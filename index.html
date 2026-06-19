@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b6';
+window.__BUILD='b7';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -235,6 +235,14 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 @keyframes auraRoad{0%,100%{box-shadow:0 0 14px 2px #fe5f5599,0 0 0 1px #9c2f29 inset,0 6px 12px #0007}50%{box-shadow:0 0 30px 7px #fe5f55,0 0 0 2px #ffb4ac inset,0 6px 12px #0007}}
 .card.k-road .inner{animation:auraRoad 1.7s ease-in-out infinite}
 .card.k-road .inner::before{background:radial-gradient(circle 2.3px at 18% 24%,#ffd9d4,transparent 70%),radial-gradient(circle 2px at 78% 20%,#ffd86b,transparent 70%),radial-gradient(circle 2.2px at 84% 64%,#fff,transparent 70%),radial-gradient(circle 1.9px at 34% 74%,#fe5f55,transparent 70%),radial-gradient(circle 2.1px at 58% 46%,#ffd9d4,transparent 70%);animation-duration:1.9s}
+/* BORDA de COR PRÓPRIA por coringa (não rainbow) + creme TINGIDO — diferenciar de verdade */
+@keyframes ringPulse{0%,100%{filter:brightness(.92) saturate(1.2)}50%{filter:brightness(1.5) saturate(1.7) drop-shadow(0 0 5px #ffffffaa)}}
+.card.k-close .holo{background:conic-gradient(from 0deg,#5fe3a0,#37d07a,#1e7a46,#9af3bf,#37d07a,#5fe3a0);animation:ringPulse 2.4s ease-in-out infinite}
+.card.k-road  .holo{background:conic-gradient(from 0deg,#ff8a7e,#fe5f55,#ffd86b,#9c2f29,#fe5f55,#ff8a7e);animation:ringPulse 1.6s ease-in-out infinite}
+.card.k-close .desc{background:linear-gradient(180deg,#eafff3,#cdf3dd)}
+.card.k-road  .desc{background:linear-gradient(180deg,#fff1ef,#ffd9d4)}
+.card.k-close .top{background:#10301f}
+.card.k-road  .top{background:#3a1714}
 @media(prefers-reduced-motion:reduce){.card.coringa .inner{animation:none}.card.coringa .inner::before{display:none}}
 .card.sel{transform:translateY(-15px) scale(1.03)!important}
 .card.sel .inner{box-shadow:0 0 0 3px var(--gold),0 0 18px var(--gold)80,0 8px 14px #0007}
@@ -1404,11 +1412,11 @@ function menu(){
 const MESA_STEPS=[
  {sel:'.blind',title:'🎯 O chefe & a meta',body:'Cada fase tem um <b>chefe</b>. Você vence batendo a <b>meta de pips</b> (o número à direita).'},
  {sel:'.formula',title:'CHIPS × MULT = pontuação',body:'O número <b style="color:#3ea0e0">AZUL</b> (chips) = <b>qualidade da zona</b>. O <b style="color:#fe5f55">VERMELHO</b> (mult) = <b>agressividade</b> da aposta. Multiplicados = seus <b>pips</b>.'},
- {sel:'.felt',title:'📈 O gráfico ao vivo',body:'A faixa <b style="color:#37d07a">VERDE</b> é o suporte (piso → compra). A linha <b style="color:#fe5f55">VERMELHA</b> tracejada é o alvo (roadblock). Dica: <b>arraste</b> no gráfico pra medir em pips.'},
- {sel:'.jokers',title:'✨ Coringas',body:'Multiplicam a jogada (×1.5…). Você os <b>conquista</b> jogando. O <b>🔒 cadeado</b> = cartas que ainda vão chegar.'},
+ {sel:'.felt',title:'📈 O gráfico É JOGÁVEL',body:'Aqui você <b>JOGA</b>: <b>arraste</b> pra MARCAR o suporte na faixa <b style="color:#37d07a">VERDE</b> (o <b>corpo</b>, não o pavio). Marcou certo → <b>libera o OPERAR</b>. A linha <b style="color:#fe5f55">vermelha</b> é o alvo (roadblock). (Depois de marcar, arrastar mede pips.)'},
+ {sel:'.jokers',title:'✨ Coringas',body:'<b>Multiplicam</b> a jogada (×1.5…). <b>Cada um é diferente</b> — cor e efeito próprios (verde, vermelho…) pra você reconhecer pela cara. Você os <b>conquista</b> jogando. <b>🔒</b> = cartas que ainda vão chegar.'},
  {sel:'.hand',title:'🃏 Sua mão',body:'<b>Toque</b> numa carta pra montar o setup; <b>segure</b> pra abrir a explicação completa dela.'},
  {sel:'#op',title:'▶ Operar',body:'Com o setup pronto, dispara o trade — as cartas pontuam em sequência e os pips estouram.'},
- {sel:'#dc',title:'♻️ Descartar',body:'Troca cartas que não servem. Você tem um número <b>limitado</b> de descartes.'},
+ {sel:'#dc',title:'♻️ Descartar — sua chance de virar o jogo',body:'Troca cartas que não servem por <b>NOVAS</b> (igual ao pôquer). É como você <b>conserta uma mão ruim</b>: jogue fora o <b>Pavio</b> ou cartas na <b>direção errada</b> e puxe melhores. É <b>limitado</b> (3) — parte da estratégia.'},
  {sel:'.statline',title:'📊 Seus recursos',body:'<b>PIPS</b> já feitos, e quantas <b>MÃOS</b> e <b>DESCARTES</b> ainda restam.'}
 ];
 function startMesaTour(auto){
