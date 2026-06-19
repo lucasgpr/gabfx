@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b16';
+window.__BUILD='b17';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -116,6 +116,15 @@ body::before{content:"";position:fixed;inset:-15%;z-index:0;opacity:.45;mix-blen
 .felt{background:rgba(0,0,0,.22);border:2px solid var(--line);border-radius:12px;padding:7px;box-shadow:inset 0 2px 16px #0007;position:relative}
 canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radius:8px;border:1px solid var(--line);display:block;touch-action:none}
 .tf-badge{position:absolute;top:13px;right:14px;background:#0008;border:1px solid #ffffff22;border-radius:7px;font-size:10px;color:#bfe0cf;padding:2px 7px;letter-spacing:1px}
+.replay-btn{position:absolute;bottom:10px;left:12px;background:#0008;border:1px solid #ffffff22;border-radius:7px;font-size:10px;color:#bfe0cf;padding:3px 9px;letter-spacing:.3px;cursor:pointer;transition:background .15s, transform .1s;z-index:3}
+.replay-btn:hover{background:#000b;color:#fff}
+.replay-btn:active{transform:scale(.96)}
+.replay-btn[disabled]{opacity:.4;cursor:default}
+.btn.conf{background:linear-gradient(180deg,#2fa563,#1f7d49);color:#fff}
+.teoria{background:rgba(244,201,93,.07);border:1px solid rgba(244,201,93,.28);border-radius:12px;padding:11px 13px;margin:10px 0;text-align:left}
+.teoria .th{font-weight:700;color:var(--gold);margin-bottom:5px;font-size:14px}
+.teoria p{font-size:13.5px;line-height:1.55;color:#dde7df;margin:0 0 8px}
+.btn.mini{padding:6px 10px;font-size:12px}
 
 /* mentor */
 .say{display:flex;gap:9px;align-items:flex-start;background:rgba(160,107,214,.13);border:1px solid rgba(160,107,214,.45);border-radius:11px;padding:9px 11px;font-size:13px;color:#ece4ff;line-height:1.4;min-height:42px}
@@ -822,7 +831,8 @@ const CENARIOS_A0={
     textos:{ zonaPalavra:'suporte', zonaCap:'Suporte', zonaLabel:'SUPORTE (compra) — marcado no CORPO',
       pisoTeto:'piso', pararamDe:'cair', dirGerundio:'Comprando', segurou:'o piso segurou!',
       confNome:'Vela de Alta', marcaHint:'~R$ 139', perfHint:'139,5', faixaTxt:'138–141', pavioTxt:'137 pra baixo',
-      contraPalavra:'vendeu num suporte', contraLicao:'No piso se <b>COMPRA</b> (os compradores empurram pra cima).' }
+      contraPalavra:'vendeu num suporte', contraLicao:'No piso se <b>COMPRA</b> (os compradores empurram pra cima).',
+      teoria:`O preço vinha <b>caindo</b> e <b>parou no piso</b>: veio uma vela de baixa e, logo depois, uma vela de <b>alta</b> segurando — a <b>regra dos 2 candles</b>. Os <b>compradores assumiram</b> ali. Por isso a direção é <b>COMPRA</b>: do piso, o preço tende a <b>subir</b>. <b>Vender</b> aqui seria operar <b>contra a zona</b> — apostar na queda bem onde os compradores empurram pra cima. [GAB]` }
   },
   resistencia:{
     tipo:'resistencia', dirCerta:'sell', cartaZona:'res', cartaConf:'bear',
@@ -838,7 +848,8 @@ const CENARIOS_A0={
     textos:{ zonaPalavra:'resistência', zonaCap:'Resistência', zonaLabel:'RESISTÊNCIA (venda) — marcada no CORPO',
       pisoTeto:'teto', pararamDe:'subir', dirGerundio:'Vendendo', segurou:'o teto segurou!',
       confNome:'Vela de Baixa', marcaHint:'~R$ 156,5', perfHint:'156,5', faixaTxt:'155–158', pavioTxt:'159 pra cima',
-      contraPalavra:'comprou numa resistência', contraLicao:'No teto se <b>VENDE</b> (os vendedores empurram pra baixo).' }
+      contraPalavra:'comprou numa resistência', contraLicao:'No teto se <b>VENDE</b> (os vendedores empurram pra baixo).',
+      teoria:`O preço vinha <b>subindo</b> e <b>parou no teto</b>: veio uma vela de alta e, logo depois, uma vela de <b>baixa</b> rejeitando — a <b>regra dos 2 candles</b>. Os <b>vendedores assumiram</b> ali. Por isso a direção é <b>VENDA</b> (você ganha na queda): do teto, o preço tende a <b>cair</b>. <b>Comprar</b> aqui seria operar <b>contra a zona</b> — apostar na alta bem onde os vendedores empurram pra baixo. [GAB]` }
   }
 };
 
@@ -1170,6 +1181,11 @@ function runAto0(){
   /* ----- estado da run (Hades: 1 run = 1 operação) ----- */
   let blind={alvo:300,maos:4,desc:3},        // [LICENÇA] Ato 0, Ante 1 = 300 pips (escala do doc)
       pips=0,sel=new Set(),busy=false,firstHand=true,priceTested=false,zoneMarked=false,descHinted=false,markedPrice=0;
+  let linhaPreco=null;       // rascunho: preço da linha colocada, AINDA não confirmada (null = sem linha)
+  let draggingLine=false;    // arrastando a linha pra ajuste fino
+  let setupAnimado=false;    // a animação de entrada da MÃO ATUAL já rodou? (reseta por mão)
+  let animando=false;        // gráfico se formando: trava marcação (probe respeita busy/animando)
+  const clampP=v=>Math.max(PR.min,Math.min(PR.max,v));
   let jokers=['close','roadblock'];          // 2 selos-coringa do Ato 0
   let fichas=0, rerollPreco=2, ofertas=[];   // economia intra-run (zera a cada run) [LICENÇA: loja Balatro]
   // BARALHO FINITO da run: mão + pilha de compra + pilha de descarte (+ aderências por mão)
@@ -1211,6 +1227,18 @@ function runAto0(){
       ctx.beginPath();ctx.moveTo(B.x,yz);ctx.lineTo(B.x+B.w,yz);ctx.stroke();
       ctx.fillStyle='#f4c95d';ctx.font='bold 10px system-ui';ctx.fillText('✓ sua zona · R$ '+markedPrice.toFixed(1),B.x+5,yz-5);
     }
+    // LINHA-RASCUNHO (estilo ordem do MetaTrader): colocada e ainda NÃO confirmada
+    if(!zoneMarked && linhaPreco!=null){
+      const yL=pY(linhaPreco,B,PR);
+      ctx.strokeStyle='#f4c95d'; ctx.lineWidth=1.5; ctx.setLineDash([5,3]);
+      ctx.beginPath(); ctx.moveTo(B.x,yL); ctx.lineTo(B.x+B.w,yL); ctx.stroke(); ctx.setLineDash([]);
+      ctx.font='bold 11px system-ui';
+      const tag='R$ '+linhaPreco.toFixed(1), tw=ctx.measureText(tag).width+14;
+      ctx.fillStyle='rgba(11,19,32,.9)'; ctx.fillRect(B.x+B.w-tw, yL-9, tw, 18);
+      ctx.strokeStyle='#f4c95d'; ctx.lineWidth=1; ctx.strokeRect(B.x+B.w-tw, yL-9, tw, 18);
+      ctx.fillStyle='#f4c95d'; ctx.fillText(tag, B.x+B.w-tw+7, yL+4);
+      ctx.beginPath(); ctx.arc(B.x+6, yL, 5, 0, 7); ctx.fill();   // alça ● na borda esquerda
+    }
   }
 
   /* ---------- cálculo (preview da fórmula no HUD) ---------- */
@@ -1251,6 +1279,58 @@ function runAto0(){
     })(t0);
   }
 
+  /* ---------- GRÁFICO ANIMADO: as velas surgem (leitura do movimento, não a resposta) ---------- */
+  function animarSetup(cb,opts){
+    opts=opts||{}; const rotulo=opts.rotulo!==false;
+    const cv=$('#bd'); if(!cv){ setupAnimado=true; if(cb)cb(); return; }
+    const wasBusy=busy; busy=true; animando=true;
+    let n=0; const PACE=185;
+    drawTrade(SETUP,0); if(rotulo) tendLabel(0);
+    const finalizar=()=>{ animando=false; busy=wasBusy; setupAnimado=true; drawTrade(); if(rotulo) tendLabel(SETUP.length); if(cb) cb(); };
+    const tm=setInterval(()=>{
+      n++; drawTrade(SETUP,n); if(rotulo) tendLabel(n);
+      blip(300+n*22); vibrate(4);
+      if(n>=SETUP.length){ clearInterval(tm); finalizar(); }
+    },PACE);
+    // SKIP: tocar durante a formação adianta (leigo impaciente)
+    cv.addEventListener('pointerdown',function skip(){
+      if(!animando) return;
+      clearInterval(tm); cv.removeEventListener('pointerdown',skip); finalizar();
+    },{once:true});
+  }
+  /* rótulo de TENDÊNCIA (passado, leitura) — nunca diz COMPRE/VENDA */
+  function tendLabel(n){
+    if(n<2) return;
+    const cv=$('#bd'); if(!cv) return; const ctx=cv.getContext('2d');
+    const sup=CEN.tipo==='suporte';
+    const txt = sup ? 'tendência  ↓ caindo' : 'tendência  ↑ subindo';
+    const col = sup ? '#fe5f55' : '#37d07a';
+    ctx.save(); ctx.font='bold 11px system-ui';
+    const w=ctx.measureText(txt).width+16;
+    ctx.fillStyle='rgba(11,19,32,.82)'; ctx.fillRect(B.x+6,B.y+6,w,20);
+    ctx.strokeStyle=col+'88'; ctx.lineWidth=1; ctx.strokeRect(B.x+6,B.y+6,w,20);
+    ctx.fillStyle=col; ctx.fillText(txt,B.x+14,B.y+20); ctx.restore();
+  }
+  /* REVER didático: re-roda setup + a continuação que ACONTECEU, sem repontuar nem mudar estado */
+  function reverTradeCompleto(full, certo, k){
+    const cv=$('#bd'); if(!cv) return;
+    const wasBusy=busy; busy=true; animando=true; let n=0;
+    const tm=setInterval(()=>{
+      n++; drawTrade(full,n); blip(300+n*16);
+      if(n>=full.length){
+        clearInterval(tm); animando=false; busy=wasBusy;
+        const ctx=cv.getContext('2d'), sup=CEN.tipo==='suporte';
+        const slot=B.w/full.length, ax=B.x+slot*(SETUP.length-0.5);
+        const buy=(CEN.dirCerta==='buy');
+        const yFrom=pY(sup?ZONE.bottom:ZONE.top,B,PR);
+        const yTo=certo?pY(sup?ROAD.bottom:ROAD.top,B,PR):pY(sup?ZONE.bottom-10:ZONE.top+10,B,PR);
+        arrow(ctx,ax,yFrom,yTo,buy?'#37d07a':'#fe5f55',buy?'COMPRA':'VENDA');
+        tendLabel(SETUP.length);
+        if(k) setTimeout(()=>roundResult(k._reCorrect,k._reChips,k._reMult,k._reGain,k),900);
+      }
+    },165);
+  }
+
   /* ---------- render completo da mesa ---------- */
   function render(){
     screen.innerHTML=`<div class="view"><div class="mesa">
@@ -1266,7 +1346,7 @@ function runAto0(){
         <div class="b"><small>BARALHO</small><b id="deckb">${drawPile.length}</b></div>
       </div>
       <div class="formula"><div class="chips" id="chips">0</div><div class="fx">×</div><div class="mult" id="mult">1</div></div>
-      <div class="felt"><canvas id="bd" width="548" height="212"></canvas><span class="tf-badge">DAILY · XAUUSD</span></div>
+      <div class="felt"><canvas id="bd" width="548" height="212"></canvas><span class="tf-badge">DAILY · XAUUSD</span><button class="replay-btn" id="replay">▶ Rever o gráfico</button></div>
       <div class="say"><span class="ava">🥋</span><span id="sayt"></span></div>
       <div class="lane-label"><span>Coringas · <b>sempre ativos</b> — multiplicam TODA jogada sozinhos (você os conquistou)</span><span class="cnt" id="jkcnt"></span></div>
       <div class="jokers" id="jk"></div>
@@ -1274,13 +1354,12 @@ function runAto0(){
       <div class="hand" id="hd"></div>
       <div class="actions">
         <button class="btn op" id="op">▶ OPERAR</button>
+        <button class="btn conf" id="cf" style="display:none">✓ Confirmar zona</button>
         <button class="btn disc" id="dc">Descartar (${blind.desc})</button>
       </div>
       <div class="note">⚠️ Simulação para aprender — não é recomendação. O método do GAB usa risco agressivo (~10% por setup) e alavancagem; a maioria dos traders perde. "95% garantido" é <b>marketing</b>, não número. Nada vai a dinheiro real sem backtest.</div>
     </div></div>`;
-    drawTrade();
-    // canvas: tocar/arrastar mostra o preço (reusa yToP — leitura do gráfico)
-    bindCanvasProbe();
+    bindCanvasProbe();   // probe SEMPRE ligada (respeita busy/animando)
     // coringas
     const jk=$('#jk');
     jokerObjs().forEach(j=>jk.appendChild(makeCard(j,'joker')));
@@ -1300,67 +1379,77 @@ function runAto0(){
     hand.forEach((id,i)=>{const c=DECK[id];const el=makeCard(c,'hand');el.dataset.i=i;
       el._toggle=()=>toggle(i,el,c);if(sel.has(i))el.classList.add('sel');hd.appendChild(el);});
     $('#op').onclick=operar;$('#dc').onclick=descartar;
-    say(firstHand
-      ? `🎯 Comece LENDO o gráfico: <b>arraste</b> e marque ${CEN.tipo==='suporte'?'o <b>suporte</b>':'a <b>resistência</b>'} na faixa <b>colorida</b> (o <b>corpo</b>, não o pavio). Depois monte <b>${CEN.textos.zonaCap} + ${CEN.textos.confNome}</b> e <b>OPERE</b>.`
-      : (zoneMarked ? 'Monte o setup (zona + confirmação na mesma direção) e opere. Use o <b>Corpo</b> pra valorizar a zona; evite o <b>Pavio</b>.' : `🎯 Marque ${CEN.tipo==='suporte'?'o suporte':'a resistência'} no gráfico (faixa colorida), monte o setup e opere.`));
+    $('#cf').onclick=confirmarZona; atualizarBotaoConfirmar();
+    const rb=$('#replay');
+    if(rb) rb.onclick=()=>{ if(busy||animando) return; blip(520);
+      animarSetup(()=>{ say(zoneMarked
+        ? '✓ Revisto. Sua zona marcada continua valendo — monte o setup e opere.'
+        : `🎯 Revisto. Marque ${CEN.tipo==='suporte'?'o suporte':'a resistência'} na faixa colorida (toque no gráfico).`); }); };
+    // 1ª vez na mão → forma o gráfico, DEPOIS libera marcar. Re-render no meio da mão → não reanima.
+    if(setupAnimado || zoneMarked || animando){
+      drawTrade();
+      say(zoneMarked
+        ? 'Monte o setup (zona + confirmação na mesma direção) e opere. Use o <b>Corpo</b> pra valorizar a zona; evite o <b>Pavio</b>.'
+        : `🎯 Marque ${CEN.tipo==='suporte'?'o suporte':'a resistência'} na faixa colorida (toque no gráfico), monte o setup e opere.`);
+    } else {
+      animarSetup(()=>{ say(firstHand
+        ? `🎯 Viu o movimento? Os corpos foram <b>${CEN.textos.pararamDe==='cair'?'caindo':'subindo'}</b> e <b>travaram</b>. Agora <b>toque no gráfico</b> pra marcar ${CEN.tipo==='suporte'?'o <b>suporte</b>':'a <b>resistência</b>'} (a faixa colorida, o <b>corpo</b>) e aperte <b>✓ Confirmar zona</b>.`
+        : `🎯 Gráfico formado. Marque ${CEN.tipo==='suporte'?'o suporte':'a resistência'} na faixa colorida e confirme.`); });
+    }
     updFormula();
     if($('#descb'))$('#descb').textContent=blind.desc;
     if($('#deckb'))$('#deckb').textContent=drawPile.length;
   }
   function say(t){const s=$('#sayt');if(s){s.innerHTML=linkify(t);bindGloss(s);}}
 
-  /* ---------- canvas probe: leitura do preço (reusa yToP) ---------- */
-  /* ---------- RÉGUA DE PIPS: arraste no gráfico = mede a distância em pips (igual MetaTrader) ---------- */
+  /* ---------- MARCAÇÃO estilo MetaTrader: TOCA pra colocar linha → ajusta → CONFIRMA ---------- */
   function bindCanvasProbe(){
-    const cv=$('#bd');if(!cv)return;let probing=false,sy=0,hinted=false;
+    const cv=$('#bd'); if(!cv) return;
     const toLocal=e=>{const r=cv.getBoundingClientRect();return {x:(e.clientX-r.left)*cv.width/r.width,y:(e.clientY-r.top)*cv.height/r.height};};
-    const toPips=d=>Math.round(Math.abs(d)*10);  // ouro: ~10 pips por R$1,00 [LICENÇA: escala didática]
-    const hLine=(ctx,yy,c)=>{ctx.strokeStyle=c;ctx.setLineDash([4,3]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(B.x,yy);ctx.lineTo(B.x+B.w,yy);ctx.stroke();ctx.setLineDash([]);};
-    const draw=e=>{const {x,y}=toLocal(e);const price=yToP(y,B,PR);
-      drawTrade();const ctx=cv.getContext('2d');
-      if(!zoneMarked){ // MODO MARCAR: linha NEUTRA + o preço. VOCÊ lê e decide; o jogo confere só AO SOLTAR.
-        hLine(ctx,y,'#f4c95d');
-        ctx.fillStyle='#f4c95d';ctx.font='bold 11px system-ui';
-        ctx.fillText('marcar  R$ '+price.toFixed(1),Math.min(x+6,B.x+B.w-104),Math.max(B.y+13,y-5));
-        if(!hinted){hinted=true;conceptToast('🎯',`Marque ${CEN.tipo==='suporte'?'o suporte':'a resistência'} (você lê)`,`Olhe as velas: <b>onde os corpos pararam de ${CEN.textos.pararamDe}?</b> Esse é ${CEN.tipo==='suporte'?'o suporte':'a resistência'}. Arraste sua linha até esse nível e <b>solte</b> — aí o jogo diz se você leu certo. (Sem entregar a resposta antes.)`);}
-        return;
-      }
-      if(Math.abs(y-sy)<7){ // (já marcado) toque = lê o preço
-        hLine(ctx,y,'#f4c95d');
-        ctx.fillStyle='#f4c95d';ctx.font='bold 11px system-ui';
-        ctx.fillText('R$ '+price.toFixed(1),Math.min(x+6,B.x+B.w-60),Math.max(B.y+12,y-4));
-        return;
-      }
-      // RÉGUA (já marcado): mede do ponto onde apertou até o atual, em PIPS
-      const p0=yToP(sy,B,PR),pips=toPips(price-p0),up=y<sy,col=up?'#37d07a':'#fe5f55';
-      hLine(ctx,sy,'#f4c95d');
-      hLine(ctx,y,col);
-      ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x,sy);ctx.lineTo(x,y);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-3,y+(up?5:-5));ctx.moveTo(x,y);ctx.lineTo(x+3,y+(up?5:-5));ctx.stroke();
-      const lx=Math.min(x+8,B.x+B.w-72),ly=(sy+y)/2;
-      ctx.fillStyle='rgba(11,19,32,.85)';ctx.fillRect(lx-4,ly-13,70,28);
-      ctx.strokeStyle=col;ctx.lineWidth=1;ctx.strokeRect(lx-4,ly-13,70,28);
-      ctx.fillStyle=col;ctx.font='bold 13px system-ui';ctx.fillText(pips+' pips',lx,ly+1);
-      ctx.fillStyle='#f4c95d';ctx.font='10px system-ui';ctx.fillText('Δ R$ '+Math.abs(price-p0).toFixed(1),lx,ly+12);
-    };
-    cv.addEventListener('pointerdown',e=>{if(busy)return;sy=toLocal(e).y;probing=true;draw(e);});
-    cv.addEventListener('pointermove',e=>{if(probing&&!busy)draw(e);});
-    function tryMark(e){const price=yToP(toLocal(e).y,B,PR);
-      const cMin=CEN.marcaCorpo[0],cMax=CEN.marcaCorpo[1],pMin=CEN.marcaPavio[0],pMax=CEN.marcaPavio[1];
-      if(price>=cMin&&price<=cMax){ // CORPO (faixa colorida) = certo
-        zoneMarked=true;markedPrice=price;drawTrade();blip(720);vibrate(12);sparks(B.x+B.w*0.5,pY(price,B,PR),'#37d07a',10);
-        say(`✅ Você marcou <b>R$ ${price.toFixed(1)}</b> — caiu no <b>CORPO</b> (faixa colorida). Leu certo! Zona confirmada. Agora monte <b>${CEN.textos.zonaCap} + ${CEN.textos.confNome}</b> e <b>OPERE</b>.`);
-        conceptToast('✅','Validado ao soltar',`No instante que você soltou, o jogo conferiu o nível <b>R$ ${price.toFixed(1)}</b>: caiu no corpo (não no pavio) → <b>certo</b>. Sua linha fica marcada no gráfico.`);
-      } else if(price>=pMin&&price<pMax){ // PAVIO = errado (ensina)
-        buzz();shake();drawTrade();
-        say(`❌ Você marcou <b>R$ ${price.toFixed(1)}</b> — isso é o <b>PAVIO</b> (o espeto fino). A zona é o <b>CORPO</b> (${CEN.textos.marcaHint}, faixa colorida). Arraste de novo e solte na faixa.`);
-        conceptToast('🎯','Validado ao soltar',`Confiro o nível no instante que você solta. <b>R$ ${price.toFixed(1)}</b> caiu no pavio → ainda não vale. Tente de novo.`);
-      } else { drawTrade();
-        say(`🎯 Você marcou <b>R$ ${price.toFixed(1)}</b> — fora da zona. Leia onde os corpos pararam de <b>${CEN.textos.pararamDe}</b> e solte ali (faixa colorida, ${CEN.textos.marcaHint}).`);
-      }
+    const HIT=12; let hinted=false;
+    function placeOrMove(e){
+      if(busy||animando||zoneMarked) return;        // animando ou já confirmado → read-only
+      const {y}=toLocal(e);
+      linhaPreco=clampP(yToP(y,B,PR));
+      drawTrade(); atualizarBotaoConfirmar();
+      if(!hinted){hinted=true;
+        conceptToast('🎯',`Coloque a linha ${CEN.tipo==='suporte'?'no suporte':'na resistência'}`,
+          `Toque onde <b>os corpos pararam de ${CEN.textos.pararamDe}</b>. A linha fica fixa — toque de novo pra mover, ou arraste a bolinha pra ajustar. Quando estiver certo, aperte <b>✓ Confirmar zona</b>. (O jogo só diz se acertou ao confirmar.)`);}
     }
-    cv.addEventListener('pointerup',e=>{probing=false;if(busy)return;if(!zoneMarked)tryMark(e);else drawTrade();});
-    cv.addEventListener('pointercancel',()=>{probing=false;if(!busy)drawTrade();});
+    cv.addEventListener('pointerdown',e=>{
+      if(busy||animando||zoneMarked) return;        // skip da animação é tratado DENTRO de animarSetup
+      const {y}=toLocal(e);
+      if(linhaPreco!=null && Math.abs(y-pY(linhaPreco,B,PR))<=HIT){ draggingLine=true; }
+      else placeOrMove(e);
+    });
+    cv.addEventListener('pointermove',e=>{ if(draggingLine && !busy && !animando) placeOrMove(e); });
+    cv.addEventListener('pointerup',  ()=>{ draggingLine=false; });
+    cv.addEventListener('pointercancel',()=>{ draggingLine=false; });
+    /* RÉGUA de pips REMOVIDA do Ato 0 (um toque = uma linha, sem ambiguidade). Reativar em atos futuros. */
+  }
+  /* CONFIRMAÇÃO = a validação de hoje (mesmas faixas/mensagens), agora em passo explícito */
+  function confirmarZona(){
+    if(busy||animando||zoneMarked||linhaPreco==null) return;
+    const price=linhaPreco;
+    const cMin=CEN.marcaCorpo[0],cMax=CEN.marcaCorpo[1],pMin=CEN.marcaPavio[0],pMax=CEN.marcaPavio[1];
+    if(price>=cMin&&price<=cMax){                    // CORPO = certo
+      zoneMarked=true; markedPrice=price; linhaPreco=null;
+      drawTrade(); blip(720); vibrate(12); sparks(B.x+B.w*0.5,pY(price,B,PR),'#37d07a',10);
+      say(`✅ Zona confirmada em <b>R$ ${price.toFixed(1)}</b> — caiu no <b>CORPO</b> (faixa colorida). Leu certo! Agora monte <b>${CEN.textos.zonaCap} + ${CEN.textos.confNome}</b> e <b>OPERE</b>.`);
+      conceptToast('✅','Zona validada',`No corpo (não no pavio) → <b>certo</b>. A linha fica fixa como sua ordem.`);
+    } else if(price>=pMin&&price<pMax){               // PAVIO = erro (linha CONTINUA)
+      buzz(); shake(); drawTrade();
+      say(`❌ <b>R$ ${price.toFixed(1)}</b> é o <b>PAVIO</b> (o espeto fino). A zona é o <b>CORPO</b> (${CEN.textos.marcaHint}). Ajuste a linha pra faixa colorida e confirme de novo.`);
+      conceptToast('🎯','Ainda não',`Pavio não marca zona. Mova a linha pro corpo e aperte <b>✓ Confirmar</b> de novo.`);
+    } else {                                          // FORA (linha CONTINUA)
+      buzz(); drawTrade();
+      say(`🎯 <b>R$ ${price.toFixed(1)}</b> está fora da zona. Veja onde os corpos pararam de <b>${CEN.textos.pararamDe}</b> e mova a linha pra faixa colorida (${CEN.textos.marcaHint}).`);
+    }
+    atualizarBotaoConfirmar();
+  }
+  function atualizarBotaoConfirmar(){
+    const cf=$('#cf'); if(!cf) return;
+    cf.style.display=(!zoneMarked && linhaPreco!=null && !animando) ? '' : 'none';
   }
 
   /* ---------- selecionar carta ---------- */
@@ -1405,7 +1494,7 @@ function runAto0(){
     });
     setTimeout(()=>{
       [...sel].sort((a,b)=>b-a).forEach(i=>{discardPile.push(hand[i]);hand.splice(i,1);});
-      sel.clear(); refill(); garantirOperavel(); render(); busy=false;
+      sel.clear(); refill(); garantirOperavel(); render(); busy=false;  // mesma mão: NÃO reseta marca/animação
       say(trapOut
         ? '✓ Se livrou de carta(s) ruim — mas o baralho não é infinito. Monte zona + confirmação.'
         : 'Puxou do baralho. Cuidado: cada descarte gasta cartas boas. Procure zona + confirmação.');
@@ -1439,6 +1528,7 @@ function runAto0(){
   function operar(){
     if(busy)return;const k=calc();
     if(!sel.size){buzz();say('Selecione cartas pra montar o setup primeiro.');return;}
+    if(!zoneMarked && linhaPreco!=null){ confirmarZona(); }   // colocou linha e esqueceu de confirmar → valida agora
     const blind_entry=!zoneMarked;                 // apertou OPERAR sem ler/marcar a zona = entrar no escuro
     if(k.hasTrap){ // armadilha do pavio: explica o erro, não pune escondido (corrige sem gastar mão)
       buzz();shake();
@@ -1654,7 +1744,8 @@ function runAto0(){
   function gastarCartas(k){ // cartas operadas são GASTAS (baralho finito) → vão pro descarte
     if(k&&Array.isArray(k.idxs)){ [...k.idxs].sort((a,b)=>b-a).forEach(i=>{ if(hand[i]!==undefined){discardPile.push(hand[i]);hand.splice(i,1);} }); }
   }
-  function proximaMao(){ refill(); garantirOperavel(); render(); }
+  function resetMao(){ zoneMarked=false; markedPrice=0; linhaPreco=null; draggingLine=false; setupAnimado=false; priceTested=false; }
+  function proximaMao(){ refill(); garantirOperavel(); resetMao(); render(); }
   function abrirLoja(){
     const juros=Math.min(3,Math.floor(fichas/5));
     if(juros>0){ fichas+=juros; conceptToast('🏦','Juros',`Você guardou fichas: <b>+${juros}🎰</b>. No Balatro, poupar rende — não torre tudo.`); }
@@ -1731,6 +1822,11 @@ function runAto0(){
       : (k&&k._blindEntry
           ? `<div class="why bad"><b>⚫ Entrada no escuro:</b> você operou <b>sem marcar a zona</b>. Não dava pra saber onde estava ${CEN.tipo==='suporte'?'o suporte':'a resistência'} — virou aposta cega e o trade fechou em <b>${fmt} pips</b>. Não é punição: é a regra nº1 — <b>marque a zona (o corpo) antes de entrar</b>. [GAB]</div>`
           : `<div class="why bad"><b>❌ Direção errada:</b> você <b>${CEN.textos.contraPalavra}</b>. ${CEN.textos.contraLicao} O preço ${CEN.tipo==='suporte'?'subiu':'caiu'} e bateu o stop: <b>${fmt} pips</b>. Não é punição — é a aula: respeite a direção da zona.</div>`);
+    // 📚 TEORIA fiel ao GAB: por que era compra/venda (sempre, acertando ou errando) + rever o gráfico
+    const dirCertaTxt = CEN.tipo==='suporte' ? 'COMPRA' : 'VENDA';
+    const teoriaHTML = `<div class="teoria"><div class="th">📚 Por que era ${dirCertaTxt}</div>
+      <p>${linkify(CEN.textos.teoria)}</p>
+      <button class="btn ghost mini" id="reverGraf">🔁 Rever o gráfico desse cenário</button></div>`;
     // CONSEQUÊNCIA DAS APOSTAS DE RISCO — só revelada DEPOIS de operar (alerta, não marca prévia)
     const riskHTML=(k&&k._riskNote)?`<div class="riskbox"><div class="riskhd">⚠ Sua aposta de risco</div><div>${k._riskNote}</div></div>`:'';
     // ADERÊNCIA ao método + JOGADA PERFEITA (item: "atingir a perfeição") — 'media' já calculada/persistida acima
@@ -1763,9 +1859,16 @@ function runAto0(){
     const ver100=`<button class="btn ghost" id="ver100">🔍 Ver como seria o 100%</button>`;
     showSheet(won?'🎉 Boa jogada':'📉 Trade no vermelho',
       `<div class="result"><div class="pipbig">${pips} <span style="font-size:16px;color:var(--mut)">/ ${blind.alvo} pips</span></div>
-       ${why}${riskHTML}${aderenciaHTML}${faltouSec}${perfeitaHTML}${ver100}
+       ${why}${teoriaHTML}${riskHTML}${aderenciaHTML}${faltouSec}${perfeitaHTML}${ver100}
        <button class="btn go" id="next">🎰 Loja → próxima mão (${blind.maos} restantes)</button></div>`,{noX:true,sticky:true});
     const v=$('#ver100'); if(v)v.onclick=()=>abrirJogadaPerfeita(CEN);
+    // guarda os args p/ o "rever" reabrir o MESMO card (roundResult é idempotente — não muta pips/fichas)
+    k._reCorrect=correct; k._reChips=chips; k._reMult=mult; k._reGain=gain;
+    const rg=$('#reverGraf');
+    if(rg) rg.onclick=()=>{ closeSheet();
+      const cont = correct ? CONT_CERTO : CONT_ERRADO;
+      reverTradeCompleto(SETUP.concat(cont), correct, k);
+    };
     $('#next').onclick=()=>{ closeSheet(); gastarCartas(k); abrirLoja(); };
   }
 
