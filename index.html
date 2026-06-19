@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b4';
+window.__BUILD='b5';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -105,8 +105,8 @@ body::before{content:"";position:fixed;inset:-15%;z-index:0;opacity:.45;mix-blen
 .statline .pips b{color:var(--gold)}
 
 /* fórmula CHIPS × MULT */
-.formula{display:flex;align-items:stretch;justify-content:center;margin:1px 0}
-.chips,.mult{font-size:21px;font-weight:800;padding:6px 0;border:2px solid var(--line);box-shadow:0 3px 0 var(--line);flex:1;text-align:center;transition:transform .12s}
+.formula{display:flex;align-items:stretch;margin:1px 0;overflow:hidden}
+.chips,.mult{font-size:21px;font-weight:800;padding:6px 0;border:2px solid var(--line);box-shadow:0 3px 0 var(--line);flex:1;min-width:0;text-align:center;transition:transform .12s}
 .chips{background:linear-gradient(180deg,var(--chip),var(--blue2));border-radius:11px 0 0 11px;color:#fff}
 .mult{background:linear-gradient(180deg,var(--mult),var(--red2));border-radius:0 11px 11px 0;color:#fff}
 .fx{font-size:18px;font-weight:800;padding:0 8px;display:flex;align-items:center;color:var(--txt)}
@@ -228,11 +228,11 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 .card.coringa .inner{animation:jokerAura 2.6s ease-in-out infinite}
 .card.coringa .inner::before{background:radial-gradient(circle 2.3px at 18% 26%,#fff,transparent 70%),radial-gradient(circle 2px at 78% 20%,#ffe89a,transparent 70%),radial-gradient(circle 2.2px at 84% 64%,#fff,transparent 70%),radial-gradient(circle 1.9px at 34% 74%,#e7c6ff,transparent 70%),radial-gradient(circle 2.1px at 58% 46%,#fff,transparent 70%)}
 /* ◆ Candle-Close — VERDE, calmo (paciência/fechamento) */
-@keyframes auraClose{0%,100%{box-shadow:0 0 0 1px #2a8d5a inset,0 0 12px #37d07a66,0 6px 12px #0007}50%{box-shadow:0 0 0 1.5px #9af3bf inset,0 0 22px #37d07ad0,0 0 26px #eafff34d,0 6px 12px #0007}}
+@keyframes auraClose{0%,100%{box-shadow:0 0 14px 2px #37d07a99,0 0 0 1px #2a8d5a inset,0 6px 12px #0007}50%{box-shadow:0 0 30px 7px #37d07a,0 0 0 2px #9af3bf inset,0 6px 12px #0007}}
 .card.k-close .inner{animation:auraClose 3.4s ease-in-out infinite}
 .card.k-close .inner::before{background:radial-gradient(circle 2.3px at 20% 28%,#dfffe9,transparent 70%),radial-gradient(circle 2px at 76% 18%,#7be0a6,transparent 70%),radial-gradient(circle 2.2px at 84% 62%,#fff,transparent 70%),radial-gradient(circle 1.9px at 32% 74%,#37d07a,transparent 70%),radial-gradient(circle 2.1px at 56% 46%,#dfffe9,transparent 70%);animation-duration:3s}
 /* ◆ Roadblock — VERMELHO, alvo (pulso de mira, mais rápido) */
-@keyframes auraRoad{0%,100%{box-shadow:0 0 0 1px #9c2f29 inset,0 0 12px #fe5f5566,0 6px 12px #0007}50%{box-shadow:0 0 0 1.5px #ffd86b inset,0 0 22px #fe5f55d0,0 0 26px #ffd86b55,0 6px 12px #0007}}
+@keyframes auraRoad{0%,100%{box-shadow:0 0 14px 2px #fe5f5599,0 0 0 1px #9c2f29 inset,0 6px 12px #0007}50%{box-shadow:0 0 30px 7px #fe5f55,0 0 0 2px #ffb4ac inset,0 6px 12px #0007}}
 .card.k-road .inner{animation:auraRoad 1.7s ease-in-out infinite}
 .card.k-road .inner::before{background:radial-gradient(circle 2.3px at 18% 24%,#ffd9d4,transparent 70%),radial-gradient(circle 2px at 78% 20%,#ffd86b,transparent 70%),radial-gradient(circle 2.2px at 84% 64%,#fff,transparent 70%),radial-gradient(circle 1.9px at 34% 74%,#fe5f55,transparent 70%),radial-gradient(circle 2.1px at 58% 46%,#ffd9d4,transparent 70%);animation-duration:1.9s}
 @media(prefers-reduced-motion:reduce){.card.coringa .inner{animation:none}.card.coringa .inner::before{display:none}}
@@ -873,7 +873,7 @@ function runAto0(){
 
   /* ----- estado da run (Hades: 1 run = 1 operação) ----- */
   let blind={alvo:300,maos:4,desc:3},        // [LICENÇA] Ato 0, Ante 1 = 300 pips (escala do doc)
-      pips=0,sel=new Set(),busy=false,firstHand=true,priceTested=false;
+      pips=0,sel=new Set(),busy=false,firstHand=true,priceTested=false,zoneMarked=false;
   let jokers=['close','roadblock'];          // 2 selos-coringa do Ato 0
   // mão inicial: garante as peças do tutorial + a armadilha (pavio) presente
   let hand=['sup','bull','wick','bear','res','body'];
@@ -898,6 +898,12 @@ function runAto0(){
     zone(ctx,{top:SUPZ.top,bottom:SUPZ.bottom,fill:lit?'rgba(55,208,122,.30)':'rgba(55,208,122,.14)',stroke:'#37d07a',lit:lit,label:'SUPORTE (compra) — marcado no CORPO',lc:'#9af3bf'},B,PR);
     candles(ctx,shown,B,PR,count);
     if(lit&&!priceTested){priceTested=true;blip(720);sparks(B.x+B.w*0.86,pY(SUPZ.bottom,B,PR)+58,'#37d07a',6);}
+    if(zoneMarked){ // sua marcação do suporte (pelo corpo) fica fixa no gráfico
+      const yz=pY((SUPZ.top+SUPZ.bottom)/2,B,PR);
+      ctx.strokeStyle='#f4c95d';ctx.lineWidth=2;ctx.setLineDash([]);
+      ctx.beginPath();ctx.moveTo(B.x,yz);ctx.lineTo(B.x+B.w,yz);ctx.stroke();
+      ctx.fillStyle='#f4c95d';ctx.font='bold 10px system-ui';ctx.fillText('✓ sua zona',B.x+5,yz-5);
+    }
   }
 
   /* ---------- cálculo (preview da fórmula no HUD) ---------- */
@@ -968,8 +974,8 @@ function runAto0(){
       el._toggle=()=>toggle(i,el,c);if(sel.has(i))el.classList.add('sel');hd.appendChild(el);});
     $('#op').onclick=operar;$('#dc').onclick=descartar;
     say(firstHand
-      ? 'Bem-vindo ao pregão! O ouro caiu até um <b>suporte</b> (faixa verde). Pra <b>comprar</b>, monte: carta <b>Suporte</b> + <b>Vela de Alta</b>. Dica: junte <b>O Corpo</b> pra marcar a zona certa — e <b>fuja do Pavio</b>. 📏 <b>Arraste no gráfico</b> pra medir a distância em pips.'
-      : 'Monte um setup (zona + confirmação na mesma direção) e opere. Use o <b>Corpo</b> pra valorizar a zona; evite o <b>Pavio</b> (marca errado).');
+      ? '🎯 Comece LENDO o gráfico: <b>arraste</b> e marque o <b>suporte</b> na faixa <b>VERDE</b> (o <b>corpo</b>, não o pavio). Depois monte <b>Suporte + Vela de Alta</b> e <b>OPERE</b>.'
+      : (zoneMarked ? 'Monte o setup (zona + confirmação na mesma direção) e opere. Use o <b>Corpo</b> pra valorizar a zona; evite o <b>Pavio</b>.' : '🎯 Marque o suporte no gráfico (faixa verde), monte o setup e opere.'));
     updFormula();
     if($('#descb'))$('#descb').textContent=blind.desc;
   }
@@ -1005,7 +1011,19 @@ function runAto0(){
     };
     cv.addEventListener('pointerdown',e=>{if(busy)return;sy=toLocal(e).y;probing=true;draw(e);});
     cv.addEventListener('pointermove',e=>{if(probing&&!busy)draw(e);});
-    cv.addEventListener('pointerup',()=>{probing=false;if(!busy)drawTrade();});
+    function tryMark(e){const price=yToP(toLocal(e).y,B,PR);
+      if(price>=137.9&&price<=141.6){ // CORPO (faixa verde) = certo
+        zoneMarked=true;drawTrade();blip(720);vibrate(12);sparks(B.x+B.w*0.5,pY((SUPZ.top+SUPZ.bottom)/2,B,PR),'#37d07a',10);
+        say('✅ <b>Marcou no CORPO!</b> Zona confirmada (faixa verde). Agora monte <b>Suporte + Vela de Alta</b> e <b>OPERE</b>.');
+        conceptToast('✅','Zona marcada certa',`Você leu o gráfico e marcou o suporte pelo <b>corpo</b> — não pelo pavio. É assim que o GAB faz. O trade liberou.`);
+      } else if(price>=136&&price<137.9){ // PAVIO = errado (ensina)
+        buzz();shake();drawTrade();
+        say('❌ Esse é o <b>PAVIO</b> (o espeto fino, ~137). A zona é o <b>CORPO</b> — a faixa <b>VERDE</b> (~139). Arraste de novo na faixa verde.');
+      } else { drawTrade();
+        say('🎯 Marque na <b>faixa VERDE</b> (onde os corpos pararam de cair). Arraste a linha até ela.');
+      }
+    }
+    cv.addEventListener('pointerup',e=>{probing=false;if(busy)return;if(!zoneMarked)tryMark(e);else drawTrade();});
     cv.addEventListener('pointercancel',()=>{probing=false;if(!busy)drawTrade();});
   }
 
@@ -1073,6 +1091,7 @@ function runAto0(){
   /* ---------- OPERAR: validações que ENSINAM (nunca cobra o não-ensinado) ---------- */
   function operar(){
     if(busy)return;const k=calc();
+    if(!zoneMarked){buzz();shake();say('🎯 Primeiro <b>marque o suporte</b>: arraste no gráfico até a faixa <b>VERDE</b> (o corpo, não o pavio). Aí o trade libera.');conceptToast('🎯','Leia o gráfico primeiro',`Antes de operar, marque onde está o suporte — no <b>corpo</b>, na faixa verde. É a leitura que o GAB faz toda vez.`);return;}
     if(!sel.size){buzz();say('Selecione cartas pra montar o setup primeiro.');return;}
     if(k.hasTrap){ // armadilha do pavio: explica o erro, não pune escondido
       buzz();shake();
