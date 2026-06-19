@@ -229,7 +229,7 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 .card .desc{padding:5px 7px 6px;min-height:43px}
 .card .desc .v{font-size:14.5px}
 .card .desc small{font-size:9.5px;line-height:1.2}
-.card .fam{font-size:7.5px;top:4px;left:7px}
+.card .fam{display:none}   /* rótulo de família escondido: poluía/sobrepunha o nome no celular */
 .card .infodot{font-size:11px}
 .hand{min-height:160px;gap:7px;padding-top:15px}
 .jokers{min-height:90px;gap:8px}
@@ -1271,7 +1271,19 @@ const LESSONS=[
   body:`Uma zona só vale <b>depois que a vela fecha</b> naquele nível. Enquanto a vela está aberta, ela ainda pode mudar tudo.<br><br>
         Entrar antes de fechar é apostar no que <b>ainda não aconteceu</b>. O GAB espera o <b>fechamento</b> (candle-close) — paciência que evita armadilha.<br><br>
         No jogo, o coringa <b>Candle-Close</b> te recompensa por esperar. E o <b>Roadblock</b> te dá o alvo: a próxima zona oposta (onde você realiza o lucro).`,
-  gab:'[GAB] Candle-close + body-only + regra dos 2 candles = a leitura crua completa. Agora você está pronto pra operar.'}
+  gab:'[GAB] Candle-close + body-only + regra dos 2 candles = a leitura crua completa. Antes de operar, bora entender as CARTAS do jogo.'},
+ {tag:'As cartas',h:'🃏 Como funcionam as cartas',art:'sup',
+  body:`Você joga com <b>cartas</b>, divididas em famílias:<br><br>
+        🕯️ <b>Velas</b> (Alta, Baixa, Corpo, Pavio) — os tijolos; <b>confirmam</b> a jogada.<br>
+        🟩🟥 <b>Zonas</b> (Suporte, Resistência) — o <b>coração</b> do setup: é onde você opera.<br>
+        ✨ <b>Coringas</b> e <b>padrões</b> — as cartas fortes (você vê na próxima).<br><br>
+        Cada carta tem uma <b>raridade</b> (o selo colorido: comum → incomum → lendária) e as especiais <b>brilham</b>. O mais importante: <b>toque e segure qualquer carta</b> que o jogo abre a explicação completa dela. Nada é cobrado sem te ensinar.`,
+  gab:'Aqui você nunca decora: clicou na carta, o jogo explica o que é, o que faz e o que significa no método do GAB.'},
+ {tag:'As cartas',h:'✨ Coringas e a coleção',art:'close',
+  body:`Os <b>Coringas</b> (selo <b>JOKER</b>, com brilho) <b>não pontuam sozinhos</b> — eles <b>multiplicam</b> a sua jogada (×1.5, ×1.4…). Ex.: <b>Candle-Close</b> (te paga por esperar a vela fechar) e <b>Roadblock</b> (o alvo do lucro).<br><br>
+        Você <b>começa com poucas</b> cartas e vai <b>conquistando</b> coringas e padrões ao vencer chefes — o baralho <b>só cresce</b>. O <b>cadeado 🔒</b> na mesa marca as cartas que <b>ainda vão chegar</b>.<br><br>
+        Empilhar <b>zona + confirmação + coringas</b> certos = é aí que os <b>pips explodem</b>.`,
+  gab:'[GAB] A força do trade vem da CONFLUÊNCIA — somar fatores que apontam pro mesmo lado. Os coringas são exatamente isso: confluência que multiplica.'}
 ];
 function lesson(i){
   i=i||0;const o=LESSONS[i];const screen=$('#screen');
