@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b15';
+window.__BUILD='b16';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -287,6 +287,25 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 .aderencia .ameta{margin-top:6px;color:var(--mut)}
 .p100{margin:4px 0;padding-left:20px} .p100 li{margin:5px 0;font-size:13px}
 .p100-math{background:#0006;border-radius:8px;padding:9px 11px;margin-top:8px;font-size:13px;line-height:1.7}
+/* LOJA (Mesa de Coringas) */
+.loja{display:flex;flex-direction:column;gap:10px}
+.loja-saldo{font-size:15px;color:var(--gold)}
+.loja-saldo small{color:var(--mut);font-weight:400}
+.loja-grade{display:flex;flex-direction:column;gap:9px}
+.loja-item{display:grid;grid-template-columns:78px 1fr auto;gap:10px;align-items:center;background:#ffffff08;border:1px solid #ffffff14;border-radius:12px;padding:8px}
+.loja-item.owned{opacity:.6}
+.loja-cardwrap{width:78px;display:flex;justify-content:center}
+.loja-cardwrap .card{width:78px!important;margin:0}
+.loja-cardwrap .active-badge{display:none!important}  /* itens à venda não são "ativos" ainda */
+.loja-cardwrap .infodot{display:none}
+.loja-meta{min-width:0}
+.loja-meta b{display:block}
+.loja-meta .rrtag{display:inline-block;font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700;margin:2px 0}
+.loja-meta p{font-size:12px;color:var(--mut);margin:3px 0 0}
+.loja-foot{display:flex;gap:8px;justify-content:space-between;margin-top:4px}
+.loja-foot .btn{flex:1}
+.loja .note{margin-top:6px}
+.loja-item .btn.buy{white-space:nowrap}
 @media(prefers-reduced-motion:reduce){.card.coringa .inner{animation:none}.card.coringa .inner::before{display:none}}
 .card.sel{transform:translateY(-15px) scale(1.03)!important}
 .card.sel .inner{box-shadow:0 0 0 3px var(--gold),0 0 18px var(--gold)80,0 8px 14px #0007}
@@ -540,7 +559,8 @@ ART_SVG.fomo=`<svg viewBox="0 0 130 100" xmlns="http://www.w3.org/2000/svg">
    =================================================================== */
 const SAVE_KEY='gabfx_ato0_v1';
 const S=Object.assign({xp:0,onbDone:false,bossWon:false,unlocked:[],runs:0,
-  aderenciaUltima:0,aderenciaMelhorRun:0,maosPerfeitas:0,cenarioUltimo:null},JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'));
+  aderenciaUltima:0,aderenciaMelhorRun:0,maosPerfeitas:0,cenarioUltimo:null,
+  coringasVistos:[],slotsDestravados:[],fichasGastasTotal:0},JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'));
 function save(){localStorage.setItem(SAVE_KEY,JSON.stringify(S));hud();}
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
@@ -663,6 +683,9 @@ function art(kind){
   else if(kind==='close')s=cdl(46,38,16,10,42,G)+`<line x1="20" y1="16" x2="72" y2="16" stroke="${GD}" stroke-width="1.4" stroke-dasharray="3 2"/><text x="46" y="11" font-size="7.5" text-anchor="middle" fill="${GD}">fechou ✓</text>`;
   else if(kind==='road') s=`<rect x="0" y="10" width="${W}" height="8" fill="rgba(255,107,94,.2)" stroke="${R}" stroke-dasharray="3 3"/>`+cdl(30,42,30,26,46,G)+cdl(50,30,18,12,34,G)+`<text x="74" y="16" font-size="9" fill="${GD}">🎯</text>`;
   else if(kind==='mtf')  s=`<rect x="5" y="8" width="36" height="34" rx="3" fill="none" stroke="${G}" opacity=".7"/><rect x="51" y="8" width="36" height="34" rx="3" fill="none" stroke="${B}" opacity=".7"/>`+cdl(20,32,20,14,40,G)+cdl(68,32,20,14,40,G);
+  else if(kind==='pullback')   s=cdl(34,30,18,8,40,R)+cdl(58,18,30,8,40,G)+`<path d="M30 24 q14 14 28 0" stroke="${GD}" stroke-width="1.4" fill="none" stroke-dasharray="2 2"/>`;
+  else if(kind==='confluencia')s=`<line x1="6" y1="36" x2="86" y2="36" stroke="${G}" stroke-width="1.6"/><line x1="20" y1="10" x2="72" y2="42" stroke="${B}" stroke-width="1.4" opacity=".8"/>`+cdl(46,34,18,10,40,G);
+  else if(kind==='disciplina') s=`<rect x="20" y="14" width="52" height="24" rx="3" fill="none" stroke="${GD}" stroke-width="1.4" stroke-dasharray="3 2"/>`+cdl(46,32,20,12,38,G)+`<text x="46" y="47" font-size="7.5" text-anchor="middle" fill="${GD}">risco fixo</text>`;
   /* lev/fomo: arte rica em ART_SVG (estilo A) — ver injeção após __ART_END__ */
   else                   s=`<text x="46" y="32" font-size="20" text-anchor="middle" fill="${GD}">?</text>`;
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="none">`+
@@ -741,6 +764,37 @@ const SEALS={
 const LOCKED_PREVIEW={nome:'Multi-Timeframe',kind:'mtf',rr:'lendaria',
   oque:'A MESMA zona aparecendo em vários tempos gráficos (Monthly, Weekly, Daily...). "The most important thing."',
   metodo:'[GAB] MTF é a confluência mais forte de todas — uma zona alinhada em vários TFs é "infinitely stronger". Entra no Ato 4. Aqui só aparece como vislumbre do que vem.'};
+
+/* ===== ITENS DA LOJA (Balatro) — selos-coringa compráveis + premium MTF =====
+   Formato idêntico a SEALS: 'mult' é o ×Mult passivo aplicado na fase 4. [GAB] os conceitos. */
+const SEALS_LOJA={
+  pullback:{nome:'Pullback (Reteste)',kind:'pullback',fam:'reteste',rr:'coringa',mult:1.3,buff:'pullback',preco:6,gab:true,
+    curto:'O preço volta pra retestar a zona antes de seguir.',efeitoCurto:'×1,3 por entrar no reteste, não na euforia',
+    oque:'PULLBACK é o preço voltar pra retestar a zona rompida antes de seguir. A entrada paciente.',
+    jogo:'Coringa: ×1,3. Recompensa entrar no <b>reteste</b> da zona, não na euforia do rompimento.',
+    metodo:'[GAB] Entrar no reteste é confirmação clássica — você espera o preço voltar e respeitar a zona antes de entrar.',
+    ex:'Rompeu a resistência, voltou pra testá-la por baixo e segurou: entra no reteste, com mais segurança.'},
+  confluencia:{nome:'Confluência',kind:'confluencia',fam:'confluência',rr:'coringa',mult:1.6,buff:'confluencia',preco:8,gab:true,
+    curto:'Mais de um fator apontando o mesmo nível.',efeitoCurto:'×1,6 por confluência de fatores',
+    oque:'CONFLUÊNCIA é mais de um fator (zona + estrutura + tempo) apontando o MESMO nível.',
+    jogo:'Coringa: ×1,6. Quanto mais fatores concordam, mais forte o trade.',
+    metodo:'[GAB] "The more confluence, the infinitely stronger." Vários sinais no mesmo preço = zona de altíssima probabilidade.',
+    ex:'O suporte coincide com um número redondo e o fundo da onda anterior: tripla confluência.'},
+  disciplina:{nome:'Disciplina (Risco Fixo)',kind:'disciplina',fam:'gestão',rr:'coringa',mult:1.25,buff:'disciplina',preco:5,gab:true,
+    curto:'Arriscar sempre a mesma fração por setup.',efeitoCurto:'×1,25 constante por gestão de risco',
+    oque:'DISCIPLINA é arriscar sempre a mesma fração (~10%) por setup — não é leitura, é gestão.',
+    jogo:'Coringa: ×1,25 constante. Modesto, mas sempre ativo — gestão paga no longo prazo.',
+    metodo:'[GAB] O GAB arrisca pesado, mas com risco FIXO por operação. A disciplina é o que mantém a conta viva.',
+    ex:'Toda entrada arrisca a mesma fração do capital — ganhe ou perca, o tamanho do risco não muda.'},
+  mtf:{nome:'Multi-Timeframe',kind:'mtf',fam:'confluência',rr:'lendaria',mult:1.8,buff:'mtf',preco:12,gab:true,
+    curto:'A MESMA zona em vários tempos gráficos.',efeitoCurto:'×1,8 — a confluência mais forte de todas',
+    oque:'A MESMA zona aparecendo em vários tempos gráficos (Monthly, Weekly, Daily). "The most important thing."',
+    jogo:'Coringa lendário: ×1,8. Era o slot travado — agora você o destrava com fichas.',
+    metodo:'[GAB] MTF é a confluência mais forte de todas — uma zona alinhada em vários TFs é "infinitely stronger".',
+    ex:'O suporte do Daily é o mesmo do Weekly e do Monthly: zona quase intransponível.'}
+};
+const POOL_LOJA=['pullback','confluencia','disciplina'];
+function selo(id){return SEALS[id]||SEALS_LOJA[id];}   // dicionário unificado de coringas
 
 /* ----- BARALHO FINITO do Ato 0 (draw pile + discard pile) [LICENÇA: metáfora de mesa, estilo Balatro] -----
    22 cartas. Ensina custo de oportunidade SEM softlock (ver garantirOperavel).
@@ -1117,6 +1171,7 @@ function runAto0(){
   let blind={alvo:300,maos:4,desc:3},        // [LICENÇA] Ato 0, Ante 1 = 300 pips (escala do doc)
       pips=0,sel=new Set(),busy=false,firstHand=true,priceTested=false,zoneMarked=false,descHinted=false,markedPrice=0;
   let jokers=['close','roadblock'];          // 2 selos-coringa do Ato 0
+  let fichas=0, rerollPreco=2, ofertas=[];   // economia intra-run (zera a cada run) [LICENÇA: loja Balatro]
   // BARALHO FINITO da run: mão + pilha de compra + pilha de descarte (+ aderências por mão)
   let hand=[], drawPile=[], discardPile=[], aderencias=[];
   function novoBaralhoA0(){
@@ -1130,7 +1185,7 @@ function runAto0(){
   }
   novoBaralhoA0();
 
-  function jokerObjs(){return jokers.map(id=>SEALS[id]);}
+  function jokerObjs(){return jokers.map(id=>selo(id));}
 
   /* ---------- desenho do gráfico (zona acende ao ser testada) ---------- */
   function drawTrade(arr,n){
@@ -1171,7 +1226,7 @@ function runAto0(){
       if(c.kind==='fomo')hasFomo=true;
     });
     cards.forEach(c=>{let cc=c.chips||0;if(hasBody&&c.tipo==='zona')cc+=8;chips+=cc;});
-    let mult=1;jokers.forEach(id=>mult*=SEALS[id].mult);
+    let mult=1;jokers.forEach(id=>mult*=selo(id).mult);
     mult=Math.round(mult*10)/10;
     return {chips,mult,dir,hasZone,hasBody,hasTrap,hasLev,hasFomo,cards,idxs};
   }
@@ -1229,14 +1284,16 @@ function runAto0(){
     // coringas
     const jk=$('#jk');
     jokerObjs().forEach(j=>jk.appendChild(makeCard(j,'joker')));
-    // slot bloqueado mostrando o MTF lendário (preview de fidelidade)
-    const lock=document.createElement('div');lock.className='joker-empty';lock.textContent='🔒';
-    lock.style.cursor='pointer';
-    lock.onclick=()=>{blip(300);showSheet('🔒 '+LOCKED_PREVIEW.nome+' (travado)',
-      `<div class="sect"><h4>📘 O que é</h4><p>${linkify(LOCKED_PREVIEW.oque)}</p></div>
-       <div class="sect method"><h4>📈 No método do GAB</h4><p>${linkify(LOCKED_PREVIEW.metodo)}</p></div>
-       <div class="fid"><span class="gabtag">● FIEL AO GAB</span> — a hierarquia (MTF acima de tudo) é do método. Você destrava no Ato 4.</div>`);};
-    jk.appendChild(lock);
+    // slot bloqueado (MTF lendário) — destravável na LOJA com fichas
+    if(!jokers.includes('mtf')){
+      const lock=document.createElement('div');lock.className='joker-empty';lock.textContent='🔒';
+      lock.style.cursor='pointer';
+      lock.onclick=()=>{blip(300);showSheet('🔒 '+LOCKED_PREVIEW.nome+' (travado)',
+        `<div class="sect"><h4>📘 O que é</h4><p>${linkify(LOCKED_PREVIEW.oque)}</p></div>
+         <div class="sect method"><h4>📈 No método do GAB</h4><p>${linkify(LOCKED_PREVIEW.metodo)}</p></div>
+         <div class="fid"><span class="gabtag">● FIEL AO GAB</span> — destrave o <b>Multi-Timeframe</b> na <b>loja</b> (entre as mãos), com fichas. Slots: ${jokers.length}/4.</div>`);};
+      jk.appendChild(lock);
+    }
     $('#jkcnt').textContent=jokers.length+'/4';
     // mão
     const hd=$('#hd');
@@ -1561,6 +1618,8 @@ function runAto0(){
     k._aderencia=computarAderencia(k,marcacao,CEN);
     aderencias.push(k._aderencia.pct);
     if(k._aderencia.pct===100) S.maosPerfeitas=(S.maosPerfeitas||0)+1;
+    // PAYOUT da mão (Balatro): verde +3, vermelho +1; +1 se leu bem (aderência ≥80). Gasta-se na loja seguinte.
+    fichas += (gain>=0?3:1) + (k._aderencia.pct>=80?1:0);
     const target=Math.max(0,pips+gain);
     let n=pips;const dir=gain>=0?1:-1,stepN=Math.max(1,Math.round(Math.abs(gain)/22));
     say(gain>=0
@@ -1585,6 +1644,73 @@ function runAto0(){
         setTimeout(()=>roundResult(correct,chips,mult,gain,k),520);
       }
     },46);
+  }
+
+  /* ---------- LOJA (Balatro): entre as mãos, troca fichas por coringas ---------- */
+  function sortearOfertas(){
+    const disp=POOL_LOJA.filter(id=>!jokers.includes(id));
+    return shuffle(disp.slice()).slice(0,2).map(id=>SEALS_LOJA[id]);
+  }
+  function gastarCartas(k){ // cartas operadas são GASTAS (baralho finito) → vão pro descarte
+    if(k&&Array.isArray(k.idxs)){ [...k.idxs].sort((a,b)=>b-a).forEach(i=>{ if(hand[i]!==undefined){discardPile.push(hand[i]);hand.splice(i,1);} }); }
+  }
+  function proximaMao(){ refill(); garantirOperavel(); render(); }
+  function abrirLoja(){
+    const juros=Math.min(3,Math.floor(fichas/5));
+    if(juros>0){ fichas+=juros; conceptToast('🏦','Juros',`Você guardou fichas: <b>+${juros}🎰</b>. No Balatro, poupar rende — não torre tudo.`); }
+    rerollPreco=2; ofertas=sortearOfertas();
+    renderLoja();
+    function renderLoja(){
+      const mtf=SEALS_LOJA.mtf;
+      const itens=[...ofertas, mtf];
+      const linhaItem=it=>{
+        const possui=jokers.includes(it.kind);
+        const cheio=jokers.length>=4 && !possui;
+        const podePagar=fichas>=it.preco;
+        const dis=(possui||cheio||!podePagar)?'disabled':'';
+        const rotulo=possui?'✔ na mesa':(cheio?'slots cheios':(podePagar?`Comprar · ${it.preco}🎰`:`${it.preco}🎰`));
+        return `<div class="loja-item ${possui?'owned':''}">
+          <div class="loja-cardwrap" data-id="${it.kind}"></div>
+          <div class="loja-meta"><b>${it.nome}</b>
+            <span class="rrtag" style="background:${rrColor(it.rr)};color:${it.rr==='lendaria'?'#1c1f18':'#fff'}">${rrLabel(it.rr)}</span>
+            <p>${it.curto}</p>
+            <div class="fid"><span class="gabtag">● ${it.gab?'FIEL AO GAB':'LICENÇA'}</span></div>
+          </div>
+          <button class="btn ${possui?'ghost':'go'} buy" data-id="${it.kind}" ${dis}>${rotulo}</button>
+        </div>`;
+      };
+      showSheet('🎰 Mesa de Coringas',
+        `<div class="loja">
+           <div class="loja-saldo">Saldo: <b>${fichas}🎰</b> <small>· coringas multiplicam TODA jogada · ${jokers.length}/4 slots</small></div>
+           <div class="loja-grade">${itens.map(linhaItem).join('')}</div>
+           <div class="loja-foot">
+             <button class="btn ghost" id="reroll" ${fichas<rerollPreco?'disabled':''}>🎲 Trocar oferta · ${rerollPreco}🎰</button>
+             <button class="btn go" id="lojaGo">▶ Próxima mão (${blind.maos})</button>
+           </div>
+           <p class="note">Comprar é opcional. Coringa <b>multiplica</b> a jogada, mas <b>não substitui a leitura</b>: setup errado × coringa = perda maior. Fichas não compram aderência.</p>
+         </div>`,{noX:true,sticky:true});
+      itens.forEach(it=>{const w=$(`.loja-cardwrap[data-id="${it.kind}"]`); if(w)w.appendChild(makeCard(it,'joker'));});
+      bindGloss($('#over'));
+      $$('.buy').forEach(b=>b.onclick=()=>comprar(b.dataset.id));
+      const rr=$('#reroll'); if(rr)rr.onclick=()=>{
+        if(fichas<rerollPreco)return buzz();
+        fichas-=rerollPreco; S.fichasGastasTotal=(S.fichasGastasTotal||0)+rerollPreco; rerollPreco++; blip(520);
+        ofertas=sortearOfertas(); save(); renderLoja();
+      };
+      $('#lojaGo').onclick=()=>{ closeSheet(); proximaMao(); };
+    }
+    function comprar(id){
+      const it=SEALS_LOJA[id]; if(!it||jokers.includes(id))return;
+      if(jokers.length>=4){ buzz(); return; }
+      if(fichas<it.preco)return buzz();
+      fichas-=it.preco; jokers.push(id);
+      S.fichasGastasTotal=(S.fichasGastasTotal||0)+it.preco;
+      S.coringasVistos=[...new Set([...(S.coringasVistos||[]),id])];
+      if(id==='mtf') S.slotsDestravados=[...new Set([...(S.slotsDestravados||[]),'mtf'])];
+      save(); fanfare(); sparks(window.innerWidth/2,window.innerHeight*0.4,'#f4c95d',16);
+      conceptToast('🃏',it.nome,`Coringa <b>na mesa</b>: ${it.efeitoCurto}. Já vale na próxima mão. [${it.gab?'GAB':'LICENÇA'}]`);
+      renderLoja();
+    }
   }
 
   /* ---------- tela de mão (resultado parcial / fim de run) ---------- */
@@ -1638,14 +1764,9 @@ function runAto0(){
     showSheet(won?'🎉 Boa jogada':'📉 Trade no vermelho',
       `<div class="result"><div class="pipbig">${pips} <span style="font-size:16px;color:var(--mut)">/ ${blind.alvo} pips</span></div>
        ${why}${riskHTML}${aderenciaHTML}${faltouSec}${perfeitaHTML}${ver100}
-       <button class="btn go" id="next">▶ Próxima mão (${blind.maos} restantes)</button></div>`,{noX:true,sticky:true});
+       <button class="btn go" id="next">🎰 Loja → próxima mão (${blind.maos} restantes)</button></div>`,{noX:true,sticky:true});
     const v=$('#ver100'); if(v)v.onclick=()=>abrirJogadaPerfeita(CEN);
-    $('#next').onclick=()=>{
-      closeSheet();
-      // cartas jogadas são GASTAS (baralho finito): vão pro descarte e saem da mão
-      if(k&&Array.isArray(k.idxs)){ [...k.idxs].sort((a,b)=>b-a).forEach(i=>{ if(hand[i]!==undefined){discardPile.push(hand[i]);hand.splice(i,1);} }); }
-      refill(); garantirOperavel(); render();
-    };
+    $('#next').onclick=()=>{ closeSheet(); gastarCartas(k); abrirLoja(); };
   }
 
   /* ---------- fim da run (Hades: death is progress) ---------- */
@@ -1785,6 +1906,7 @@ function menu(){
       <div class="holo"></div><div class="shine" style="opacity:.35"></div></div>
     <p style="color:#dde7df;font-size:14px;line-height:1.5">Aprenda o método de trading de ouro do <b>GAB</b> do <b>zero absoluto</b>, jogando. Cada conceito vira uma <b>carta</b>: você monta o setup, o gráfico roda o trade ao vivo e os <b>pips</b> estouram.</p>
     ${S.bossWon?'<div class="unlock"><span>🏆</span><div>Ato 0 concluído — <b>O Gráfico Limpo</b> derrotado. (Atos 1+ em construção.)</div></div>':''}
+    ${(S.coringasVistos&&S.coringasVistos.length)?`<div class="fid" style="margin-top:8px">🃏 Coringas descobertos na loja: <b>${S.coringasVistos.length}</b></div>`:''}
     <button class="btn primary" id="start">${S.onbDone?'📚 Rever as aulas (Módulos 1–6)':'▶ Começar do zero'}</button>
     ${cont}
     <div class="fid" style="margin-top:14px">Conteúdo <span class="gabtag">FIEL</span> ao método do GAB · adaptações marcadas como <span class="lictag">LICENÇA DE DESIGN</span>. PT-BR.</div>
