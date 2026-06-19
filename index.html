@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#274f3c">
 <title>GABFX — O Pregão · Ato 0</title>
+<meta http-equiv="Cache-Control" content="no-cache">
+<script>
+/* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
+window.__BUILD='b1';
+(function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
+</script>
 <style>
 /* ============================================================
    GABFX — Ato 0 (Módulos 1–6): leitura crua do zero.
@@ -217,8 +223,8 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 .card .warn{position:absolute;top:-7px;right:-7px;background:#caa23a;color:#1c1f18;font-size:11px;border-radius:50%;width:21px;height:21px;display:flex;align-items:center;justify-content:center;border:2px solid var(--line);z-index:4}
 .card .infodot{position:absolute;bottom:3px;right:5px;font-size:10px;color:#9b8f6e;z-index:3}
 /* ===== cartas MAIORES (base mobile-first; sobrepõe os tamanhos acima) ===== */
-.card.hcard{width:120px}
-.card.joker{width:102px}
+.card.hcard{width:148px}
+.card.joker{width:124px}
 .card .inner{border-radius:13px}
 .card,.shine{border-radius:13px}
 .card .top{padding:4px 7px}
@@ -299,13 +305,13 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 
 @media(min-height:760px){
   .hand{min-height:176px}
-  .card.hcard{width:132px}
+  .card.hcard{width:164px}
   .card .art{height:66px}
   .card.joker .art{height:54px}
 }
 @media(max-width:340px){
-  .card.hcard{width:92px}
-  .card.joker{width:76px}
+  .card.hcard{width:128px}
+  .card.joker{width:104px}
   .card .art{height:52px}
   .card.joker .art{height:44px}
   .card .desc .v{font-size:13.5px}
@@ -1326,7 +1332,7 @@ function menu(){
     <div style="font-size:13px;color:var(--mut);letter-spacing:3px">DECKBUILDER ROGUELIKE</div>
     <h2 style="font-size:30px;margin:4px 0 2px">GAB<span style="color:var(--gold)">FX</span></h2>
     <div style="color:var(--mut);font-size:13px;margin-bottom:8px">O Pregão · <b style="color:var(--txt)">Ato 0 — Leitura Crua</b></div>
-    <div class="card hcard incomum foil" style="width:104px;margin:8px auto;cursor:default">
+    <div class="card hcard incomum foil" style="width:150px;margin:8px auto;cursor:default">
       <div class="inner"><div class="top"><span class="nm">Suporte</span><span class="rr incomum">INCOMUM</span></div><div class="art">${art('sup')}</div>
       <div class="desc"><span class="v vz">+45 · COMPRA</span><small>Piso → compra.</small></div></div>
       <div class="holo"></div><div class="shine" style="opacity:.35"></div></div>
