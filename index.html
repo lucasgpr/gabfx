@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b19';
+window.__BUILD='b20';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -2256,7 +2256,7 @@ function playAula(aula){
       <b style="font-size:15px">${aula.titulo}</b></div>
     <div class="felt"><canvas id="acad-bd" width="548" height="212"></canvas>
       <span class="tf-badge">DAILY · XAUUSD</span></div>
-    <div class="gab-note" id="acad-say" style="min-height:54px"></div>
+    <div class="gab-note" id="acad-say" style="min-height:54px;display:block"></div>
     <div class="acad-ctr" id="acad-ctr" style="display:flex;gap:8px;margin-top:8px"></div>
   </div></div>`;
   $('#ac-back').onclick=()=>{ acStop(); telaAcademia(); };
