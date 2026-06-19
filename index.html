@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b11';
+window.__BUILD='b12';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -264,6 +264,28 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 /* alerta de consequência da aposta (mostrado SÓ depois de operar) */
 .riskbox{margin:10px 0;padding:11px 13px;border-radius:12px;background:linear-gradient(180deg,#2a1d08,#241608);border:1px solid #caa23a66;font-size:13px;line-height:1.5;color:#f3e6c8}
 .riskbox .riskhd{font-weight:700;color:#ffd86b;margin-bottom:4px;letter-spacing:.5px}
+/* JUICE — clímax do coringa */
+.mult-flash{animation:multFlash .5s ease-out}
+@keyframes multFlash{0%{filter:brightness(1)}35%{filter:brightness(1.7) drop-shadow(0 0 14px var(--gold))}100%{filter:brightness(1)}}
+.card.jk-fire .inner{animation:jkFire .5s ease-out}
+@keyframes jkFire{0%{filter:brightness(1)}40%{filter:brightness(1.7) saturate(1.5)}100%{filter:brightness(1)}}
+.chips,.mult{will-change:transform}
+/* badge ATIVO no coringa (passivo, sempre ligado) */
+.card.joker .active-badge{position:absolute;top:-7px;left:-6px;background:var(--green);color:#06311a;
+  font-size:7.5px;font-weight:800;letter-spacing:.3px;padding:2px 5px;border-radius:9px;
+  border:2px solid var(--line);z-index:4;box-shadow:0 1px 4px #0008;white-space:nowrap}
+/* seções do card de resultado: aderência / o que faltou / jogada perfeita */
+.perfeita,.faltou,.aderencia{background:#00000026;border-radius:8px;padding:10px 12px;margin-top:12px;text-align:left;font-size:13px;line-height:1.5}
+.perfeita .ph,.faltou .fh,.aderencia .ah{font-weight:800;color:var(--gold);margin-bottom:5px;font-size:12px;letter-spacing:.5px;text-transform:uppercase}
+.perfeita .ppips{margin-top:6px;color:var(--green);font-weight:800}
+.perfeita .ppips small{color:var(--mut);font-weight:400}
+.faltou ul{margin:4px 0 0;padding-left:18px} .faltou li{margin:3px 0} .faltou .ok{color:var(--green);font-weight:700}
+.aderencia .abar{position:relative;height:18px;background:#0006;border:2px solid var(--line);border-radius:9px;overflow:hidden;margin:4px 0}
+.aderencia .afill{height:100%;background:linear-gradient(90deg,var(--green2),var(--green));transition:width .6s cubic-bezier(.3,1,.5,1)}
+.aderencia .aval{position:absolute;right:8px;top:0;line-height:14px;font-size:11px;font-weight:800;color:#fff;text-shadow:0 1px 2px #000}
+.aderencia .ameta{margin-top:6px;color:var(--mut)}
+.p100{margin:4px 0;padding-left:20px} .p100 li{margin:5px 0;font-size:13px}
+.p100-math{background:#0006;border-radius:8px;padding:9px 11px;margin-top:8px;font-size:13px;line-height:1.7}
 @media(prefers-reduced-motion:reduce){.card.coringa .inner{animation:none}.card.coringa .inner::before{display:none}}
 .card.sel{transform:translateY(-15px) scale(1.03)!important}
 .card.sel .inner{box-shadow:0 0 0 3px var(--gold),0 0 18px var(--gold)80,0 8px 14px #0007}
@@ -467,7 +489,8 @@ ART_SVG={"bull":"<svg viewBox=\"0 0 130 100\" xmlns=\"http://www.w3.org/2000/svg
    0. ESTADO PERSISTENTE  (meta-progressão leve estilo Hades — item 1/núcleo)
    =================================================================== */
 const SAVE_KEY='gabfx_ato0_v1';
-const S=Object.assign({xp:0,onbDone:false,bossWon:false,unlocked:[],runs:0},JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'));
+const S=Object.assign({xp:0,onbDone:false,bossWon:false,unlocked:[],runs:0,
+  aderenciaUltima:0,aderenciaMelhorRun:0,maosPerfeitas:0},JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'));
 function save(){localStorage.setItem(SAVE_KEY,JSON.stringify(S));hud();}
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
@@ -685,6 +708,13 @@ const LOCKED_PREVIEW={nome:'Multi-Timeframe',kind:'mtf',rr:'lendaria',
   oque:'A MESMA zona aparecendo em vários tempos gráficos (Monthly, Weekly, Daily...). "The most important thing."',
   metodo:'[GAB] MTF é a confluência mais forte de todas — uma zona alinhada em vários TFs é "infinitely stronger". Entra no Ato 4. Aqui só aparece como vislumbre do que vem.'};
 
+/* ----- BARALHO FINITO do Ato 0 (draw pile + discard pile) [LICENÇA: metáfora de mesa, estilo Balatro] -----
+   22 cartas. Ensina custo de oportunidade SEM softlock (ver garantirOperavel).
+   7 zonas (5 sup + 2 res) e 7 confirmações (5 bull + 2 bear) são CONSERVADAS na run
+   (mão+draw+discard), então a jogada perfeita 'sup+bull+body+lev' é SEMPRE alcançável. */
+const DECK_COMP_A0={ sup:5, res:2, bull:5, bear:2, body:3, wick:2, lev:2, fomo:1 };
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
 /* ===================================================================
    6. DICIONÁRIO VIVO  (item 4) — termos clicáveis em qualquer texto
    =================================================================== */
@@ -789,7 +819,15 @@ function cardDetail(c){
      <div class="sect method"><h4>📈 No método do GAB</h4><p>${linkify(c.metodo)}</p></div>
      ${c.ex?`<div class="sect example"><h4>🔎 Exemplo</h4><p>${linkify(c.ex)}</p></div>`:''}
      <div class="fid">${fidGab?'<span class="gabtag">● FIEL AO GAB</span> — conteúdo direto do método.':'<span class="lictag">● LICENÇA DE DESIGN</span> — adaptação do jogo.'}</div>`;
-  showSheet(c.fam?('Carta · '+c.fam.toUpperCase()):'Carta',body);
+  // CORINGA é PASSIVO (sempre ativo) — explica por que clicar só mostra a descrição
+  const passiveNote = c.rr==='coringa'
+    ? `<div class="sect" style="border-color:var(--green)">
+         <h4 style="color:var(--green)">✓ Coringa ativo (passivo)</h4>
+         <p>Você <b>já conquistou</b> este coringa. Ele fica <b>sempre ligado</b> e multiplica
+         <b>automaticamente TODA jogada</b> (×${c.mult}) — você não precisa (nem pode) ativá-lo na rodada.
+         É de propósito: esperar o fechamento e mirar o alvo são <b>disciplinas boas em toda entrada</b>,
+         então viram <b>hábito permanente</b>, não um botão. [GAB]</p></div>` : '';
+  showSheet(c.fam?('Carta · '+c.fam.toUpperCase()):'Carta',body+passiveNote);
 }
 
 /* ===================================================================
@@ -818,7 +856,8 @@ function makeCard(c,kind){ // kind: 'hand' | 'joker'
      <div class="holo"></div><div class="shine"></div>`+
     (c.trap?'<div class="warn">⚠</div>':'')+
     (c.kind==='lev'?'<div class="risk lev">⚡</div>':'')+
-    (c.kind==='fomo'?'<div class="risk fomo">⚠</div>':'');
+    (c.kind==='fomo'?'<div class="risk fomo">⚠</div>':'')+
+    (kind==='joker'?'<div class="active-badge">ATIVO ✓</div>':'');
   tilt(d);
   bindPress(d,c,kind);
   return d;
@@ -921,6 +960,60 @@ function setupName(s){
 }
 
 /* ===================================================================
+   11b. ADERÊNCIA AO MÉTODO + JOGADA PERFEITA (item: "atingir a perfeição")
+   Funções PURAS (testáveis). Reusam os números já validados: corpo 137.9–141.6,
+   chips 65, mult 2.1 → 137 base, 274 alavancado limpo.
+   =================================================================== */
+/* A jogada perfeita determinística do Ato 0 (cenário suporte). [GAB] leitura + risco disciplinado */
+function gerarJogadaPerfeita(){
+  return { marcacaoPreco:139.5, cartas:['sup','bull','body','lev'], coringas:['close','roadblock'],
+    chips:65, mult:2.1, pipsBase:137, pips:274,
+    resumo:'Compra no suporte (corpo ~R$ 139,5) · Suporte + Vela de Alta + O Corpo · alavancada com leitura limpa.' };
+}
+/* Aderência 0–100% da mão. k = saída de calc(); marcacao = {price, noCorpo}. [GAB] critérios / LICENÇA pesos */
+function computarAderencia(k, marcacao){
+  const noCorpo=!!(marcacao&&marcacao.noCorpo);
+  const buy=k.dir==='buy';
+  const temConf=k.cards.some(c=>c.tipo==='confirma'&&c.dir===k.dir);
+  const limpa=noCorpo&&buy&&!k.hasTrap&&!k.hasFomo;       // espelha 'clean' de finish() + marcação
+  const crit=[];
+  const add=(nome,peso,ok)=>crit.push({nome,peso,ganho:ok?peso:0,ok});
+  add('Marcou no corpo (não no pavio)',20,noCorpo);
+  add('Direção certa (compra no suporte)',20,buy);
+  add('Incluiu a zona no setup',15,k.hasZone);
+  add('Confirmou na mesma direção',12,temConf);
+  add('Usou O Corpo (valoriza a zona)',8,k.hasBody);
+  add('Sem o Pavio (armadilha)',10,!k.hasTrap);
+  add('Sem FOMO (esperou o fechamento)',8,!k.hasFomo);
+  let lev;
+  if(!k.hasLev)   lev={nome:'Alavancou com leitura limpa',peso:7,ganho:0,ok:null};   // deixou pips na mesa
+  else if(limpa)  lev={nome:'Alavancou com leitura limpa',peso:7,ganho:7,ok:true};
+  else            lev={nome:'Alavancou com leitura limpa',peso:7,ganho:-10,ok:false};// estouro
+  crit.push(lev);
+  let pct=Math.max(0,Math.min(100,crit.reduce((s,c)=>s+c.ganho,0)));
+  const faltou=crit.filter(c=>c.ganho<c.peso).sort((a,b)=>b.peso-a.peso);
+  return {pct,crit,faltou,limpa};
+}
+/* Painel passo-a-passo do 100% (botão "Ver como seria o 100%") */
+function abrirJogadaPerfeita(){
+  showSheet('🎯 A jogada de 100%',
+   `<div class="sect"><h4>🎯 Passo a passo do GAB</h4>
+     <ol class="p100">
+       <li><b>Leia o gráfico:</b> os corpos pararam de cair na faixa <b>138–141</b>. O pavio furou 137 — <b>ignore o pavio</b>.</li>
+       <li><b>Marque o corpo</b> em ~<b>R$ 139,5</b> (faixa verde), nunca a ponta do pavio.</li>
+       <li><b>Monte o setup:</b> <b>Suporte</b> (zona, compra) + <b>Vela de Alta</b> (confirma) + <b>O Corpo</b> (+8 na zona).</li>
+       <li><b>Coringas ativos:</b> <b>Candle-Close</b> (×1,5) e <b>Roadblock</b> (×1,4).</li>
+       <li><b>Alavanque</b> — a leitura está limpa, então o GAB arrisca: dobra o acerto.</li>
+     </ol>
+     <div class="p100-math">
+       <div>Chips: <b>45</b> (Suporte) + <b>8</b> (Corpo) + <b>12</b> (Vela de Alta) = <b>65</b></div>
+       <div>Mult: <b>1,5</b> × <b>1,4</b> = <b>2,1</b></div>
+       <div>65 × 2,1 = <b>137</b> → alavancado (limpo) = <b>+274 pips</b></div>
+     </div>
+     <div class="fid"><span class="gabtag">● FIEL AO GAB</span> — leitura crua + risco disciplinado: arriscar pesado <b>só</b> quando o setup manda.</div></div>`);
+}
+
+/* ===================================================================
    12. FASE — A MESA DO ATO 0 (run = operação; chefe "O Gráfico Limpo")
    =================================================================== */
 function runAto0(){
@@ -947,8 +1040,18 @@ function runAto0(){
   let blind={alvo:300,maos:4,desc:3},        // [LICENÇA] Ato 0, Ante 1 = 300 pips (escala do doc)
       pips=0,sel=new Set(),busy=false,firstHand=true,priceTested=false,zoneMarked=false,descHinted=false,markedPrice=0;
   let jokers=['close','roadblock'];          // 2 selos-coringa do Ato 0
-  // mão inicial: garante as peças do tutorial + a armadilha (pavio) presente
-  let hand=['sup','bull','wick','bear','res','body','lev','fomo'];
+  // BARALHO FINITO da run: mão + pilha de compra + pilha de descarte (+ aderências por mão)
+  let hand=[], drawPile=[], discardPile=[], aderencias=[];
+  function novoBaralhoA0(){
+    drawPile=[];
+    for(const id in DECK_COMP_A0){for(let k=0;k<DECK_COMP_A0[id];k++)drawPile.push(id);}
+    shuffle(drawPile); discardPile=[];
+    // MÃO INICIAL PEDAGÓGICA (didática, igual ao tutorial; lev/fomo entram pelo baralho)
+    hand=[]; const inicial=['sup','bull','wick','bear','res','body'];
+    inicial.forEach(id=>{const i=drawPile.lastIndexOf(id); if(i>=0){hand.push(id);drawPile.splice(i,1);} else hand.push(id);});
+    while(hand.length<6 && drawPile.length) hand.push(drawPile.pop());
+  }
+  novoBaralhoA0();
 
   function jokerObjs(){return jokers.map(id=>SEALS[id]);}
 
@@ -1000,6 +1103,21 @@ function runAto0(){
     setNum($('#chips'),k.chips);setNum($('#mult'),k.mult);
   }
   function setNum(el,n){if(!el)return;el.textContent=(typeof n==='number'&&n%1)?n.toFixed(1):n;el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}
+  // JUICE: contador SUBINDO dinâmico (interpolado) com escala crescente — estilo Balatro
+  function countTo(el,from,to,ms,col){
+    if(!el)return; const t0=performance.now(),dur=ms||300,dec=(to%1!==0),jump=Math.abs(to-from);
+    const peak=1.12+Math.min(.43,jump/90);
+    if(col){el.style.color=col;el.style.textShadow='0 0 10px '+col;}
+    (function frame(now){
+      let p=Math.min(1,(now-t0)/dur); const e=1-Math.pow(1-p,3); const v=from+(to-from)*e;
+      el.textContent=dec?v.toFixed(1):Math.round(v);
+      const s=1+(peak-1)*Math.sin(Math.min(1,p*1.3)*Math.PI);
+      el.style.transform='scale('+s.toFixed(3)+')';
+      if(p<1)requestAnimationFrame(frame);
+      else{el.textContent=dec?to.toFixed(1):to;el.style.transform='scale(1)';
+           setTimeout(()=>{el.style.color='';el.style.textShadow='';},220);}
+    })(t0);
+  }
 
   /* ---------- render completo da mesa ---------- */
   function render(){
@@ -1013,13 +1131,14 @@ function runAto0(){
         <div class="b pips"><small>PIPS</small><b id="pipsb">${pips}</b></div>
         <div class="b"><small>MÃOS</small><b id="maosb">${blind.maos}</b></div>
         <div class="b"><small>DESCARTES</small><b id="descb">${blind.desc}</b></div>
+        <div class="b"><small>BARALHO</small><b id="deckb">${drawPile.length}</b></div>
       </div>
       <div class="formula"><div class="chips" id="chips">0</div><div class="fx">×</div><div class="mult" id="mult">1</div></div>
       <div class="felt"><canvas id="bd" width="548" height="212"></canvas><span class="tf-badge">DAILY · XAUUSD</span></div>
       <div class="say"><span class="ava">🥋</span><span id="sayt"></span></div>
-      <div class="lane-label"><span>Coringas · selos de regra (multiplicam)</span><span class="cnt" id="jkcnt"></span></div>
+      <div class="lane-label"><span>Coringas · <b>sempre ativos</b> — multiplicam TODA jogada sozinhos (você os conquistou)</span><span class="cnt" id="jkcnt"></span></div>
       <div class="jokers" id="jk"></div>
-      <div class="lane-label"><span>Sua mão · toque pra montar o setup, segure pra explicar</span></div>
+      <div class="lane-label"><span>Sua mão · <b>você escolhe</b> o que entra no setup — toque pra montar, segure pra explicar</span></div>
       <div class="hand" id="hd"></div>
       <div class="actions">
         <button class="btn op" id="op">▶ OPERAR</button>
@@ -1052,6 +1171,7 @@ function runAto0(){
       : (zoneMarked ? 'Monte o setup (zona + confirmação na mesma direção) e opere. Use o <b>Corpo</b> pra valorizar a zona; evite o <b>Pavio</b>.' : '🎯 Marque o suporte no gráfico (faixa verde), monte o setup e opere.'));
     updFormula();
     if($('#descb'))$('#descb').textContent=blind.desc;
+    if($('#deckb'))$('#deckb').textContent=drawPile.length;
   }
   function say(t){const s=$('#sayt');if(s){s.innerHTML=linkify(t);bindGloss(s);}}
 
@@ -1121,12 +1241,17 @@ function runAto0(){
     updFormula();
   }
   function conceptOnSelect(c){
-    if(c.trap)conceptToast('⚠','Pavio = armadilha',`O <b>pavio</b> é o espeto fino e <b>não marca zona</b>. Se ele entra no setup, a zona sai errada e você perde. <i>"The wick is useless."</i> (segure a carta pra entender)`);
-    else if(c.kind==='lev')conceptToast('⚡','Alavancagem = risco dos 2 lados',`Ela <b>DOBRA o resultado</b> — pra cima se você leu CERTO, pra baixo se errou. Só se revela no <b>final</b> da operação. Arrisque, mas <b>só com leitura limpa</b> (zona + direção certa, sem pavio, sem FOMO). [GAB: agressivo, mas disciplinado]`);
-    else if(c.kind==='fomo')conceptToast('⚠','FOMO = isca',`Parece a melhor (muitos <b>+chips</b>!), mas é <b>entrar antes do fechamento</b>. O preço chicoteia e come o ganho. O estrago só aparece <b>depois</b> que você opera. [GAB: espere a vela fechar]`);
+    // REGRA: na SELEÇÃO nunca revelar bom/ruim nem risco. Consequência só APÓS operar.
+    if(c.trap){
+      conceptToast('🕯️','O Pavio',`O <b>pavio</b> é o espeto fino da vela (a sombra). Segure a carta pra ver o que ele é. <i>Você decide se entra no setup.</i>`);
+    } else if(c.kind==='lev'){
+      conceptToast('⚡','Alavancagem',`Operar com mais força que o capital. <b>Multiplica o resultado.</b> Pra que lado? Você descobre <b>depois</b> de operar.`);
+    } else if(c.kind==='fomo'){
+      conceptToast('⏩','Entrada Antecipada',`Entrar antes da vela <b>fechar</b>. Mostra muitos <b>+chips</b>. O resultado disso só aparece <b>depois</b> que você opera.`);
+    }
     else if(c.buff==='body')conceptToast('🟩','Marcar só o corpo',`<b>O Corpo</b> é a parte que vale. Com ele, sua <b>zona</b> ganha +8 chips por estar bem marcada. [GAB]`);
     else if(c.tipo==='zona')conceptToast(c.dir==='buy'?'🟢':'🔴',c.nome,c.dir==='buy'?'Você está num <b>suporte</b> (piso). A direção é <b>COMPRA</b>. Confirme com uma Vela de Alta.':'Você está numa <b>resistência</b> (teto). A direção é <b>VENDA</b> — ganha na queda.');
-    else if(c.tipo==='confirma')conceptToast(c.dir==='buy'?'🕯️':'🕯️',c.nome,`Esta vela <b>confirma</b> a direção ${c.dir==='buy'?'de compra':'de venda'}. Sozinha é fraca — a força vem da <b>zona</b>.`);
+    else if(c.tipo==='confirma')conceptToast('🕯️',c.nome,`Esta vela <b>confirma</b> a direção ${c.dir==='buy'?'de compra':'de venda'}. Sozinha é fraca — a força vem da <b>zona</b>.`);
   }
 
   /* ---------- descartar (com swipe + whoosh) ---------- */
@@ -1135,7 +1260,7 @@ function runAto0(){
     if(!sel.size){buzz();say('Selecione as cartas que quer descartar (toque nelas) — o Descartar troca por novas.');return;}
     const trapOut=[...sel].some(i=>DECK[hand[i]].trap);
     busy=true;blind.desc--;whoosh();vibrate(14);
-    if(!descHinted){descHinted=true;conceptToast('♻️','Pra que serve o Descartar',`Igual ao Balatro/pôquer: você <b>troca cartas que não servem por NOVAS</b>. Use pra se livrar do <b>Pavio</b> (armadilha) ou de cartas na <b>direção errada</b>, e buscar uma <b>mão melhor</b>. São poucos — gaste com cabeça.`);}
+    if(!descHinted){descHinted=true;conceptToast('♻️','Pra que serve o Descartar',`Você <b>troca cartas por NOVAS do baralho</b>. Mas o baralho é <b>finito</b>: as boas (zona/confirmação) <b>acabam</b>. Descarte com cabeça — esbanjar deixa só pavio e risco na mão.`);}
     const els=$$('.hand .card.sel');
     els.forEach((el,k)=>{
       el.classList.add('flying');
@@ -1144,42 +1269,43 @@ function runAto0(){
         {duration:420,easing:'cubic-bezier(.5,0,.8,.4)',fill:'forwards'});
     });
     setTimeout(()=>{
-      [...sel].sort((a,b)=>b-a).forEach(i=>hand.splice(i,1));
-      sel.clear();refill();render();busy=false;
-      say(trapOut?'✓ Boa — se livrou de carta(s) ruim e puxou novas. Monte um setup melhor (zona + confirmação na mesma direção).':'Puxou cartas novas. Procure uma zona + confirmação na mesma direção.');
+      [...sel].sort((a,b)=>b-a).forEach(i=>{discardPile.push(hand[i]);hand.splice(i,1);});
+      sel.clear(); refill(); garantirOperavel(); render(); busy=false;
+      say(trapOut
+        ? '✓ Se livrou de carta(s) ruim — mas o baralho não é infinito. Monte zona + confirmação.'
+        : 'Puxou do baralho. Cuidado: cada descarte gasta cartas boas. Procure zona + confirmação.');
     },440);
   }
+  // BARALHO FINITO: compra crua do topo; ao esvaziar, o DESCARTE volta embaralhado (cartas ruins reaparecem)
   function refill(){
-    const pool=['sup','bull','bear','res','body','wick'];
-    while(hand.length<6){hand.push(pool[Math.floor(Math.random()*pool.length)]);}
-    // [GAB] garante jogada vencedora: ao menos 1 zona + 1 confirmação na MESMA direção
-    // (sup→bull / res→bear). 'wick' (armadilha) e 'body' (selo) seguem aparecendo — são
-    // pedagógicos — mas nunca travam a mão.
-    const temZona=d=>hand.some(id=>DECK[id].tipo==='zona'&&DECK[id].dir===d);
-    const temConf=d=>hand.some(id=>DECK[id].tipo==='confirma'&&DECK[id].dir===d);
-    if((temZona('buy')&&temConf('buy'))||(temZona('sell')&&temConf('sell')))return; // já jogável
-    // reaproveita o que a mão já esboça; mão neutra (só wick/body) → compra (o cenário é um suporte)
-    const buyComp=temZona('buy')||temConf('buy'),sellComp=temZona('sell')||temConf('sell');
-    const dir=(buyComp||!sellComp)?'buy':'sell';
-    const zCard=dir==='buy'?'sup':'res',cCard=dir==='buy'?'bull':'bear';
-    const keep=[];
-    // qual carta sacrificar p/ abrir slot: pavio → selo → direção oposta → resto (nunca o par certo)
-    const slotLivre=()=>{
-      const rank=id=>{const c=DECK[id];return c.trap?0:c.tipo==='selo'?1:(c.dir&&c.dir!==dir)?2:3;};
-      let best=0,bestR=9;
-      for(let i=0;i<hand.length;i++){if(keep.includes(i))continue;const r=rank(hand[i]);if(r<bestR){bestR=r;best=i;}}
-      return best;
-    };
-    if(!temZona(dir)){const s=slotLivre();hand[s]=zCard;keep.push(s);}
-    if(!temConf(dir)){const s=slotLivre();hand[s]=cCard;keep.push(s);}
+    while(hand.length<6){
+      if(!drawPile.length){
+        if(!discardPile.length) break;            // extremo: ambos vazios → para (garantirOperavel cobre)
+        drawPile=discardPile; discardPile=[]; shuffle(drawPile);
+        conceptToast('🔄','Baralho reembaralhado',`Acabaram as cartas: seu <b>descarte voltou pro baralho</b>. As que você jogou fora <b>voltam a aparecer</b> — inclusive as ruins.`);
+      }
+      hand.push(drawPile.pop());
+    }
+  }
+  // ANTI-SOFTLOCK: garante ≥1 zona na mão (7 zonas são conservadas na run → sempre dá pra operar)
+  function garantirOperavel(){
+    if(hand.some(id=>DECK[id].tipo==='zona')) return;     // INVARIANTE: mão sempre tem ≥1 zona
+    const acharZona=p=>p.findIndex(id=>DECK[id].tipo==='zona');
+    let src=null,si=acharZona(drawPile);
+    if(si>=0)src=drawPile; else{si=acharZona(discardPile); if(si>=0)src=discardPile;}
+    if(src===null) return;                                 // impossível pela conservação (7 zonas)
+    const zona=src.splice(si,1)[0];
+    const rank=id=>{const c=DECK[id];return c.trap?0:c.kind==='fomo'?1:c.kind==='lev'?2:c.buff==='body'?3:c.tipo==='confirma'?4:5;};
+    let worst=0,wr=9; hand.forEach((id,i)=>{const r=rank(id);if(r<wr){wr=r;worst=i;}});
+    discardPile.push(hand[worst]); hand[worst]=zona;
   }
 
   /* ---------- OPERAR: validações que ENSINAM (nunca cobra o não-ensinado) ---------- */
   function operar(){
     if(busy)return;const k=calc();
-    if(!zoneMarked){buzz();shake();say('🎯 Primeiro <b>marque o suporte</b>: arraste no gráfico até a faixa <b>VERDE</b> (o corpo, não o pavio). Aí o trade libera.');conceptToast('🎯','Leia o gráfico primeiro',`Antes de operar, marque onde está o suporte — no <b>corpo</b>, na faixa verde. É a leitura que o GAB faz toda vez.`);return;}
     if(!sel.size){buzz();say('Selecione cartas pra montar o setup primeiro.');return;}
-    if(k.hasTrap){ // armadilha do pavio: explica o erro, não pune escondido
+    const blind_entry=!zoneMarked;                 // apertou OPERAR sem ler/marcar a zona = entrar no escuro
+    if(k.hasTrap){ // armadilha do pavio: explica o erro, não pune escondido (corrige sem gastar mão)
       buzz();shake();
       say('❌ Você colocou o <b>Pavio</b> no setup. O pavio marca a zona pela ponta errada — a entrada fica falsa. Tire o pavio: marque pelo <b>Corpo</b>.');
       conceptToast('⚠','Por que falhou',`O <b>pavio</b> não marca zona ("the wick is useless"). Descarte-o e use <b>O Corpo</b>. Isso não gasta uma mão — só remova a carta.`);
@@ -1193,11 +1319,13 @@ function runAto0(){
       conceptToast('🧭','Precisa de zona',`A força do trade vem da <b>zona</b>, não da vela solta. Adicione um <b>Suporte</b> (compra) ou <b>Resistência</b> (venda).`);
       return;
     }
-    // operação válida -> encena
+    // operação válida (mesmo sem marcar: aí entra NO ESCURO e quase certo perde — explica só depois)
     busy=true;firstHand=false;blind.maos--;
     $('#op').disabled=true;$('#dc').disabled=true;
     if($('#maosb'))$('#maosb').textContent=blind.maos;
     const buy=k.dir==='buy';
+    k._blindEntry=blind_entry;
+    if(blind_entry){say('▶ Você entrou <b>sem marcar a zona</b>… operando no escuro. Vamos ver no que dá.');}
     const cont=buy?CONT_BUY:CONT_SELL,full=SETUP.concat(cont);
     animateTrade(full,buy,k);
   }
@@ -1269,34 +1397,37 @@ function runAto0(){
         const el=cardEls.find(e=>(+e.dataset.i)===s.idx)
               || cardEls.find(e=>DECK[hand[+e.dataset.i]]===s.ref);
         if(el)bumpCard(el);
-        chips+=s.chips;
-        setNum($('#chips'),chips);
+        const prevChips=chips; chips+=s.chips;
+        countTo($('#chips'),prevChips,chips, 260+Math.min(260,s.chips*4), 'var(--chip)'); // SOBE animado
         // +Mult (vermelho) entra ANTES do ×Mult — encena a soma quando houver
-        if(s.addMult){mult+=s.addMult;setNum($('#mult'),Math.round(mult*10)/10);
+        if(s.addMult){const pm=mult; mult+=s.addMult;
+          countTo($('#mult'),pm,Math.round(mult*10)/10,260,'var(--mult)');
           if(el){const [mx,my]=centerOf(el);pop(mx+14,my-22,'+'+s.addMult+' mult','#fe5f55');}}
         if(el){const [x,y]=centerOf(el);if(s.chips){pop(x-14,y-22,'+'+s.chips,'#3ea0e0');sparks(x,y-10,'#3ea0e0',5);}}
         // alavancagem: "arma" o trade — o efeito (×2 pra cima ou pra baixo) só se revela no resultado
         if(s.ref&&s.ref.kind==='lev'&&el){const [x,y]=centerOf(el);pop(x-12,y-22,'⚡ alavancado','#f4c95d');sparks(x,y-8,'#f4c95d',6);}
-        // pitch crescente (kaw kaw): som sobe com os chips
-        blip(420+Math.min(900,chips*3));thunk();shake();vibrate(8);
+        // pitch crescente (kaw kaw): som sobe com os chips; tremor ESCALA com o tamanho da carta
+        blip(420+Math.min(900,chips*3));thunk();shake(s.chips>=40);vibrate(s.chips>=40?12:8);
         setTimeout(runStep,420);
         return;
       }
       if(s.kind==='joker'){
-        // FASE 4 — coringas, ×Mult (dourado), aplicado por ÚLTIMO (não comuta)
+        // FASE 4 — CLÍMAX do coringa: ×Mult (dourado) por ÚLTIMO (não comuta) com count-up + flash + tremor forte
         const jkEls=$$('.jokers .card');
         const idx=jokerObjs().indexOf(s.ref);
         const el=jkEls[idx];
-        if(el)bumpCard(el,true);
-        // ×Mult em dourado (os +Mult já foram somados acima):
-        mult=Math.round(mult*s.xMult*10)/10;
-        setNum($('#mult'),mult);
-        if(el){const [x,y]=centerOf(el);pop(x-12,y-20,'×'+s.xMult,'#f4c95d');sparks(x,y-8,'#f4c95d',6);}
-        blip(720+idx*90);shake(true);vibrate(10);
+        if(el){bumpCard(el,true); el.classList.add('jk-fire'); setTimeout(()=>el.classList.remove('jk-fire'),520);}
+        whoosh();
+        const pm=mult; mult=Math.round(mult*s.xMult*10)/10;
+        countTo($('#mult'),pm,mult,520,'var(--gold)'); // o MULT salta multiplicando, na cara
+        const mb=$('#mult'); if(mb){mb.classList.remove('mult-flash');void mb.offsetWidth;mb.classList.add('mult-flash');}
+        if(el){const [x,y]=centerOf(el);pop(x-12,y-26,'×'+s.xMult,'#f4c95d',true);sparks(x,y-8,'#f4c95d',12);sparks(x,y-8,'#fff',6);}
+        blip(720+idx*90);setTimeout(()=>blip(980+idx*90),120);
+        shake(true);vibrate(18);
         // feedback que ENSINA (item: avisa quando usou o coringa certo)
         if(s.ref.buff==='close')conceptToast('⏳','Candle-Close ✓',`Você operou no <b>fechamento</b> da vela: ×${s.xMult}. Paciência paga. [GAB]`);
         if(s.ref.buff==='tp')conceptToast('🎯','Roadblock ✓',`Você mirou o <b>alvo</b> certo (a zona oposta): ×${s.xMult}. [GAB]`);
-        setTimeout(runStep,460);
+        setTimeout(runStep,620);
         return;
       }
       setTimeout(runStep,200);
@@ -1314,10 +1445,14 @@ function runAto0(){
   function finish(chips,mult,buy,k){
     const raw=Math.round(chips*mult);
     // direção certa? suporte = COMPRA. Vender no suporte = operar contra a zona (perde) [GAB]
-    const correct=buy;
+    let correct=buy;
     // leitura LIMPA = disciplina: direção certa, sem pavio, sem FOMO (entrada no tempo certo)
-    const clean=correct&&!k.hasTrap&&!k.hasFomo;
+    let clean=correct&&!k.hasTrap&&!k.hasFomo;
+    // ⚫ ENTRADA NO ESCURO: operou sem marcar a zona → chute cego, derruba tudo [GAB: marcar a zona é a regra nº1]
+    if(k._blindEntry){ correct=false; clean=false; }
     let gain=correct?raw:-Math.round(raw*0.5);
+    if(k._blindEntry){ gain=-Math.round(raw*0.65);
+      k._blindNote='<b>⚫ Você operou no ESCURO:</b> apertou OPERAR <b>sem marcar a zona</b> no gráfico. Sem saber onde estava o piso, sua entrada virou um chute — e o mercado cobra isso. Marcar a zona (no <b>corpo</b>, faixa verde) é a 1ª coisa que o GAB faz, SEMPRE. [GAB]'; }
     let riskNote='';
     // ⚠ FOMO: entrou antes do fechamento → chicote. Os +chips do FOMO eram ISCA (não compensam).
     if(k.hasFomo){
@@ -1334,7 +1469,13 @@ function runAto0(){
         riskNote=(riskNote?riskNote+'<br><br>':'')+'<b>⚡ Alavancagem num setup FALHO:</b> ela dobra a PERDA também. Você <b>estourou</b> ('+gain+' pips). A alavancagem não perdoa erro — só alavanque com a leitura limpa. [GAB]';
       }
     }
+    if(k._blindNote){ riskNote = k._blindNote + (riskNote?'<br><br>'+riskNote:''); }
     k._riskNote=riskNote;
+    // ADERÊNCIA da mão (markedPrice e os limites do corpo são os mesmos de tryMark)
+    const marcacao={ price:markedPrice, noCorpo:(markedPrice>=137.9 && markedPrice<=141.6) };
+    k._aderencia=computarAderencia(k,marcacao);
+    aderencias.push(k._aderencia.pct);
+    if(k._aderencia.pct===100) S.maosPerfeitas=(S.maosPerfeitas||0)+1;
     const target=Math.max(0,pips+gain);
     let n=pips;const dir=gain>=0?1:-1,stepN=Math.max(1,Math.round(Math.abs(gain)/22));
     say(gain>=0?(correct?'Subindo… o piso segurou!':'Deu certo apesar de tudo…'):(correct?'A aposta de risco virou contra você…':'O preço subiu contra a venda…'));
@@ -1361,36 +1502,79 @@ function runAto0(){
 
   /* ---------- tela de mão (resultado parcial / fim de run) ---------- */
   function roundResult(correct,chips,mult,gain,k){
+    busy=false;
+    // ADERÊNCIA da run — persiste ANTES do fim da run (senão a mão final não grava)
+    const media = aderencias.length ? Math.round(aderencias.reduce((a,b)=>a+b,0)/aderencias.length) : 0;
+    S.aderenciaUltima=media; S.aderenciaMelhorRun=Math.max(S.aderenciaMelhorRun||0,media); save();
     const reachedGoal=pips>=blind.alvo;
     const outOfHands=blind.maos<=0;
-    busy=false;
-    if(reachedGoal){return endRun(true);}
-    if(outOfHands){return endRun(false);}
+    if(reachedGoal){return endRun(true,media);}
+    if(outOfHands){return endRun(false,media);}
     // continua a run: feedback + próxima mão
     const won=gain>=0;
     const fmt=(gain>=0?'+':'')+gain;
     const why=correct
       ? `<div class="why${won?'':' bad'}"><b>✅ Leitura certa:</b> você comprou no <b>suporte</b> (o piso, onde estão os compradores) e confirmou com a vela — <b>direção certa</b>. Base: ${chips} chips × ${mult}. Resultado final: <b>${fmt} pips</b>.${(k&&k._riskNote)?' <i>(veja abaixo o que suas apostas de risco fizeram)</i>':' Zona forte + direção certa = pips de verdade. [GAB]'}</div>`
-      : `<div class="why bad"><b>❌ Direção errada:</b> você <b>vendeu num suporte</b>. No piso se <b>COMPRA</b> (os compradores empurram pra cima). O preço subiu e bateu o stop: <b>${fmt} pips</b>. Não é punição — é a aula: respeite a direção da zona.</div>`;
+      : (k&&k._blindEntry
+          ? `<div class="why bad"><b>⚫ Entrada no escuro:</b> você operou <b>sem marcar a zona</b>. Não dava pra saber onde estava o suporte — virou aposta cega e o trade fechou em <b>${fmt} pips</b>. Não é punição: é a regra nº1 — <b>marque a zona (o corpo) antes de entrar</b>. [GAB]</div>`
+          : `<div class="why bad"><b>❌ Direção errada:</b> você <b>vendeu num suporte</b>. No piso se <b>COMPRA</b> (os compradores empurram pra cima). O preço subiu e bateu o stop: <b>${fmt} pips</b>. Não é punição — é a aula: respeite a direção da zona.</div>`);
     // CONSEQUÊNCIA DAS APOSTAS DE RISCO — só revelada DEPOIS de operar (alerta, não marca prévia)
     const riskHTML=(k&&k._riskNote)?`<div class="riskbox"><div class="riskhd">⚠ Sua aposta de risco</div><div>${k._riskNote}</div></div>`:'';
+    // ADERÊNCIA ao método + JOGADA PERFEITA (item: "atingir a perfeição") — 'media' já calculada/persistida acima
+    const ad=k&&k._aderencia ? k._aderencia : {pct:0,faltou:[]};
+    const P=gerarJogadaPerfeita();
+    const FALTA={
+      'Marcou no corpo (não no pavio)':'<b>Corpo:</b> você não marcou no <b>corpo</b> (~R$ 139,5). Sem marcar, entrou no escuro; marcando no pavio, marca a zona errada.',
+      'Direção certa (compra no suporte)':'<b>Direção:</b> no suporte se <b>COMPRA</b>. Você operou contra a zona.',
+      'Incluiu a zona no setup':'<b>Zona:</b> faltou suporte/resistência — sem zona não há trade. [GAB]',
+      'Confirmou na mesma direção':'<b>Confirmação:</b> faltou a <b>Vela de Alta</b> confirmando a compra (regra dos 2 candles).',
+      'Usou O Corpo (valoriza a zona)':'<b>O Corpo:</b> faltou o selo que valoriza a zona (+8 chips). Marcar pelo corpo é o método.',
+      'Sem o Pavio (armadilha)':'<b>Pavio:</b> a armadilha entrou no setup e marcou a zona errada. "The wick is useless."',
+      'Sem FOMO (esperou o fechamento)':'<b>FOMO:</b> você entrou antes do fechamento. Espere a vela <b>fechar</b> — o número grande era isca.',
+      'Alavancou com leitura limpa':(k&&k.hasLev)
+         ? '<b>Alavancagem:</b> você alavancou um setup <b>falho</b> — a alavancagem dobrou a PERDA (estouro).'
+         : '<b>Alavancagem:</b> o setup estava limpo e você não arriscou — deixou <b>+'+P.pipsBase+' pips na mesa</b>. O GAB alavanca quando a leitura é limpa.'
+    };
+    const faltouHTML = ad.pct===100
+      ? `<p class="ok">Nada. Leitura impecável e risco no lugar certo — <b>essa foi a jogada do GAB.</b></p>`
+      : `<ul>${ad.faltou.map(c=>`<li>${FALTA[c.nome]||c.nome}</li>`).join('')}</ul>`;
+    const perfeitaHTML=`<div class="perfeita"><div class="ph">🎯 Jogada perfeita (GAB)</div>
+      <p>Compra no <b>suporte</b>, marcando o <b>corpo</b> (~R$ 139,5). Setup: <b>Suporte + Vela de Alta + O Corpo</b>, com <b>Candle-Close</b> e <b>Roadblock</b> ativos — e <b>alavancada</b>, porque a leitura estava limpa.</p>
+      <div class="ppips">Renderia <b>+${P.pips} pips</b> <small>(65 chips × 2,1 = 137, dobrado pela alavancagem disciplinada)</small></div></div>`;
+    const aderenciaHTML=`<div class="aderencia"><div class="ah">📐 Aderência ao método</div>
+      <div class="abar"><div class="afill" style="width:${ad.pct}%"></div><span class="aval">${ad.pct}%</span></div>
+      <small>Esta mão: <b>${ad.pct}%</b> · Média da run: <b>${media}%</b> · Melhor run: <b>${S.aderenciaMelhorRun||0}%</b></small>
+      <p class="ameta">${ad.pct===100?'Perfeito. É isso que a gente persegue.':'Mire os <b>100%</b>: zona no corpo + compra + confirmação + corpo, sem pavio e sem FOMO, e alavancar só com a leitura limpa.'}</p></div>`;
+    const faltouSec=`<div class="faltou"><div class="fh">📌 O que faltou</div>${faltouHTML}</div>`;
+    const ver100=`<button class="btn ghost" id="ver100">🔍 Ver como seria o 100%</button>`;
     showSheet(won?'🎉 Boa jogada':'📉 Trade no vermelho',
-      `<div class="result"><div class="pipbig">${pips} <span style="font-size:16px;color:var(--mut)">/ ${blind.alvo} pips</span></div>${why}${riskHTML}
+      `<div class="result"><div class="pipbig">${pips} <span style="font-size:16px;color:var(--mut)">/ ${blind.alvo} pips</span></div>
+       ${why}${riskHTML}${aderenciaHTML}${faltouSec}${perfeitaHTML}${ver100}
        <button class="btn go" id="next">▶ Próxima mão (${blind.maos} restantes)</button></div>`,{noX:true,sticky:true});
-    $('#next').onclick=()=>{closeSheet();refill();render();};
+    const v=$('#ver100'); if(v)v.onclick=abrirJogadaPerfeita;
+    $('#next').onclick=()=>{
+      closeSheet();
+      // cartas jogadas são GASTAS (baralho finito): vão pro descarte e saem da mão
+      if(k&&Array.isArray(k.idxs)){ [...k.idxs].sort((a,b)=>b-a).forEach(i=>{ if(hand[i]!==undefined){discardPile.push(hand[i]);hand.splice(i,1);} }); }
+      refill(); garantirOperavel(); render();
+    };
   }
 
   /* ---------- fim da run (Hades: death is progress) ---------- */
-  function endRun(win){
+  function endRun(win,media){
     S.runs=(S.runs||0)+1;
     if(win&&!S.bossWon){S.bossWon=true;S.xp+=20;}
     save();
+    const adRunHTML=(typeof media==='number')?`<div class="aderencia" style="margin-top:10px"><div class="ah">📐 Aderência da run</div>
+      <div class="abar"><div class="afill" style="width:${media}%"></div><span class="aval">${media}%</span></div>
+      <small>Média desta run: <b>${media}%</b> · Sua melhor: <b>${S.aderenciaMelhorRun||0}%</b>${media>=100?' · 🏅 GABARITOU!':''}</small></div>`:'';
     if(win){
       const unlockHTML=`<div class="unlock"><span style="font-size:20px">🃏</span><div>Próximo: <b>Ato 1 — Flip de Polaridade</b>. Entram <b>RBS</b>, <b>SBR</b>, <b>Breakout</b> e o <b>Pullback</b>. As cartas ficam mais fortes e os coringas começam a <b>somar +Mult</b> antes do ×Mult.</div></div>`;
       showSheet('🏆 Chefe derrotado!',
         `<div class="result"><div class="result-icon">🏆</div><h2 style="color:var(--gold)">O Gráfico Limpo caiu</h2>
          <div class="pipbig">${pips} <span style="font-size:16px;color:var(--mut)">/ ${blind.alvo} pips</span></div>
          <p>Você dominou a <b>leitura crua</b>: vela, compra×venda, pip, a regra dos 2 candles, marcar só o <b>corpo</b> e esperar o <b>fechamento</b>. Esse é o coração do método do GAB.</p>
+         ${adRunHTML}
          ${unlockHTML}
          <div class="alert"><div>⚠️</div><div>Lembre: aqui é simulação. No real o GAB arrisca ~10% por setup e usa alavancagem — agressivo. A gestão de risco fiel vem nos Atos 7+.</div></div>
          <button class="btn primary" id="again">▶ Jogar a run de novo</button>
@@ -1401,6 +1585,7 @@ function runAto0(){
          <div class="pipbig">${pips} <span style="font-size:16px;color:var(--mut)">/ ${blind.alvo} pips</span></div>
          <p>Perder uma run <b>não é o fim</b> — é a aula (death is progress). No real, gestão de risco é o que te mantém vivo.</p>
          <div class="why"><b>Dica do mestre:</b> monte <b>Suporte + Vela de Alta</b> (mesma direção, COMPRA), junte <b>O Corpo</b> pra valorizar a zona e <b>evite o Pavio</b>. Vendeu no suporte? Aí perde — no piso se compra.</div>
+         ${adRunHTML}
          <button class="btn primary" id="again">▶ Tentar a run de novo</button>
          <button class="btn ghost" id="menu">Voltar ao menu</button></div>`,{noX:true,sticky:true});
     }
@@ -1434,22 +1619,38 @@ const LESSONS=[
         No jogo, seus pontos são <b>pips</b>: quanto mais o preço foi a seu favor, mais pips você faz. A meta de cada chefe é uma quantidade de <b>pips</b>.<br><br>
         Pip é simples: é o <b>placar</b> do trader.`,
   gab:'Os GABs vivem citando "fiz +300 pips". Pip é o jeito honesto de medir o movimento, sem falar de dinheiro ainda.'},
- {tag:'Módulo 4',h:'⚔️ A regra dos 2 candles',art:'sup',
+ {tag:'Módulo 4',h:'🗺️ O gráfico e a ZONA',art:'sup',
+  body:`O gráfico se lê da <b>esquerda pra direita</b>: a esquerda é o passado, a direita é o agora. O preço sobe e desce nesse caminho.<br><br>
+        Onde ele <b>trava e volta</b>, fica uma <b>zona</b> — e atenção: zona <b>não é uma linha, é uma FAIXA</b> (um pedaço de preço). Você marca essa faixa pelo <b>corpo</b> das velas.<br><br>
+        E o preço <b>nunca vai reto</b>: ele anda em <b>ondas</b>. O <b>fundo</b> de uma onda costuma ser um <b>piso (suporte)</b>; o <b>topo</b>, um <b>teto (resistência)</b>.`,
+  gab:'[GAB] O preço "respeita" a mesma faixa de novo e de novo. Quando você entra numa zona, seu alvo é a zona oposta — o "roadblock", o fim da onda.'},
+ {tag:'Módulo 5',h:'📈 Tendência e tempo gráfico',art:'bull',
+  body:`<b>Tendência</b> é pra onde o preço vai no geral: <b>alta</b> (fundos cada vez mais altos), <b>baixa</b> (topos cada vez mais baixos) ou <b>lateral</b> (de lado).<br><br>
+        E aquele <b>DAILY</b> lá na mesa? É o <b>tempo gráfico (timeframe)</b>: cada vela representa um pedaço de tempo. No <b>Daily</b>, <b>cada vela é 1 dia inteiro</b> de ouro.<br><br>
+        Tempos maiores = zonas mais fortes.`,
+  gab:'[GAB] "Quanto maior o tempo gráfico, mais forte a zona." Multi-timeframe é o passo avançado — vem nos próximos atos.'},
+ {tag:'Módulo 6',h:'⚔️ A regra dos 2 candles',art:'sup',
   body:`A base de TUDO no método. Uma <b>zona</b> nasce de <b>duas velas</b>:<br><br>
         🟢 <b>Suporte</b> (piso → <span class="up">compra</span>): uma vela de <b>baixa</b> seguida de uma vela de <b>alta</b>. Os compradores assumiram.<br>
         🔴 <b>Resistência</b> (teto → <span class="down">venda</span>): uma vela de <b>alta</b> seguida de uma vela de <b>baixa</b>. Os vendedores assumiram.<br><br>
         É só isso: <b>2 velas</b> que viram o jogo marcam a zona.`,
   gab:'[GAB] Esta é a "SNR Tradicional" — a zona mais FORTE do método. Suporte = baixa+alta. Resistência = alta+baixa.'},
- {tag:'Módulo 5',h:'🟩 Só o corpo, nunca o pavio',art:'body',
+ {tag:'Módulo 7',h:'🟩 Só o corpo, nunca o pavio',art:'body',
   body:`Pra marcar a zona, você olha o <b>corpo</b> das velas — <b>nunca o pavio</b>.<br><br>
         O <b>pavio</b> (espeto fino) mostra até onde o preço foi e <b>voltou</b>. Se você marcar a zona pela ponta do pavio, marca no lugar errado e leva stop fácil.<br><br>
         Regra de ouro do GAB, em inglês: <i>"the wick is useless"</i> — o pavio é inútil pra marcar zona. <b>Marque pelo corpo.</b>`,
   gab:'[GAB] "Mark only the body, never the wick." No jogo, a carta <b>O Corpo</b> valoriza sua zona; o <b>Pavio</b> é uma armadilha que marca errado.'},
- {tag:'Módulo 6',h:'⏳ Espere a vela FECHAR',art:'close',
+ {tag:'Módulo 8',h:'⏳ Espere a vela FECHAR',art:'close',
   body:`Uma zona só vale <b>depois que a vela fecha</b> naquele nível. Enquanto a vela está aberta, ela ainda pode mudar tudo.<br><br>
         Entrar antes de fechar é apostar no que <b>ainda não aconteceu</b>. O GAB espera o <b>fechamento</b> (candle-close) — paciência que evita armadilha.<br><br>
         No jogo, o coringa <b>Candle-Close</b> te recompensa por esperar. E o <b>Roadblock</b> te dá o alvo: a próxima zona oposta (onde você realiza o lucro).`,
-  gab:'[GAB] Candle-close + body-only + regra dos 2 candles = a leitura crua completa. Antes de operar, bora entender as CARTAS do jogo.'},
+  gab:'[GAB] Candle-close + body-only + regra dos 2 candles = a leitura crua completa.'},
+ {tag:'Módulo 9',h:'🎯 Sair do trade: alvo, stop e risco',art:'res',
+  body:`Entrar é metade. Todo trade tem uma <b>saída planejada</b> antes de começar:<br><br>
+        🎯 <b>Alvo (take profit)</b> = onde você realiza o lucro — a <b>zona oposta</b> (o "roadblock").<br>
+        🛑 <b>Stop</b> = onde você aceita estar errado — se a sua zona <b>falhar</b>.<br><br>
+        O segredo: arriscar <b>pouco</b> pra buscar <b>muito</b>. Isso é <b>risco × retorno</b>.`,
+  gab:'[GAB] O GAB corta só quando a zona é rompida (não no susto) e segura até o roadblock. (Os números fixos de stop/alvo aqui são licença de design — o GAB decide na leitura.)'},
  {tag:'As cartas',h:'🃏 Como funcionam as cartas',art:'sup',
   body:`Você joga com <b>cartas</b>, divididas em famílias:<br><br>
         🕯️ <b>Velas</b> (Alta, Baixa, Corpo, Pavio) — os tijolos; <b>confirmam</b> a jogada.<br>
@@ -1512,7 +1713,7 @@ function menu(){
 const MESA_STEPS=[
  {sel:'.blind',title:'🎯 O chefe & a meta',body:'Cada fase tem um <b>chefe</b>. Você vence batendo a <b>meta de pips</b> (o número à direita).'},
  {sel:'.formula',title:'CHIPS × MULT = pontuação',body:'O número <b style="color:#3ea0e0">AZUL</b> (chips) = <b>qualidade da zona</b>. O <b style="color:#fe5f55">VERMELHO</b> (mult) = <b>agressividade</b> da aposta. Multiplicados = seus <b>pips</b>.'},
- {sel:'.felt',title:'📈 O gráfico É JOGÁVEL',body:'Aqui você <b>JOGA</b>: <b>arraste</b> pra MARCAR o suporte na faixa <b style="color:#37d07a">VERDE</b> (o <b>corpo</b>, não o pavio). Marcou certo → <b>libera o OPERAR</b>. A linha <b style="color:#fe5f55">vermelha</b> é o alvo (roadblock). (Depois de marcar, arrastar mede pips.)'},
+ {sel:'.felt',title:'📈 O gráfico É JOGÁVEL',body:'Aqui você <b>JOGA</b>: <b>arraste</b> pra MARCAR o suporte na faixa <b style="color:#37d07a">VERDE</b> (o <b>corpo</b>, não o pavio). Marcar antes é a leitura que o GAB faz toda vez — se operar <b>sem</b> marcar, você entra <b>no escuro</b> e (quase sempre) perde. A linha <b style="color:#fe5f55">vermelha</b> é o alvo (roadblock).'},
  {sel:'.jokers',title:'✨ Coringas',body:'<b>Multiplicam</b> a jogada (×1.5…). <b>Cada um é diferente</b> — cor e efeito próprios (verde, vermelho…) pra você reconhecer pela cara. Você os <b>conquista</b> jogando. <b>🔒</b> = cartas que ainda vão chegar.'},
  {sel:'.hand',title:'🃏 Sua mão',body:'<b>Toque</b> numa carta pra montar o setup; <b>segure</b> pra abrir a explicação completa dela.'},
  {sel:'.hand',title:'⚡ Cartas de RISCO (a aposta)',body:'As de borda <b style="color:#f4c95d">âmbar</b> são <b>apostas</b> — não erros. <b>⚡ Alavancagem</b> DOBRA o resultado: pra cima se você leu <b>certo</b>, pra baixo se errou. <b style="color:#ff7a2e">⚠ FOMO</b> mostra muitos <b>+chips</b> (isca!) mas é entrar cedo demais. O perigo só aparece <b>DEPOIS</b> de operar — arrisque <b>o que o GAB manda</b>: só com leitura limpa.'},
