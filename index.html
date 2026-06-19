@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b7';
+window.__BUILD='b8';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -400,6 +400,11 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 /* ===== arte rica das cartas: painel com proporção fixa + SVG preenchendo ===== */
 .card .art{height:auto;aspect-ratio:130/100;overflow:hidden}
 .card .art svg{width:100%;height:100%;display:block}
+/* MOBILE: as 3 cartas da mão PREENCHEM a largura (sem sobra nas laterais) */
+@media(max-width:819px){
+  .hand{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;justify-items:stretch}
+  .hand .card.hcard{width:auto;max-width:none}
+}
 /* ===== TUTORIAL DE HOLOFOTE (spotlight) ===== */
 #tourov{position:fixed;inset:0;z-index:200;pointer-events:auto}
 #tspot{position:fixed;border-radius:12px;box-shadow:0 0 0 9999px rgba(3,6,11,.86);border:2px solid var(--gold);transition:all .22s ease;pointer-events:none}
@@ -785,7 +790,10 @@ function tilt(d){
     d.classList.add('lifted');
     sh.style.setProperty('--mx',(px*120+50)+'%');sh.style.setProperty('--my',(py*120+50)+'%');
   });
-  d.addEventListener('pointerleave',()=>{d.classList.remove('lifted');if(!d.classList.contains('flying'))d.style.transform='';});
+  const _treset=()=>{d.classList.remove('lifted');if(!d.classList.contains('flying'))d.style.transform='';};
+  d.addEventListener('pointerleave',_treset);
+  d.addEventListener('pointerup',_treset);      /* mobile: reseta o tilt ao soltar (não fica torta) */
+  d.addEventListener('pointercancel',_treset);
 }
 /* clique curto = selecionar (mão) ; segurar (>=380ms) ou ⓘ = painel "eu não sei nada" */
 function bindPress(d,c,kind){
