@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b18';
+window.__BUILD='b19';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -70,6 +70,8 @@ body::before{content:"";position:fixed;inset:-15%;z-index:0;opacity:.45;mix-blen
 .up{color:var(--green);font-weight:800}.down{color:var(--red);font-weight:800}
 .gab-note{display:flex;gap:8px;background:rgba(160,107,214,.13);border:1px solid rgba(160,107,214,.5);border-radius:11px;padding:9px 11px;font-size:12.5px;color:#e9def8;margin-top:12px;line-height:1.45}
 .gab-note .ava{font-size:18px;flex-shrink:0}
+.ac-q{margin-top:8px;font-weight:700;color:var(--gold)}
+.acad-item{margin:5px 0}
 .alert{display:flex;gap:8px;background:rgba(232,181,61,.10);border:1px solid rgba(232,181,61,.6);border-radius:11px;padding:9px 11px;font-size:12.5px;color:#ffe6a0;margin-top:10px;line-height:1.45}
 .license{display:flex;gap:8px;background:rgba(62,160,224,.08);border:1px dashed rgba(62,160,224,.5);border-radius:10px;padding:7px 10px;font-size:11.5px;color:#bfe0f5;margin-top:8px;line-height:1.4}
 
@@ -569,7 +571,8 @@ ART_SVG.fomo=`<svg viewBox="0 0 130 100" xmlns="http://www.w3.org/2000/svg">
 const SAVE_KEY='gabfx_ato0_v1';
 const S=Object.assign({xp:0,onbDone:false,bossWon:false,unlocked:[],runs:0,
   aderenciaUltima:0,aderenciaMelhorRun:0,maosPerfeitas:0,cenarioUltimo:null,
-  coringasVistos:[],slotsDestravados:[],fichasGastasTotal:0},JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'));
+  coringasVistos:[],slotsDestravados:[],fichasGastasTotal:0,
+  academiaDone:false,aulasVistas:[],acadOferecida:false},JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'));
 function save(){localStorage.setItem(SAVE_KEY,JSON.stringify(S));hud();}
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
@@ -2003,9 +2006,293 @@ function lesson(i){
     <div class="dots">${LESSONS.map((_,k)=>`<span class="dot ${k===i?'on':''}"></span>`).join('')}</div>
   </div></div>`;
   bindGloss(screen);
-  $('#ln').onclick=()=>{blip(560);S.xp+=2;save();if(i<LESSONS.length-1)lesson(i+1);else{S.onbDone=true;save();runAto0();}};
+  $('#ln').onclick=()=>{blip(560);S.xp+=2;save();if(i<LESSONS.length-1)lesson(i+1);else{S.onbDone=true;
+    if(!S.academiaDone && !S.acadOferecida){ S.acadOferecida=true; save();
+      showSheet('📊 Antes de operar…',
+        `<p class="sect">Quer ver as <b>aulas animadas</b>? O gráfico se move e mostra <b>quando uma vela bate</b> num suporte — recomendado se você ficou em dúvida.</p>
+         <button class="btn primary" onclick="closeSheet();abrirAcademia()">📊 Sim, ver no gráfico</button>
+         <button class="btn ghost" onclick="closeSheet();runAto0()">Pular e operar</button>`,
+        {sticky:true});
+    } else { save(); runAto0(); }
+  }};
   screen.scrollTop=0;
 }
+
+/* ===================================================================
+   13b. ACADEMIA DE LEITURA — aulas ANIMADAS no gráfico (pré Ato 0)
+   Reusa pY/yToP/candles/zone/drawGrid/arrow + juice. Canvas próprio #acad-bd.
+   Timer próprio acTimer (NUNCA o animTimer do jogo). Estado em S.aulasVistas.
+   =================================================================== */
+const ACAD_PR={min:130,max:166};                 // = PR do runAto0
+const ACAD_B ={x:14,y:12,w:520,h:188};           // = B do runAto0
+const ACAD_CORES={
+  sup :{fill:'rgba(55,208,122,.16)', litFill:'rgba(55,208,122,.30)', stroke:'#37d07a', lc:'#9af3bf', rgb:'55,208,122'},
+  res :{fill:'rgba(255,107,94,.16)', litFill:'rgba(255,107,94,.30)', stroke:'#ff6b5e', lc:'#ffb4ac', rgb:'255,107,94'},
+  road:{fill:'rgba(255,107,94,.10)', litFill:'rgba(255,107,94,.18)', stroke:'#ff6b5e', lc:'#ffb4ac', rgb:'255,107,94'}
+};
+let acTimer=null;
+function acStop(){ if(acTimer){clearInterval(acTimer);acTimer=null;} }
+/* FONTE ÚNICA da regra "a vela bate na zona" = mesma do drawTrade */
+function corpoBate(c,z){
+  if(Math.min(c.o,c.c)<=z.top && Math.max(c.o,c.c)>=z.bottom) return true; // corpo cruza a faixa
+  if(c.c<=z.top+0.6 && c.c>=z.bottom-0.6) return true;                     // fechamento dentro (±0.6)
+  return false;
+}
+/* px de página de um ponto (preço) do canvas — p/ pop()/sparks() que usam coord de tela */
+function acPagePt(p){ const cv=$('#acad-bd'); if(!cv) return {x:0,y:0};
+  const r=cv.getBoundingClientRect(), sx=r.width/cv.width, sy=r.height/cv.height;
+  return { x:r.left+(ACAD_B.x+ACAD_B.w*0.86)*sx, y:r.top+pY(p,ACAD_B,ACAD_PR)*sy }; }
+
+/* ---- currículo (V1: 6 aulas que matam a dúvida) ---- */
+const _SUP=CENARIOS_A0.suporte, _RES=CENARIOS_A0.resistencia;
+const AULA_VELA={ id:'a_vela', titulo:'🕯️ O que é uma VELA',
+  passos:[
+    { candles:[{o:150,h:156,l:148,c:154}], ate:1, narracao:
+      'Cada <b>vela</b> conta a luta do preço num período. Esta <b>abriu</b> em 150, espetou até 156, caiu a 148 e <b>fechou</b> em 154. Como fechou <b>acima</b> de onde abriu → vela <b>VERDE</b> (alta).' },
+    { candles:[{o:150,h:156,l:148,c:154}], ate:1, narracao:
+      'O retângulo grosso é o <b>corpo</b> (de 150 a 154 — o que importa). Os espetos finos são o <b>pavio</b>: lugares onde o preço foi e <b>voltou</b>. [GAB] o pavio é só passagem.' },
+    { candles:[{o:150,h:156,l:148,c:154},{o:154,h:156,l:149,c:150}], ate:2, narracao:
+      'Esta segunda abriu em cima (154) e <b>fechou embaixo</b> (150) → vela <b>VERMELHA</b> (baixa). Verde sobe, vermelha cai: é assim que você lê a cor.' },
+    { candles:[{o:150,h:156,l:148,c:154},{o:154,h:156,l:149,c:150}], ate:2,
+      interacao:{tipo:'simNao', pergunta:'A 1ª vela (verde) fechou ACIMA de onde abriu?', alvo:true,
+        feedback:{ok:'Isso! Fechou em 154, acima da abertura 150 → verde.',
+                   no:'Olhe de novo: abriu em 150 e fechou em 154 (mais alto) → verde = alta.'}},
+      narracao:'Sua vez: olhando a <b>1ª vela</b>…' }
+  ]};
+const AULA_ONDAS={ id:'a_ondas', titulo:'🌊 O preço anda em ONDAS',
+  passos:[
+    { candles:[
+      {o:140,h:143,l:139,c:142},{o:142,h:148,l:141,c:147},{o:147,h:148,l:143,c:144},
+      {o:144,h:151,l:143,c:150},{o:150,h:151,l:145,c:146},{o:146,h:154,l:145,c:153},
+      {o:153,h:154,l:148,c:149},{o:149,h:157,l:148,c:156},{o:156,h:157,l:151,c:152},
+      {o:152,h:159,l:151,c:158}], ate:10, narracao:
+      'Muita gente acha que, se o ouro sobe, sobe <b>reto</b>. Não sobe: ele anda em <b>ondas</b> — um passo pra frente, meio pra trás.' },
+    { narracao:
+      'Cada <b>fundo</b> de onda (onde ele para de cair) é candidato a <b>piso</b> = <b>suporte</b>. Cada <b>topo</b> (onde para de subir) é candidato a <b>teto</b> = <b>resistência</b>. É daí que nasce a zona.' }
+  ]};
+const AULA_SUPORTE={ id:'a_suporte', titulo:'🟢 O que é um SUPORTE',
+  passos:[
+    { candles:_SUP.setup, ate:6, narracao:
+      'O ouro vinha <b>caindo</b> — cada vela fecha mais baixo (<b>tendência de baixa</b>). Pra onde será que ele para?' },
+    { zonas:[{top:_SUP.zona.top,bottom:_SUP.zona.bottom,cor:'sup',label:'SUPORTE = faixa (o piso)'}], narracao:
+      'Parou aqui embaixo, perto de <b>139</b>. Essa <b>faixa</b> verde é o <b>suporte</b>: o <b>piso</b> onde o preço travou. Repare: é uma <b>faixa</b> de preço, <b>não</b> uma linha fininha.' },
+    { zonas:[{top:_SUP.zona.top,bottom:_SUP.zona.bottom,cor:'sup',label:'a vela BATEU e segurou'}],
+      acende:{cor:'sup'}, narracao:
+      'Olha a <b>última vela</b>: o <b>corpo</b> dela entrou na faixa e <b>segurou</b> — por isso a zona <b>acende</b>. Isso é a vela <b>"bater"</b> no suporte. Subiu porque, barato, apareceu gente <b>comprando</b>.' },
+    { zonas:[{top:_SUP.zona.top,bottom:_SUP.zona.bottom,cor:'sup'}], acende:{cor:'sup'},
+      interacao:{tipo:'simNao', pergunta:'A última vela BATEU no suporte?', alvo:true,
+        feedback:{ok:'Exato! O corpo entrou na faixa verde.',
+                  no:'Olhe de novo: o corpo da última vela está DENTRO da faixa verde.'}},
+      narracao:'Sua vez: essa vela <b>bateu</b> no suporte?' },
+    { candles:_SUP.setup.concat(_SUP.contCerto), ate:12,
+      zonas:[{top:_SUP.zona.top,bottom:_SUP.zona.bottom,cor:'sup',label:'SUPORTE'},
+             {top:_SUP.road.top,bottom:_SUP.road.bottom,cor:'road',label:'ROADBLOCK (alvo)'}],
+      acende:{cor:'sup'},
+      seta:{x:'52%',de:138,ate:151,cor:'#37d07a',txt:'COMPRA'}, narracao:
+      'Do piso, o preço tende a <b>subir</b> — por isso suporte = <b>COMPRA</b> (compra barato, no piso). O alvo é a próxima zona lá em cima: o <b>roadblock</b>. [GAB]' }
+  ]};
+const AULA_RESISTENCIA={ id:'a_resistencia', titulo:'🔴 O que é uma RESISTÊNCIA',
+  passos:[
+    { candles:_RES.setup, ate:6, narracao:
+      'Mesma história ao contrário: agora o preço vinha <b>subindo</b> (<b>tendência de alta</b>). Até onde ele vai?' },
+    { zonas:[{top:_RES.zona.top,bottom:_RES.zona.bottom,cor:'res',label:'RESISTÊNCIA = faixa (o teto)'}], narracao:
+      'Bateu lá em cima, perto de <b>157</b>, e travou. Essa faixa vermelha é a <b>resistência</b>: o <b>teto</b>. No preço <b>caro</b>, apareceu gente <b>vendendo</b>.' },
+    { zonas:[{top:_RES.zona.top,bottom:_RES.zona.bottom,cor:'res',label:'a vela BATEU e rejeitou'}],
+      acende:{cor:'res'}, narracao:
+      'O <b>corpo</b> da última vela entrou na faixa do teto e foi <b>rejeitado</b> → a zona <b>acende</b>. Mesma regra do suporte, de cabeça pra baixo.' },
+    { candles:_RES.setup.concat(_RES.contCerto), ate:12,
+      zonas:[{top:_RES.zona.top,bottom:_RES.zona.bottom,cor:'res',label:'RESISTÊNCIA'},
+             {top:_RES.road.top,bottom:_RES.road.bottom,cor:'road',label:'ROADBLOCK (alvo)'}],
+      acende:{cor:'res'},
+      seta:{x:'52%',de:159,ate:146,cor:'#ff6b5e',txt:'VENDA'}, narracao:
+      'Do teto, o preço tende a <b>cair</b> → resistência = <b>VENDA</b> (você ganha na queda). Suporte e resistência são <b>espelhos</b>. [GAB]' }
+  ]};
+const _BZ={top:142.5,bottom:140};
+const AULA_BATE={ id:'a_bate', titulo:'🎯 Quando a vela BATE (ou não)',
+  passos:[
+    { candles:[{o:148,h:149,l:146,c:147},{o:147,h:148,l:143,c:144},{o:143,h:144,l:141,c:141}],
+      zonas:[{top:_BZ.top,bottom:_BZ.bottom,cor:'sup',label:'ZONA (suporte)'}], acende:{cor:'sup'}, ate:3,
+      narracao:'Caso 1 — o <b>corpo</b> da última vela fechou <b>dentro</b> da faixa (141 está na zona). Isso é <b>BATER</b>: o preço respeitou o piso. Olha a zona <b>acender</b>.' },
+    { candles:[{o:148,h:149,l:146,c:147},{o:147,h:148,l:143,c:144},{o:145,h:145,l:140.8,c:144.3}],
+      zonas:[{top:_BZ.top,bottom:_BZ.bottom,cor:'sup',label:'ZONA (suporte)'}], acende:{cor:'sup'}, ate:3,
+      narracao:'Caso 2 — agora só o <b>pavio</b> desceu e roçou a faixa (140.8), mas o <b>corpo</b> (144–145) ficou por cima. <b>Não conta</b> → a zona fica <b>apagada</b>. O pavio é só susto.' },
+    { candles:[{o:148,h:149,l:146,c:147},{o:147,h:148,l:146.5,c:147},{o:148,h:148.4,l:146.6,c:147}],
+      zonas:[{top:_BZ.top,bottom:_BZ.bottom,cor:'sup',label:'ZONA (suporte)'}], acende:{cor:'sup'}, ate:3,
+      narracao:'Caso 3 — esta nem chegou perto. Sem o corpo tocar, <b>nada acende</b>. [GAB] no jogo é exatamente isto: a faixa acende só quando o <b>corpo</b> entra nela.' },
+    { candles:[{o:148,h:149,l:146,c:147},{o:147,h:148,l:143,c:144},{o:145,h:145,l:140.8,c:144.3}],
+      zonas:[{top:_BZ.top,bottom:_BZ.bottom,cor:'sup',label:'ZONA (suporte)'}], acende:{cor:'sup'}, ate:3,
+      interacao:{tipo:'simNao', pergunta:'Esta última vela BATEU na zona?', alvo:false,
+        feedback:{ok:'Isso! Só o pavio tocou — o corpo ficou por cima. Não conta.',
+                  no:'Repare: só o PAVIO encostou; o corpo ficou acima da faixa → NÃO bateu.'}},
+      narracao:'Agora decida você:' }
+  ]};
+const AULA_CARTA={ id:'a_carta', titulo:'🟩 Por que aparece a carta "Suporte"',
+  passos:[
+    { candles:_SUP.setup, ate:6,
+      zonas:[{top:_SUP.zona.top,bottom:_SUP.zona.bottom,cor:'sup',label:'SUPORTE'}], acende:{cor:'sup'},
+      marca:{preco:_SUP.precoPerfeito,cor:'#f4c95d',label:'✓ você marca AQUI (no corpo)'}, narracao:
+      'Você acabou de <b>reconhecer</b> um suporte e marcou no <b>corpo</b> (~R$ 139,5), nunca no pavio.' },
+    { candles:_SUP.setup, ate:6,
+      zonas:[{top:_SUP.zona.top,bottom:_SUP.zona.bottom,cor:'sup',label:'SUPORTE'}], acende:{cor:'sup'},
+      marca:{preco:_SUP.precoPerfeito,cor:'#f4c95d',label:'✓ aqui é piso'},
+      interacao:{tipo:'marcar', alvo:{top:_SUP.marcaCorpo[1],bottom:_SUP.marcaCorpo[0]},
+        pergunta:'Toque no gráfico onde está o <b>corpo</b> do suporte.',
+        feedback:{ok:'Boa! Você marcou no corpo — é assim que se faz.',
+                  no:'Mire a faixa verde (o corpo das velas do fundo), não o pavio lá embaixo.'}},
+      narracao:'Sua vez de marcar:' },
+    { candles:_SUP.setup, ate:6,
+      zonas:[{top:_SUP.zona.top,bottom:_SUP.zona.bottom,cor:'sup',label:'SUPORTE'}], acende:{cor:'sup'}, narracao:
+      'No jogo, isso vira uma <b>carta</b>: a carta <b>Suporte</b> é você apontando pro gráfico e dizendo "aqui é piso". Por isso ela aparece — <b>não</b> é aleatória.' },
+    { candles:_SUP.setup.concat(_SUP.contCerto), ate:12,
+      zonas:[{top:_SUP.zona.top,bottom:_SUP.zona.bottom,cor:'sup',label:'SUPORTE'},
+             {top:_SUP.road.top,bottom:_SUP.road.bottom,cor:'road',label:'ROADBLOCK (alvo)'}],
+      acende:{cor:'sup'}, seta:{x:'52%',de:138,ate:151,cor:'#37d07a',txt:'COMPRA'}, narracao:
+      'Junto da carta <b>Suporte</b> você joga a <b>Vela de Alta</b> (baixa+alta = <b>regra dos 2 candles</b>). Marca a zona, monta o setup, mira o alvo. [GAB] Bora operar o Ato 0!' }
+  ]};
+const ACADEMIA=[AULA_VELA, AULA_ONDAS, AULA_SUPORTE, AULA_RESISTENCIA, AULA_BATE, AULA_CARTA];
+
+/* ---- player ---- */
+function acDraw(state,n){
+  const cv=$('#acad-bd'); if(!cv) return; const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  drawGrid(ctx,ACAD_B,ACAD_PR);
+  const arr=state.candles||[], count=(n==null?arr.length:Math.min(n,arr.length));
+  (state.zonas||[]).forEach(z=>{
+    const cc=ACAD_CORES[z.cor]||ACAD_CORES.sup;
+    let lit=false;
+    if(state.acende && z.cor===state.acende.cor){
+      for(let i=0;i<count;i++){ if(corpoBate(arr[i],z)){lit=true;break;} }
+    }
+    zone(ctx,{top:z.top,bottom:z.bottom, fill:lit?cc.litFill:cc.fill, stroke:cc.stroke,
+              lit:lit, label:z.label, lc:cc.lc}, ACAD_B, ACAD_PR);
+    if(lit && !state._litFx){ state._litFx=true; blip(720);
+      const pt=acPagePt(z.bottom); sparks(pt.x,pt.y,cc.stroke,6); }
+  });
+  candles(ctx,arr,ACAD_B,ACAD_PR,count);
+  if(state.marca){ const y=pY(state.marca.preco,ACAD_B,ACAD_PR);
+    ctx.strokeStyle=state.marca.cor; ctx.lineWidth=2; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(ACAD_B.x,y); ctx.lineTo(ACAD_B.x+ACAD_B.w,y); ctx.stroke();
+    ctx.fillStyle=state.marca.cor; ctx.font='bold 10px system-ui';
+    ctx.fillText(state.marca.label, ACAD_B.x+5, y-5); }
+  if(state.seta && count>=arr.length){ const s=state.seta;
+    const ax=ACAD_B.x+ACAD_B.w*(parseFloat(s.x)/100);
+    arrow(ctx, ax, pY(s.de,ACAD_B,ACAD_PR), pY(s.ate,ACAD_B,ACAD_PR), s.cor, s.txt); }
+}
+function playStep(aula,i){
+  acStop();
+  const passo=aula.passos[i]; const bal=$('#acad-say'); if(!bal) return;
+  const prev=aula._state||{};
+  const state=aula._state={
+    candles: passo.candles || prev.candles || [],
+    zonas  : passo.zonas   || prev.zonas   || [],
+    acende : passo.acende, marca:passo.marca, seta:passo.seta, _litFx:false
+  };
+  const alvoN = (passo.ate==null) ? state.candles.length : Math.min(passo.ate,state.candles.length);
+  bal.innerHTML=linkify(passo.narracao||''); bindGloss(bal);
+  const animar = passo.candles && alvoN>0;
+  let n = animar ? 0 : alvoN;
+  acDraw(state,n);
+  if(animar && n<alvoN){
+    acTimer=setInterval(()=>{ n++; acDraw(state,n); blip(300+n*22); vibrate(4);
+      if(n>=alvoN){ acStop(); armarAvanco(aula,i,passo); } },170);
+  } else { armarAvanco(aula,i,passo); }
+}
+function armarAvanco(aula,i,passo){
+  const ctr=$('#acad-ctr'); if(!ctr) return; ctr.innerHTML='';
+  if(passo.interacao){ return montarInteracao(aula,i,passo,ctr); }
+  const ehUltimo=(i>=aula.passos.length-1);
+  ctr.innerHTML =
+    `<button class="btn ghost" id="ac-again">▶ de novo</button>`+
+    `<button class="btn primary" id="ac-next">${ehUltimo?'✓ Terminei':'continuar ›'}</button>`;
+  $('#ac-again').onclick=()=>{ blip(480); aula._state=prevStateFor(aula,i); playStep(aula,i); };
+  $('#ac-next').onclick =()=>{ blip(560); if(ehUltimo) fecharAula(aula); else playStep(aula,i+1); };
+}
+function prevStateFor(aula,i){
+  let st=null;
+  for(let k=0;k<i;k++){ const p=aula.passos[k];
+    st={candles:p.candles||(st&&st.candles)||[], zonas:p.zonas||(st&&st.zonas)||[]}; }
+  return st;
+}
+function montarInteracao(aula,i,passo,ctr){
+  const it=passo.interacao;
+  $('#acad-say').innerHTML += `<div class="ac-q">${linkify(it.pergunta)}</div>`;
+  const proximo=()=> (i>=aula.passos.length-1?fecharAula(aula):playStep(aula,i+1));
+  const armarPos=()=>{ ctr.innerHTML=
+      `<button class="btn ghost" id="ac-again">▶ de novo</button>`+
+      `<button class="btn primary" id="ac-next">continuar ›</button>`;
+    $('#ac-again').onclick=()=>{ aula._state=prevStateFor(aula,i); playStep(aula,i); };
+    $('#ac-next').onclick =proximo; };
+  if(it.tipo==='simNao'){
+    ctr.innerHTML=`<button class="btn" id="ac-sim">👍 Bateu</button>`+
+                  `<button class="btn ghost" id="ac-nao">👎 Não bateu</button>`;
+    const responder=(resp)=>{ const certo=(resp===it.alvo);
+      conceptToast(certo?'✅':'🤔', certo?'Isso!':'Quase…', certo?it.feedback.ok:it.feedback.no);
+      certo?fanfare():buzz(); armarPos(); };
+    $('#ac-sim').onclick=()=>responder(true);
+    $('#ac-nao').onclick=()=>responder(false);
+  }
+  else if(it.tipo==='marcar'){
+    const cv=$('#acad-bd');
+    const handler=ev=>{ const r=cv.getBoundingClientRect();
+      const yy=(((ev.touches?ev.touches[0].clientY:ev.clientY)-r.top))*(cv.height/r.height);
+      const p=yToP(yy,ACAD_B,ACAD_PR), z=it.alvo;
+      const ok=(p<=z.top+1 && p>=z.bottom-1);
+      aula._state.marca={preco:p, cor:ok?'#37d07a':'#ff6b5e', label:ok?'✓ no corpo!':'✗ fora'};
+      acDraw(aula._state,(passo.ate||aula._state.candles.length));
+      conceptToast(ok?'✅':'❌', ok?'Boa!':'Tente de novo', ok?it.feedback.ok:it.feedback.no);
+      ok?fanfare():buzz();
+      if(ok){ cv.onclick=null; cv.ontouchstart=null; armarPos(); } };
+    cv.onclick=handler; cv.ontouchstart=e=>{e.preventDefault();handler(e);};
+    ctr.innerHTML=`<button class="btn ghost" id="ac-again">▶ de novo</button>`;
+    $('#ac-again').onclick=()=>{ aula._state=prevStateFor(aula,i); playStep(aula,i); };
+  }
+}
+function playAula(aula){
+  acStop();
+  const screen=$('#screen');
+  screen.innerHTML=`<div class="view"><div class="card-lesson" style="padding-top:10px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <button class="btn ghost" style="width:auto;padding:4px 10px;margin:0" id="ac-back">‹ aulas</button>
+      <b style="font-size:15px">${aula.titulo}</b></div>
+    <div class="felt"><canvas id="acad-bd" width="548" height="212"></canvas>
+      <span class="tf-badge">DAILY · XAUUSD</span></div>
+    <div class="gab-note" id="acad-say" style="min-height:54px"></div>
+    <div class="acad-ctr" id="acad-ctr" style="display:flex;gap:8px;margin-top:8px"></div>
+  </div></div>`;
+  $('#ac-back').onclick=()=>{ acStop(); telaAcademia(); };
+  aula._state=null;
+  S.aulasVistas=S.aulasVistas||[];
+  if(!S.aulasVistas.includes(aula.id)){ S.aulasVistas.push(aula.id); save(); }
+  screen.scrollTop=0;
+  playStep(aula,0);
+}
+function fecharAula(aula){ acStop(); fanfare();
+  conceptToast('🎓','Aula concluída','Você viu <b>'+aula.titulo+'</b>. Pode rever quando quiser.');
+  if(ACADEMIA.filter(a=>!a.fase2).every(a=>(S.aulasVistas||[]).includes(a.id))){ S.academiaDone=true; save(); }
+  telaAcademia();
+}
+function telaAcademia(){
+  acStop();
+  const screen=$('#screen'); const vistas=S.aulasVistas||[];
+  const v1=ACADEMIA.filter(a=>!a.fase2), total=v1.length;
+  const cards=v1.map(a=>{ const ok=vistas.includes(a.id);
+    return `<button class="btn ${ok?'ghost':'primary'} acad-item" data-aula="${a.id}" style="text-align:left">
+      ${ok?'✓ ':'▶ '}${a.titulo}</button>`; }).join('');
+  screen.innerHTML=`<div class="view"><div class="card-lesson">
+    <div class="tag">ACADEMIA · ${vistas.filter(id=>v1.some(a=>a.id===id)).length}/${total} aulas</div>
+    <h2>📊 Academia de Leitura</h2>
+    <p style="color:#dde7df;font-size:14px;line-height:1.5">Aulas <b>animadas</b> no gráfico: veja o preço se mover, a zona <b>acender</b> e entenda <b>quando a vela bate</b> num suporte ou numa resistência. No seu ritmo — toque <b>▶ de novo</b> pra rever.</p>
+    ${cards}
+    <button class="btn go" id="ac-jogar">▶ Ir pro Ato 0</button>
+    <button class="btn ghost" id="ac-menu">‹ Voltar ao menu</button>
+  </div></div>`;
+  $$('.acad-item').forEach(b=>b.onclick=()=>{ blip(560);
+    playAula(ACADEMIA.find(a=>a.id===b.dataset.aula)); });
+  $('#ac-jogar').onclick=()=>{ blip(560); S.onbDone=true; save(); runAto0(); };
+  $('#ac-menu').onclick =()=>{ blip(360); menu(); };
+  screen.scrollTop=0;
+}
+function abrirAcademia(){ telaAcademia(); }
 
 /* ===================================================================
    14. MENU / ABERTURA
@@ -2025,10 +2312,12 @@ function menu(){
     ${S.bossWon?'<div class="unlock"><span>🏆</span><div>Ato 0 concluído — <b>O Gráfico Limpo</b> derrotado. (Atos 1+ em construção.)</div></div>':''}
     ${(S.coringasVistos&&S.coringasVistos.length)?`<div class="fid" style="margin-top:8px">🃏 Coringas descobertos na loja: <b>${S.coringasVistos.length}</b></div>`:''}
     <button class="btn primary" id="start">${S.onbDone?'📚 Rever as aulas (Módulos 1–6)':'▶ Começar do zero'}</button>
+    <button class="btn ghost" id="acad">📊 Academia de Leitura ${S.academiaDone?'✓':''}</button>
     ${cont}
     <div class="fid" style="margin-top:14px">Conteúdo <span class="gabtag">FIEL</span> ao método do GAB · adaptações marcadas como <span class="lictag">LICENÇA DE DESIGN</span>. PT-BR.</div>
   </div></div>`;
   $('#start').onclick=()=>{blip(560);lesson(0);};
+  const ab=$('#acad');if(ab)ab.onclick=()=>{blip(560);abrirAcademia();};
   const p=$('#play');if(p)p.onclick=()=>{blip(560);runAto0();};
   screen.scrollTop=0;
   $('#actpill').innerHTML='Ato <b>0</b>';
