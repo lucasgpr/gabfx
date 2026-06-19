@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b13';
+window.__BUILD='b14';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -271,9 +271,10 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 @keyframes jkFire{0%{filter:brightness(1)}40%{filter:brightness(1.7) saturate(1.5)}100%{filter:brightness(1)}}
 .chips,.mult{will-change:transform}
 /* badge ATIVO no coringa (passivo, sempre ligado) */
-.card.joker .active-badge{position:absolute;top:-7px;left:-6px;background:var(--green);color:#06311a;
+.card.joker .active-badge{position:absolute;bottom:-7px;right:-6px;background:var(--green);color:#06311a;
   font-size:7.5px;font-weight:800;letter-spacing:.3px;padding:2px 5px;border-radius:9px;
   border:2px solid var(--line);z-index:4;box-shadow:0 1px 4px #0008;white-space:nowrap}
+.card.joker .infodot{display:none}
 /* seções do card de resultado: aderência / o que faltou / jogada perfeita */
 .perfeita,.faltou,.aderencia{background:#00000026;border-radius:8px;padding:10px 12px;margin-top:12px;text-align:left;font-size:13px;line-height:1.5}
 .perfeita .ph,.faltou .fh,.aderencia .ah{font-weight:800;color:var(--gold);margin-bottom:5px;font-size:12px;letter-spacing:.5px;text-transform:uppercase}
