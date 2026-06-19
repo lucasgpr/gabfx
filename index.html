@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b5';
+window.__BUILD='b6';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -247,8 +247,8 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 .card .inner{border-radius:13px}
 .card,.shine{border-radius:13px}
 .card .top{padding:4px 7px}
-.card .nm{font-size:12px}
-.card .rr{font-size:6.5px;padding:1px 4px;max-width:46%}
+.card .nm{font-size:10px}
+.card .rr{font-size:6px;padding:1px 3px;max-width:42%}
 .card .art{height:60px}
 .card.joker .art{height:50px}
 .card .desc{padding:5px 7px 6px;min-height:43px}
@@ -873,7 +873,7 @@ function runAto0(){
 
   /* ----- estado da run (Hades: 1 run = 1 operação) ----- */
   let blind={alvo:300,maos:4,desc:3},        // [LICENÇA] Ato 0, Ante 1 = 300 pips (escala do doc)
-      pips=0,sel=new Set(),busy=false,firstHand=true,priceTested=false,zoneMarked=false;
+      pips=0,sel=new Set(),busy=false,firstHand=true,priceTested=false,zoneMarked=false,descHinted=false;
   let jokers=['close','roadblock'];          // 2 selos-coringa do Ato 0
   // mão inicial: garante as peças do tutorial + a armadilha (pavio) presente
   let hand=['sup','bull','wick','bear','res','body'];
@@ -1049,8 +1049,10 @@ function runAto0(){
   /* ---------- descartar (com swipe + whoosh) ---------- */
   function descartar(){
     if(busy||blind.desc<=0)return;
-    if(!sel.size){buzz();say('Selecione as cartas que quer descartar.');return;}
+    if(!sel.size){buzz();say('Selecione as cartas que quer descartar (toque nelas) — o Descartar troca por novas.');return;}
+    const trapOut=[...sel].some(i=>DECK[hand[i]].trap);
     busy=true;blind.desc--;whoosh();vibrate(14);
+    if(!descHinted){descHinted=true;conceptToast('♻️','Pra que serve o Descartar',`Igual ao Balatro/pôquer: você <b>troca cartas que não servem por NOVAS</b>. Use pra se livrar do <b>Pavio</b> (armadilha) ou de cartas na <b>direção errada</b>, e buscar uma <b>mão melhor</b>. São poucos — gaste com cabeça.`);}
     const els=$$('.hand .card.sel');
     els.forEach((el,k)=>{
       el.classList.add('flying');
@@ -1061,6 +1063,7 @@ function runAto0(){
     setTimeout(()=>{
       [...sel].sort((a,b)=>b-a).forEach(i=>hand.splice(i,1));
       sel.clear();refill();render();busy=false;
+      say(trapOut?'✓ Boa — se livrou de carta(s) ruim e puxou novas. Monte um setup melhor (zona + confirmação na mesma direção).':'Puxou cartas novas. Procure uma zona + confirmação na mesma direção.');
     },440);
   }
   function refill(){
