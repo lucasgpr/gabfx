@@ -173,18 +173,18 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 /* holográfico das raras/coringas */
 /* foil holográfico SÓ NA BORDA: anel conic mascarado (border-box xor padding-box) */
 .holo{
-  position:absolute; inset:-1px;        /* abraça a borda de raridade do .inner (borda dupla) */
-  border-radius:14px;                   /* = radius do .inner (13px) + 1px do inset */
+  position:absolute; inset:0;           /* mesma caixa do miolo → cantos batem (sem vazamento) */
+  border-radius:13px;                   /* = raio do .inner */
   pointer-events:none; opacity:0; z-index:1;
-  border:4px solid transparent;         /* espessura do anel holográfico */
+  padding:3.5px;                        /* espessura do anel (substitui border: evita o leak de canto) */
   background:conic-gradient(from 0deg,
       #ff4dd8,#54e0ff,#fff27a,#5cff9e,#7aa8ff,#b15bff,#ff4dd8);
   -webkit-mask:
-      linear-gradient(#000 0 0) padding-box,
-      linear-gradient(#000 0 0) border-box;
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
           mask:
-      linear-gradient(#000 0 0) padding-box,
-      linear-gradient(#000 0 0) border-box;
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
   -webkit-mask-composite:xor;           /* Safari / iOS PWA */
           mask-composite:exclude;       /* spec */
   transition:opacity .2s ease;
