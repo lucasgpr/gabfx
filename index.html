@@ -367,6 +367,17 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 /* ===== arte rica das cartas: painel com proporção fixa + SVG preenchendo ===== */
 .card .art{height:auto;aspect-ratio:130/100;overflow:hidden}
 .card .art svg{width:100%;height:100%;display:block}
+/* ===== TUTORIAL DE HOLOFOTE (spotlight) ===== */
+#tourov{position:fixed;inset:0;z-index:200;pointer-events:auto}
+#tspot{position:fixed;border-radius:12px;box-shadow:0 0 0 9999px rgba(3,6,11,.86);border:2px solid var(--gold);transition:all .22s ease;pointer-events:none}
+#ttip{position:fixed;max-width:300px;width:calc(100% - 28px);background:var(--panel);border:2px solid var(--gold);border-radius:14px;padding:13px 15px;box-shadow:0 12px 34px #000b;pointer-events:auto;z-index:201}
+#ttip .tt-title{font-size:15px;font-weight:800;color:var(--gold);margin-bottom:5px}
+#ttip .tt-body{font-size:13.5px;line-height:1.5;color:#dde7df}
+#ttip .tt-row{display:flex;justify-content:space-between;align-items:center;margin-top:11px;gap:10px}
+#ttip .tt-count{font-size:12px;color:var(--mut);flex-shrink:0}
+#ttip .tt-btns{display:flex;gap:8px}
+#ttip button{border:2px solid var(--line);border-radius:9px;padding:7px 12px;font-size:13px;font-weight:800;cursor:pointer;color:#cdd9cf;background:var(--panel2)}
+#ttip .tt-next{background:var(--green);color:#06311a;border-color:var(--green2)}
 </style>
 </head>
 <body>
@@ -377,6 +388,7 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
     <span class="pill">⭐<b id="hxp">0</b></span>
     <span class="pill" id="actpill">Ato <b>0</b></span>
     <button class="iconbtn" id="dicbtn" title="Dicionário">📖</button>
+    <button class="iconbtn" id="tourbtn" title="Tutorial da tela">?</button>
   </div>
   <div id="screen"></div>
 </div>
@@ -636,6 +648,7 @@ function openDictionary(){
   showSheet('📖 Dicionário',h);
 }
 $('#dicbtn').onclick=openDictionary;
+{const _tb=$('#tourbtn');if(_tb)_tb.onclick=()=>startMesaTour(false);}
 
 /* ===================================================================
    7. OVERLAY GENÉRICO (sheet)  — usado por painel-de-carta, dicionário, resultado
@@ -698,7 +711,7 @@ function makeCard(c,kind){ // kind: 'hand' | 'joker'
   d.innerHTML=
     `<div class="inner">
        <span class="fam">${c.fam||c.rr}</span>
-       <div class="top"><span class="nm">${c.nome}</span><span class="rr ${c.rr}">${(c.rr==='coringa'?'JOKER':rrLabel(c.rr)).slice(0,6)}</span></div>
+       <div class="top"><span class="nm">${c.nome}</span><span class="rr ${c.rr}">${c.rr==='coringa'?'JOKER':rrLabel(c.rr)}</span></div>
        <div class="art">${art(c.kind)}</div>
        <div class="desc">${valHTML}<small>${shortDesc(c)}</small></div>
        <span class="infodot">ⓘ</span>
@@ -1233,6 +1246,7 @@ function runAto0(){
 
   render();
   $('#screen').scrollTop=0;
+  if(!S.tourSeen) setTimeout(()=>startMesaTour(true),480);
 }
 
 /* ===================================================================
@@ -1313,7 +1327,7 @@ function menu(){
     <h2 style="font-size:30px;margin:4px 0 2px">GAB<span style="color:var(--gold)">FX</span></h2>
     <div style="color:var(--mut);font-size:13px;margin-bottom:8px">O Pregão · <b style="color:var(--txt)">Ato 0 — Leitura Crua</b></div>
     <div class="card hcard incomum foil" style="width:104px;margin:8px auto;cursor:default">
-      <div class="inner"><span class="fam">zona</span><div class="top"><span class="nm">Suporte</span><span class="rr incomum">INCOM</span></div><div class="art">${art('sup')}</div>
+      <div class="inner"><div class="top"><span class="nm">Suporte</span><span class="rr incomum">INCOMUM</span></div><div class="art">${art('sup')}</div>
       <div class="desc"><span class="v vz">+45 · COMPRA</span><small>Piso → compra.</small></div></div>
       <div class="holo"></div><div class="shine" style="opacity:.35"></div></div>
     <p style="color:#dde7df;font-size:14px;line-height:1.5">Aprenda o método de trading de ouro do <b>GAB</b> do <b>zero absoluto</b>, jogando. Cada conceito vira uma <b>carta</b>: você monta o setup, o gráfico roda o trade ao vivo e os <b>pips</b> estouram.</p>
@@ -1326,6 +1340,50 @@ function menu(){
   const p=$('#play');if(p)p.onclick=()=>{blip(560);runAto0();};
   screen.scrollTop=0;
   $('#actpill').innerHTML='Ato <b>0</b>';
+}
+
+/* ===================================================================
+   14b. TUTORIAL DE HOLOFOTE — explica a mesa item por item (spotlight)
+   =================================================================== */
+const MESA_STEPS=[
+ {sel:'.blind',title:'🎯 O chefe & a meta',body:'Cada fase tem um <b>chefe</b>. Você vence batendo a <b>meta de pips</b> (o número à direita).'},
+ {sel:'.formula',title:'CHIPS × MULT = pontuação',body:'O número <b style="color:#3ea0e0">AZUL</b> (chips) = <b>qualidade da zona</b>. O <b style="color:#fe5f55">VERMELHO</b> (mult) = <b>agressividade</b> da aposta. Multiplicados = seus <b>pips</b>.'},
+ {sel:'.felt',title:'📈 O gráfico ao vivo',body:'A faixa <b style="color:#37d07a">VERDE</b> é o suporte (piso → compra). A linha <b style="color:#fe5f55">VERMELHA</b> tracejada é o alvo (roadblock). Dica: <b>arraste</b> no gráfico pra medir em pips.'},
+ {sel:'.jokers',title:'✨ Coringas',body:'Multiplicam a jogada (×1.5…). Você os <b>conquista</b> jogando. O <b>🔒 cadeado</b> = cartas que ainda vão chegar.'},
+ {sel:'.hand',title:'🃏 Sua mão',body:'<b>Toque</b> numa carta pra montar o setup; <b>segure</b> pra abrir a explicação completa dela.'},
+ {sel:'#op',title:'▶ Operar',body:'Com o setup pronto, dispara o trade — as cartas pontuam em sequência e os pips estouram.'},
+ {sel:'#dc',title:'♻️ Descartar',body:'Troca cartas que não servem. Você tem um número <b>limitado</b> de descartes.'},
+ {sel:'.statline',title:'📊 Seus recursos',body:'<b>PIPS</b> já feitos, e quantas <b>MÃOS</b> e <b>DESCARTES</b> ainda restam.'}
+];
+function startMesaTour(auto){
+  if(!document.querySelector('#bd')||document.getElementById('tourov'))return;
+  let idx=0;
+  const ov=document.createElement('div');ov.id='tourov';
+  ov.innerHTML='<div id="tspot"></div><div id="ttip"><div class="tt-title"></div><div class="tt-body"></div><div class="tt-row"><span class="tt-count"></span><div class="tt-btns"><button class="tt-skip">Pular</button><button class="tt-next"></button></div></div></div>';
+  document.body.appendChild(ov);
+  const spot=ov.querySelector('#tspot'),tip=ov.querySelector('#ttip');
+  function paint(){
+    const st=MESA_STEPS[idx],el=document.querySelector(st.sel);
+    if(!el){idx++;if(idx>=MESA_STEPS.length)return end();return paint();}
+    el.scrollIntoView({block:'center'});
+    requestAnimationFrame(()=>{
+      const r=el.getBoundingClientRect(),pad=6;
+      spot.style.left=(r.left-pad)+'px';spot.style.top=(r.top-pad)+'px';
+      spot.style.width=(r.width+pad*2)+'px';spot.style.height=(r.height+pad*2)+'px';
+      tip.querySelector('.tt-title').innerHTML=st.title;
+      tip.querySelector('.tt-body').innerHTML=st.body;
+      tip.querySelector('.tt-count').textContent=(idx+1)+' / '+MESA_STEPS.length;
+      tip.querySelector('.tt-next').textContent=idx<MESA_STEPS.length-1?'Próximo ›':'Começar ▶';
+      const vw=window.innerWidth,vh=window.innerHeight,tw=tip.offsetWidth,th=tip.offsetHeight;
+      let top=r.bottom+12;if(top+th>vh-10)top=Math.max(10,r.top-th-12);
+      let left=Math.min(Math.max(10,r.left),vw-tw-10);
+      tip.style.top=top+'px';tip.style.left=left+'px';
+    });
+  }
+  function end(){ov.remove();if(auto){S.tourSeen=true;save();}}
+  ov.querySelector('.tt-next').onclick=()=>{blip(560);idx++;if(idx>=MESA_STEPS.length)end();else paint();};
+  ov.querySelector('.tt-skip').onclick=end;
+  paint();
 }
 
 /* ===================================================================
