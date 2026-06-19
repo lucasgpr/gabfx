@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b3';
+window.__BUILD='b4';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -217,26 +217,24 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 .card.coringa .inner{box-shadow:0 0 0 1px var(--purple) inset,0 0 11px #a06bd680,0 6px 12px #0007}
 .card.risco .inner{box-shadow:0 0 0 1px #caa23a inset,0 0 11px #caa23a88,0 6px 12px #0007}
 .card.lendaria .inner{box-shadow:0 0 0 1px #ffd86b inset,0 0 16px #ffd86b99,0 6px 12px #0007}
-/* ===== CORINGA (JOKER): a carta MAIS especial — tratamento próprio, dinâmico ===== */
-.card.coringa .holo{animation-duration:2.2s;opacity:.96}            /* anel arco-íris mais rápido e forte */
-@keyframes jokerAura{
-  0%,100%{box-shadow:0 0 0 1px #a06bd6 inset,0 0 12px #a06bd680,0 6px 12px #0007}
-  50%    {box-shadow:0 0 0 1.5px #ffd86b inset,0 0 22px #a06bd6cc,0 0 28px #ffd86b66,0 6px 12px #0007}
-}
-.card.coringa .inner{animation:jokerAura 2.6s ease-in-out infinite}  /* aura pulsando roxo↔ouro */
-.card.coringa .inner::before{                                        /* faíscas cintilando */
-  content:"";position:absolute;inset:0;pointer-events:none;z-index:3;border-radius:11px;
-  background:
-    radial-gradient(circle 2.6px at 16% 24%,#fff,transparent 70%),
-    radial-gradient(circle 2.1px at 74% 16%,#ffe89a,transparent 70%),
-    radial-gradient(circle 2.4px at 85% 60%,#fff,transparent 70%),
-    radial-gradient(circle 1.9px at 30% 70%,#e7c6ff,transparent 70%),
-    radial-gradient(circle 2.3px at 56% 42%,#fff,transparent 70%),
-    radial-gradient(circle 2px at 45% 86%,#ffe89a,transparent 70%);
-  filter:drop-shadow(0 0 2px #ffffffcc);
-  animation:jokerSparkle 2.6s ease-in-out infinite;
-}
+/* ===== CORINGAS (JOKERS): CADA UM com efeito ÚNICO (estilo Balatro — você reconhece pela cara) =====
+   Comum a todos: anel arco-íris (= "é coringa"). Assinatura própria: cor da aura + ritmo + cor das faíscas. */
+.card.coringa .holo{animation-duration:2.2s;opacity:.96}
 @keyframes jokerSparkle{0%,100%{opacity:.15;transform:scale(.96)}50%{opacity:1;transform:scale(1)}}
+.card.coringa .inner::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:3;border-radius:11px;
+  filter:drop-shadow(0 0 2px #ffffffcc);animation:jokerSparkle 2.6s ease-in-out infinite}
+/* fallback (coringa sem assinatura): roxo/ouro */
+@keyframes jokerAura{0%,100%{box-shadow:0 0 0 1px #a06bd6 inset,0 0 12px #a06bd680,0 6px 12px #0007}50%{box-shadow:0 0 0 1.5px #ffd86b inset,0 0 22px #a06bd6cc,0 0 28px #ffd86b66,0 6px 12px #0007}}
+.card.coringa .inner{animation:jokerAura 2.6s ease-in-out infinite}
+.card.coringa .inner::before{background:radial-gradient(circle 2.3px at 18% 26%,#fff,transparent 70%),radial-gradient(circle 2px at 78% 20%,#ffe89a,transparent 70%),radial-gradient(circle 2.2px at 84% 64%,#fff,transparent 70%),radial-gradient(circle 1.9px at 34% 74%,#e7c6ff,transparent 70%),radial-gradient(circle 2.1px at 58% 46%,#fff,transparent 70%)}
+/* ◆ Candle-Close — VERDE, calmo (paciência/fechamento) */
+@keyframes auraClose{0%,100%{box-shadow:0 0 0 1px #2a8d5a inset,0 0 12px #37d07a66,0 6px 12px #0007}50%{box-shadow:0 0 0 1.5px #9af3bf inset,0 0 22px #37d07ad0,0 0 26px #eafff34d,0 6px 12px #0007}}
+.card.k-close .inner{animation:auraClose 3.4s ease-in-out infinite}
+.card.k-close .inner::before{background:radial-gradient(circle 2.3px at 20% 28%,#dfffe9,transparent 70%),radial-gradient(circle 2px at 76% 18%,#7be0a6,transparent 70%),radial-gradient(circle 2.2px at 84% 62%,#fff,transparent 70%),radial-gradient(circle 1.9px at 32% 74%,#37d07a,transparent 70%),radial-gradient(circle 2.1px at 56% 46%,#dfffe9,transparent 70%);animation-duration:3s}
+/* ◆ Roadblock — VERMELHO, alvo (pulso de mira, mais rápido) */
+@keyframes auraRoad{0%,100%{box-shadow:0 0 0 1px #9c2f29 inset,0 0 12px #fe5f5566,0 6px 12px #0007}50%{box-shadow:0 0 0 1.5px #ffd86b inset,0 0 22px #fe5f55d0,0 0 26px #ffd86b55,0 6px 12px #0007}}
+.card.k-road .inner{animation:auraRoad 1.7s ease-in-out infinite}
+.card.k-road .inner::before{background:radial-gradient(circle 2.3px at 18% 24%,#ffd9d4,transparent 70%),radial-gradient(circle 2px at 78% 20%,#ffd86b,transparent 70%),radial-gradient(circle 2.2px at 84% 64%,#fff,transparent 70%),radial-gradient(circle 1.9px at 34% 74%,#fe5f55,transparent 70%),radial-gradient(circle 2.1px at 58% 46%,#ffd9d4,transparent 70%);animation-duration:1.9s}
 @media(prefers-reduced-motion:reduce){.card.coringa .inner{animation:none}.card.coringa .inner::before{display:none}}
 .card.sel{transform:translateY(-15px) scale(1.03)!important}
 .card.sel .inner{box-shadow:0 0 0 3px var(--gold),0 0 18px var(--gold)80,0 8px 14px #0007}
@@ -244,8 +242,8 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 .card .warn{position:absolute;top:-7px;right:-7px;background:#caa23a;color:#1c1f18;font-size:11px;border-radius:50%;width:21px;height:21px;display:flex;align-items:center;justify-content:center;border:2px solid var(--line);z-index:4}
 .card .infodot{position:absolute;bottom:3px;right:5px;font-size:10px;color:#9b8f6e;z-index:3}
 /* ===== cartas MAIORES (base mobile-first; sobrepõe os tamanhos acima) ===== */
-.card.hcard{width:148px}
-.card.joker{width:124px}
+.card.hcard{width:112px}
+.card.joker{width:100px}
 .card .inner{border-radius:13px}
 .card,.shine{border-radius:13px}
 .card .top{padding:4px 7px}
@@ -326,13 +324,13 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 
 @media(min-height:760px){
   .hand{min-height:176px}
-  .card.hcard{width:164px}
+  .card.hcard{width:112px}
   .card .art{height:66px}
   .card.joker .art{height:54px}
 }
 @media(max-width:340px){
-  .card.hcard{width:128px}
-  .card.joker{width:104px}
+  .card.hcard{width:100px}
+  .card.joker{width:86px}
   .card .art{height:52px}
   .card.joker .art{height:44px}
   .card .desc .v{font-size:13.5px}
@@ -722,7 +720,7 @@ function cardDetail(c){
          <span class="rrtag" style="background:${rrColor(c.rr)};color:${c.rr==='incomum'||c.rr==='coringa'?'#fff':'#1c1f18'}">${rrLabel(c.rr)}</span>
          <div class="chipline">${chipBits.join('')}</div></div>
      </div>
-     <div class="sect"><h4>⭐ Raridade: ${rrLabel(c.rr)}</h4><p>${RAR_INFO[c.rr]||'—'}</p></div>
+     <div class="sect"><h4>⭐ Raridade: ${rrLabel(c.rr)}</h4><p>${RAR_INFO[c.rr]||'—'}<br><br><span style="color:#caa23a">⚠ A borda/raridade mostra o quanto a carta é <b>rara/forte</b> — <b>não</b> que ela é a certa pra <b>esta</b> jogada. Quem decide é o <b>setup</b> (zona + confirmação na direção certa). Repare: até a <b>armadilha</b> (Pavio) tem borda especial.</span></p></div>
      <div class="sect"><h4>📘 O que é</h4><p>${linkify(c.oque)}</p></div>
      <div class="sect game"><h4>🎮 No jogo</h4><p>${linkify(c.jogo||'—')}</p></div>
      <div class="sect method"><h4>📈 No método do GAB</h4><p>${linkify(c.metodo)}</p></div>
@@ -737,7 +735,7 @@ function cardDetail(c){
 function makeCard(c,kind){ // kind: 'hand' | 'joker'
   const d=document.createElement('div');
   const foil=(c.rr==='lendaria'||c.rr==='coringa'||c.rr==='incomum'||c.rr==='risco');
-  d.className='card '+(kind==='joker'?'joker ':'hcard ')+c.rr+(foil?' foil':'');
+  d.className='card '+(kind==='joker'?'joker ':'hcard ')+c.rr+(foil?' foil':'')+' k-'+c.kind;
   let valHTML;
   if(kind==='joker') valHTML=`<span class="v" style="color:#7b3fb0">×${c.mult}</span>`;
   else if(c.trap)    valHTML=`<span class="v vm">+0</span>`;
