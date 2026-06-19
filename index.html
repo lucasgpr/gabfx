@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b2';
+window.__BUILD='b3';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -217,6 +217,27 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 .card.coringa .inner{box-shadow:0 0 0 1px var(--purple) inset,0 0 11px #a06bd680,0 6px 12px #0007}
 .card.risco .inner{box-shadow:0 0 0 1px #caa23a inset,0 0 11px #caa23a88,0 6px 12px #0007}
 .card.lendaria .inner{box-shadow:0 0 0 1px #ffd86b inset,0 0 16px #ffd86b99,0 6px 12px #0007}
+/* ===== CORINGA (JOKER): a carta MAIS especial — tratamento próprio, dinâmico ===== */
+.card.coringa .holo{animation-duration:2.2s;opacity:.96}            /* anel arco-íris mais rápido e forte */
+@keyframes jokerAura{
+  0%,100%{box-shadow:0 0 0 1px #a06bd6 inset,0 0 12px #a06bd680,0 6px 12px #0007}
+  50%    {box-shadow:0 0 0 1.5px #ffd86b inset,0 0 22px #a06bd6cc,0 0 28px #ffd86b66,0 6px 12px #0007}
+}
+.card.coringa .inner{animation:jokerAura 2.6s ease-in-out infinite}  /* aura pulsando roxo↔ouro */
+.card.coringa .inner::before{                                        /* faíscas cintilando */
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:3;border-radius:11px;
+  background:
+    radial-gradient(circle 2.6px at 16% 24%,#fff,transparent 70%),
+    radial-gradient(circle 2.1px at 74% 16%,#ffe89a,transparent 70%),
+    radial-gradient(circle 2.4px at 85% 60%,#fff,transparent 70%),
+    radial-gradient(circle 1.9px at 30% 70%,#e7c6ff,transparent 70%),
+    radial-gradient(circle 2.3px at 56% 42%,#fff,transparent 70%),
+    radial-gradient(circle 2px at 45% 86%,#ffe89a,transparent 70%);
+  filter:drop-shadow(0 0 2px #ffffffcc);
+  animation:jokerSparkle 2.6s ease-in-out infinite;
+}
+@keyframes jokerSparkle{0%,100%{opacity:.15;transform:scale(.96)}50%{opacity:1;transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.card.coringa .inner{animation:none}.card.coringa .inner::before{display:none}}
 .card.sel{transform:translateY(-15px) scale(1.03)!important}
 .card.sel .inner{box-shadow:0 0 0 3px var(--gold),0 0 18px var(--gold)80,0 8px 14px #0007}
 .card.trap-revealed .inner{box-shadow:0 0 0 3px var(--red),0 0 16px var(--red)!important}
