@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b8';
+window.__BUILD='b9';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -1006,24 +1006,33 @@ function runAto0(){
     const hLine=(ctx,yy,c)=>{ctx.strokeStyle=c;ctx.setLineDash([4,3]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(B.x,yy);ctx.lineTo(B.x+B.w,yy);ctx.stroke();ctx.setLineDash([]);};
     const draw=e=>{const {x,y}=toLocal(e);const price=yToP(y,B,PR);
       drawTrade();const ctx=cv.getContext('2d');
-      if(Math.abs(y-sy)<7){ // toque/parado: só lê o preço naquele nível
+      if(!zoneMarked){ // MODO MARCAR a zona: linha colorida por ONDE está + dica clara de onde soltar
+        const inCorpo=price>=137.9&&price<=141.6, inPavio=price>=136&&price<137.9;
+        const c=inCorpo?'#37d07a':(inPavio?'#fe5f55':'#f4c95d');
+        ctx.strokeStyle=c;ctx.lineWidth=inCorpo?2.2:1.4;ctx.setLineDash(inCorpo?[]:[4,3]);
+        ctx.beginPath();ctx.moveTo(B.x,y);ctx.lineTo(B.x+B.w,y);ctx.stroke();ctx.setLineDash([]);
+        ctx.fillStyle=c;ctx.font='bold 12px system-ui';
+        ctx.fillText(inCorpo?'✓ SOLTE aqui':(inPavio?'✗ pavio (errado)':'↑ vá pra faixa verde'),Math.min(x+6,B.x+B.w-118),Math.max(B.y+14,y-5));
+        if(!hinted){hinted=true;conceptToast('🎯','Como marcar a zona',`<b>Arraste</b> a linha até a <b>faixa verde</b> (o corpo) e <b>solte</b> quando ela ficar <b style="color:#37d07a">verde</b> com "✓ SOLTE aqui". No <b style="color:#fe5f55">pavio</b> (vermelho) é errado. É você lendo o gráfico!`);}
+        return;
+      }
+      if(Math.abs(y-sy)<7){ // (já marcado) toque = lê o preço
         hLine(ctx,y,'#f4c95d');
         ctx.fillStyle='#f4c95d';ctx.font='bold 11px system-ui';
         ctx.fillText('R$ '+price.toFixed(1),Math.min(x+6,B.x+B.w-60),Math.max(B.y+12,y-4));
         return;
       }
-      // RÉGUA: mede do ponto onde você apertou (âncora) até o atual, em PIPS
+      // RÉGUA (já marcado): mede do ponto onde apertou até o atual, em PIPS
       const p0=yToP(sy,B,PR),pips=toPips(price-p0),up=y<sy,col=up?'#37d07a':'#fe5f55';
-      hLine(ctx,sy,'#f4c95d');                          // âncora
-      hLine(ctx,y,col);                                 // ponto atual
-      ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x,sy);ctx.lineTo(x,y);ctx.stroke(); // conector
-      ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-3,y+(up?5:-5));ctx.moveTo(x,y);ctx.lineTo(x+3,y+(up?5:-5));ctx.stroke(); // seta
-      const lx=Math.min(x+8,B.x+B.w-72),ly=(sy+y)/2;     // rótulo
+      hLine(ctx,sy,'#f4c95d');
+      hLine(ctx,y,col);
+      ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x,sy);ctx.lineTo(x,y);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-3,y+(up?5:-5));ctx.moveTo(x,y);ctx.lineTo(x+3,y+(up?5:-5));ctx.stroke();
+      const lx=Math.min(x+8,B.x+B.w-72),ly=(sy+y)/2;
       ctx.fillStyle='rgba(11,19,32,.85)';ctx.fillRect(lx-4,ly-13,70,28);
       ctx.strokeStyle=col;ctx.lineWidth=1;ctx.strokeRect(lx-4,ly-13,70,28);
       ctx.fillStyle=col;ctx.font='bold 13px system-ui';ctx.fillText(pips+' pips',lx,ly+1);
       ctx.fillStyle='#f4c95d';ctx.font='10px system-ui';ctx.fillText('Δ R$ '+Math.abs(price-p0).toFixed(1),lx,ly+12);
-      if(!hinted){hinted=true;conceptToast('📏','Régua de pips',`Você está medindo a distância em <b>pips</b> entre dois pontos do preço — igual à ferramenta de medição do <b>MetaTrader</b>. É assim que se mede o alvo (e o risco) de um trade.`);}
     };
     cv.addEventListener('pointerdown',e=>{if(busy)return;sy=toLocal(e).y;probing=true;draw(e);});
     cv.addEventListener('pointermove',e=>{if(probing&&!busy)draw(e);});
