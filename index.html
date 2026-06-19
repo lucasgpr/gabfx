@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b9';
+window.__BUILD='b10';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -243,6 +243,27 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 .card.k-road  .desc{background:linear-gradient(180deg,#fff1ef,#ffd9d4)}
 .card.k-close .top{background:#10301f}
 .card.k-road  .top{background:#3a1714}
+/* ◆ CARTAS DE RISCO (aposta — distintas dos coringas e do pavio) */
+/* ⚡ Alavancagem — ÂMBAR/OURO carregado (oportunidade que corta dos 2 lados) */
+@keyframes auraLev{0%,100%{box-shadow:0 0 14px 2px #f4c95d99,0 0 0 1px #8a6a1e inset,0 6px 12px #0007}50%{box-shadow:0 0 30px 7px #ffd86b,0 0 0 2px #ffe9a8 inset,0 6px 12px #0007}}
+.card.k-lev .inner{animation:auraLev 2.1s ease-in-out infinite}
+.card.k-lev .holo{background:conic-gradient(from 0deg,#ffe9a8,#f4c95d,#caa23a,#fff3cf,#f4c95d,#ffe9a8);animation:ringPulse 1.5s ease-in-out infinite}
+.card.k-lev .desc{background:linear-gradient(180deg,#fff7e0,#ffeab0)}
+.card.k-lev .top{background:#3a2e0e}
+/* ⚠ FOMO — LARANJA NERVOSO, alerta (isca: parece ótima, mas é o erro) */
+@keyframes auraFomo{0%,100%{box-shadow:0 0 14px 2px #ff8a3d88,0 0 0 1px #8a3a12 inset,0 6px 12px #0007}50%{box-shadow:0 0 28px 7px #ff7a2e,0 0 0 2px #ffc79a inset,0 6px 12px #0007}}
+.card.k-fomo .inner{animation:auraFomo 1.1s ease-in-out infinite}
+.card.k-fomo .holo{background:conic-gradient(from 0deg,#ffc79a,#ff8a3d,#e0561a,#ffd9bf,#ff8a3d,#ffc79a);animation:ringPulse 1s ease-in-out infinite}
+.card.k-fomo .desc{background:linear-gradient(180deg,#fff0e4,#ffd9bf)}
+.card.k-fomo .top{background:#3a1c0c}
+/* selo de RISCO no canto (⚡ oportunidade / ⚠ isca) */
+.card .risk{position:absolute;top:-7px;right:-7px;font-size:11px;border-radius:50%;width:21px;height:21px;display:flex;align-items:center;justify-content:center;border:2px solid var(--line);z-index:4;box-shadow:0 1px 4px #0008}
+.card .risk.lev{background:#f4c95d;color:#3a2e0e}
+.card .risk.fomo{background:#ff7a2e;color:#2a1206;animation:fomoBlink 1s steps(2,jump-none) infinite}
+@keyframes fomoBlink{0%,100%{opacity:1}50%{opacity:.45}}
+/* alerta de consequência da aposta (mostrado SÓ depois de operar) */
+.riskbox{margin:10px 0;padding:11px 13px;border-radius:12px;background:linear-gradient(180deg,#2a1d08,#241608);border:1px solid #caa23a66;font-size:13px;line-height:1.5;color:#f3e6c8}
+.riskbox .riskhd{font-weight:700;color:#ffd86b;margin-bottom:4px;letter-spacing:.5px}
 @media(prefers-reduced-motion:reduce){.card.coringa .inner{animation:none}.card.coringa .inner::before{display:none}}
 .card.sel{transform:translateY(-15px) scale(1.03)!important}
 .card.sel .inner{box-shadow:0 0 0 3px var(--gold),0 0 18px var(--gold)80,0 8px 14px #0007}
@@ -569,6 +590,8 @@ function art(kind){
   else if(kind==='close')s=cdl(46,38,16,10,42,G)+`<line x1="20" y1="16" x2="72" y2="16" stroke="${GD}" stroke-width="1.4" stroke-dasharray="3 2"/><text x="46" y="11" font-size="7.5" text-anchor="middle" fill="${GD}">fechou ✓</text>`;
   else if(kind==='road') s=`<rect x="0" y="10" width="${W}" height="8" fill="rgba(255,107,94,.2)" stroke="${R}" stroke-dasharray="3 3"/>`+cdl(30,42,30,26,46,G)+cdl(50,30,18,12,34,G)+`<text x="74" y="16" font-size="9" fill="${GD}">🎯</text>`;
   else if(kind==='mtf')  s=`<rect x="5" y="8" width="36" height="34" rx="3" fill="none" stroke="${G}" opacity=".7"/><rect x="51" y="8" width="36" height="34" rx="3" fill="none" stroke="${B}" opacity=".7"/>`+cdl(20,32,20,14,40,G)+cdl(68,32,20,14,40,G);
+  else if(kind==='lev')  s=`<path d="M40 4 L24 28 H40 L34 46 L60 20 H44 Z" fill="${GD}" stroke="#8a6a1e" stroke-width="1.2"/><path d="M8 38 l10 -6 m-10 6 l10 6 M84 38 l-10 -6 m10 6 l-10 6" stroke="${GD}" stroke-width="1.6" fill="none" opacity=".8"/>`;
+  else if(kind==='fomo'){ s=`<path d="M14 40 L34 22 L48 32 L78 10" fill="none" stroke="#ff8a3d" stroke-width="2.4"/><path d="M70 10 h10 v10" fill="none" stroke="#ff8a3d" stroke-width="2.4"/><circle cx="46" cy="12" r="9" fill="none" stroke="${R}" stroke-width="1.6"/><line x1="46" y1="8" x2="46" y2="13" stroke="${R}" stroke-width="1.8"/><circle cx="46" cy="16.5" r="1.1" fill="${R}"/><text x="46" y="48" font-size="7.5" text-anchor="middle" fill="#ff8a3d">cedo demais</text>`;}
   else                   s=`<text x="46" y="32" font-size="20" text-anchor="middle" fill="${GD}">?</text>`;
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="none">`+
          `<rect width="${W}" height="${H}" fill="#0b1320"/>`+s+`</svg>`;
@@ -613,7 +636,19 @@ const DECK={
     oque:'A RESISTÊNCIA é o TETO: a faixa onde o preço subiu, parou e voltou a cair. É onde estão os VENDEDORES.',
     jogo:'+45 chips e define a direção VENDA. Toque numa Vela de Baixa junto pra confirmar.',
     metodo:'[GAB] Regra dos 2 candles: resistência = vela de ALTA seguida de vela de BAIXA. SNR Tradicional, a zona mais forte. Vende-se aqui; o alvo é o roadblock abaixo.',
-    ex:'O ouro sobe, faz uma vela verde e logo uma vermelha no mesmo nível: nasceu uma resistência. Vende.'}
+    ex:'O ouro sobe, faz uma vela verde e logo uma vermelha no mesmo nível: nasceu uma resistência. Vende.'},
+
+  /* ---- CAMADA DE RISCO (a aposta — o GAB arrisca agressivo, MAS disciplinado) ---- */
+  lev:{nome:'Alavancagem',kind:'lev',fam:'risco',rr:'risco',tipo:'risco',dir:null,chips:0,risk:'lev',
+    oque:'ALAVANCAGEM é operar com mais força do que o capital que você tem. Ela MULTIPLICA o resultado — pros DOIS lados.',
+    jogo:'⚡ Aposta: <b>DOBRA o resultado</b> no fim do trade. Leu CERTO (zona + direção certa, sem pavio, sem FOMO) → dobra o GANHO. Leu errado → dobra a PERDA (estouro). Só se revela DEPOIS de operar.',
+    metodo:'[GAB] O GAB arrisca pesado (~10% por setup, alavancado). Mas a alavancagem só é a favor de quem tem LEITURA LIMPA. Alavancar um setup falho é como o estouro de conta — a alavancagem não perdoa erro.',
+    ex:'Leu o suporte certo e alavancou: +137 vira +274. Mas alavancou uma venda no piso (errado): a perda também dobra. Mesma carta, destinos opostos.'},
+  fomo:{nome:'Entrada Antecipada',kind:'fomo',fam:'risco',rr:'risco',tipo:'risco',dir:null,chips:55,risk:'fomo',
+    oque:'FOMO ("medo de ficar de fora") é entrar com PRESSA, antes da vela FECHAR — pela ansiedade de não perder o movimento.',
+    jogo:'⚠ Isca: mostra muitos <b>+chips</b> (parece a melhor!), mas significa entrar <b>antes do fechamento</b>. O preço chicoteia e come o ganho. O estrago só aparece DEPOIS que você opera — e se juntar com a Alavancagem, vira desastre.',
+    metodo:'[GAB] O oposto do candle-close. O GAB ESPERA a vela fechar — entrar antes é apostar no que ainda não aconteceu. FOMO é o erro nº1 do iniciante: o gráfico te seduz com um número grande.',
+    ex:'A vela ainda nem fechou e parece um suporte lindo. Você entra com pressa pelos "chips" grandes — ela fecha pro outro lado e te estopa.'}
 };
 
 /* selos de regra que entram como "coringas" do Ato 0 (multiplicador leve). */
@@ -712,7 +747,7 @@ function rrColor(rr){return ({comum:'#9aa6a0',incomum:'var(--blue)',coringa:'var
 const RAR_INFO={
   comum:'O <b>tijolo</b> do gráfico. Confirma a jogada, mas vale <b>poucos chips</b> sozinha — a força de verdade vem da ZONA. São as cartas que você mais tem.',
   incomum:'<b>Mais forte.</b> As <b>zonas</b> (suporte/resistência) são o <b>coração do setup</b>: valem <b>+45 chips</b>, contra +12 de uma vela comum. É onde você de fato opera — por isso valem mais.',
-  risco:'<b>Alto risco.</b> Pode ser <b>armadilha</b> (o Pavio pontua 0) ou aposta agressiva. O jogo sempre <b>te alerta</b> ⚠ — o risco existe no método do GAB, mas você precisa enxergar.',
+  risco:'<b>Aposta de alto risco.</b> Pode ser <b>armadilha</b> (o Pavio pontua 0) ou <b>aposta agressiva</b> — a <b>Alavancagem</b> dobra ganho E perda; o <b>FOMO</b> é isca (parece ótimo, é o erro). O método do GAB É agressivo, mas <b>disciplinado</b>: arrisque só com <b>leitura limpa</b>. O estrago aparece <b>depois</b> de operar.',
   coringa:'<b>Coringa (JOKER).</b> Não pontua sozinho: <b>MULTIPLICA</b> a jogada inteira (×). Raros e <b>devastadores</b> quando casam com a zona certa. Você os <b>conquista</b> jogando.',
   lendaria:'<b>A mais rara e poderosa.</b> Confluências que fazem o placar <b>EXPLODIR</b> (ex.: Multi-Timeframe). Destravadas avançando nos atos.'
 };
@@ -753,6 +788,8 @@ function makeCard(c,kind){ // kind: 'hand' | 'joker'
   if(kind==='joker') valHTML=`<span class="v" style="color:#7b3fb0">×${c.mult}</span>`;
   else if(c.trap)    valHTML=`<span class="v vm">+0</span>`;
   else if(c.tipo==='zona') valHTML=`<span class="v vz">+${c.chips} · ${c.dir==='buy'?'COMPRA':'VENDA'}</span>`;
+  else if(c.kind==='lev')  valHTML=`<span class="v" style="color:#8a6a1e">×2 ⚡ risco</span>`;
+  else if(c.kind==='fomo') valHTML=`<span class="v vc">+${c.chips} ⚠</span>`;
   else if(c.buff)    valHTML=`<span class="v" style="color:#7b3fb0">selo</span>`;
   else               valHTML=`<span class="v ${c.dir==='buy'?'vc':'vm'}">+${c.chips}</span>`;
   d.innerHTML=
@@ -764,13 +801,17 @@ function makeCard(c,kind){ // kind: 'hand' | 'joker'
        <span class="infodot">ⓘ</span>
      </div>
      <div class="holo"></div><div class="shine"></div>`+
-    (c.trap?'<div class="warn">⚠</div>':'');
+    (c.trap?'<div class="warn">⚠</div>':'')+
+    (c.kind==='lev'?'<div class="risk lev">⚡</div>':'')+
+    (c.kind==='fomo'?'<div class="risk fomo">⚠</div>':'');
   tilt(d);
   bindPress(d,c,kind);
   return d;
 }
 function shortDesc(c){
   if(c.trap)return 'Armadilha: marca zona errada.';
+  if(c.kind==='lev')return 'Dobra ganho E perda.';
+  if(c.kind==='fomo')return 'Isca: entra cedo, chicoteia.';
   if(c.tipo==='zona')return c.dir==='buy'?'Piso → compra.':'Teto → venda.';
   if(c.buff==='body')return 'Marca só o corpo.';
   if(c.buff==='close')return 'Espera a vela fechar.';
@@ -889,10 +930,10 @@ function runAto0(){
 
   /* ----- estado da run (Hades: 1 run = 1 operação) ----- */
   let blind={alvo:300,maos:4,desc:3},        // [LICENÇA] Ato 0, Ante 1 = 300 pips (escala do doc)
-      pips=0,sel=new Set(),busy=false,firstHand=true,priceTested=false,zoneMarked=false,descHinted=false;
+      pips=0,sel=new Set(),busy=false,firstHand=true,priceTested=false,zoneMarked=false,descHinted=false,markedPrice=0;
   let jokers=['close','roadblock'];          // 2 selos-coringa do Ato 0
   // mão inicial: garante as peças do tutorial + a armadilha (pavio) presente
-  let hand=['sup','bull','wick','bear','res','body'];
+  let hand=['sup','bull','wick','bear','res','body','lev','fomo'];
 
   function jokerObjs(){return jokers.map(id=>SEALS[id]);}
 
@@ -914,28 +955,30 @@ function runAto0(){
     zone(ctx,{top:SUPZ.top,bottom:SUPZ.bottom,fill:lit?'rgba(55,208,122,.30)':'rgba(55,208,122,.14)',stroke:'#37d07a',lit:lit,label:'SUPORTE (compra) — marcado no CORPO',lc:'#9af3bf'},B,PR);
     candles(ctx,shown,B,PR,count);
     if(lit&&!priceTested){priceTested=true;blip(720);sparks(B.x+B.w*0.86,pY(SUPZ.bottom,B,PR)+58,'#37d07a',6);}
-    if(zoneMarked){ // sua marcação do suporte (pelo corpo) fica fixa no gráfico
-      const yz=pY((SUPZ.top+SUPZ.bottom)/2,B,PR);
+    if(zoneMarked){ // sua marcação fica fixa no gráfico, no preço que VOCÊ marcou
+      const yz=pY(markedPrice,B,PR);
       ctx.strokeStyle='#f4c95d';ctx.lineWidth=2;ctx.setLineDash([]);
       ctx.beginPath();ctx.moveTo(B.x,yz);ctx.lineTo(B.x+B.w,yz);ctx.stroke();
-      ctx.fillStyle='#f4c95d';ctx.font='bold 10px system-ui';ctx.fillText('✓ sua zona',B.x+5,yz-5);
+      ctx.fillStyle='#f4c95d';ctx.font='bold 10px system-ui';ctx.fillText('✓ sua zona · R$ '+markedPrice.toFixed(1),B.x+5,yz-5);
     }
   }
 
   /* ---------- cálculo (preview da fórmula no HUD) ---------- */
   function calc(){
-    let chips=0,dir=null,hasZone=false,hasBody=false,hasTrap=false;
+    let chips=0,dir=null,hasZone=false,hasBody=false,hasTrap=false,hasLev=false,hasFomo=false;
     const idxs=[...sel];
     const cards=idxs.map(i=>DECK[hand[i]]);
     cards.forEach(c=>{
       if(c.tipo==='zona'){hasZone=true;dir=c.dir;}
       if(c.buff==='body')hasBody=true;
       if(c.trap)hasTrap=true;
+      if(c.kind==='lev')hasLev=true;
+      if(c.kind==='fomo')hasFomo=true;
     });
     cards.forEach(c=>{let cc=c.chips||0;if(hasBody&&c.tipo==='zona')cc+=8;chips+=cc;});
     let mult=1;jokers.forEach(id=>mult*=SEALS[id].mult);
     mult=Math.round(mult*10)/10;
-    return {chips,mult,dir,hasZone,hasBody,hasTrap,cards,idxs};
+    return {chips,mult,dir,hasZone,hasBody,hasTrap,hasLev,hasFomo,cards,idxs};
   }
   function updFormula(){
     const k=calc();
@@ -1006,14 +1049,11 @@ function runAto0(){
     const hLine=(ctx,yy,c)=>{ctx.strokeStyle=c;ctx.setLineDash([4,3]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(B.x,yy);ctx.lineTo(B.x+B.w,yy);ctx.stroke();ctx.setLineDash([]);};
     const draw=e=>{const {x,y}=toLocal(e);const price=yToP(y,B,PR);
       drawTrade();const ctx=cv.getContext('2d');
-      if(!zoneMarked){ // MODO MARCAR a zona: linha colorida por ONDE está + dica clara de onde soltar
-        const inCorpo=price>=137.9&&price<=141.6, inPavio=price>=136&&price<137.9;
-        const c=inCorpo?'#37d07a':(inPavio?'#fe5f55':'#f4c95d');
-        ctx.strokeStyle=c;ctx.lineWidth=inCorpo?2.2:1.4;ctx.setLineDash(inCorpo?[]:[4,3]);
-        ctx.beginPath();ctx.moveTo(B.x,y);ctx.lineTo(B.x+B.w,y);ctx.stroke();ctx.setLineDash([]);
-        ctx.fillStyle=c;ctx.font='bold 12px system-ui';
-        ctx.fillText(inCorpo?'✓ SOLTE aqui':(inPavio?'✗ pavio (errado)':'↑ vá pra faixa verde'),Math.min(x+6,B.x+B.w-118),Math.max(B.y+14,y-5));
-        if(!hinted){hinted=true;conceptToast('🎯','Como marcar a zona',`<b>Arraste</b> a linha até a <b>faixa verde</b> (o corpo) e <b>solte</b> quando ela ficar <b style="color:#37d07a">verde</b> com "✓ SOLTE aqui". No <b style="color:#fe5f55">pavio</b> (vermelho) é errado. É você lendo o gráfico!`);}
+      if(!zoneMarked){ // MODO MARCAR: linha NEUTRA + o preço. VOCÊ lê e decide; o jogo confere só AO SOLTAR.
+        hLine(ctx,y,'#f4c95d');
+        ctx.fillStyle='#f4c95d';ctx.font='bold 11px system-ui';
+        ctx.fillText('marcar  R$ '+price.toFixed(1),Math.min(x+6,B.x+B.w-104),Math.max(B.y+13,y-5));
+        if(!hinted){hinted=true;conceptToast('🎯','Marque o suporte (você lê)',`Olhe as velas: <b>onde os corpos pararam de cair?</b> Esse é o suporte. Arraste sua linha até esse nível e <b>solte</b> — aí o jogo diz se você leu certo. (Sem entregar a resposta antes.)`);}
         return;
       }
       if(Math.abs(y-sy)<7){ // (já marcado) toque = lê o preço
@@ -1038,14 +1078,15 @@ function runAto0(){
     cv.addEventListener('pointermove',e=>{if(probing&&!busy)draw(e);});
     function tryMark(e){const price=yToP(toLocal(e).y,B,PR);
       if(price>=137.9&&price<=141.6){ // CORPO (faixa verde) = certo
-        zoneMarked=true;drawTrade();blip(720);vibrate(12);sparks(B.x+B.w*0.5,pY((SUPZ.top+SUPZ.bottom)/2,B,PR),'#37d07a',10);
-        say('✅ <b>Marcou no CORPO!</b> Zona confirmada (faixa verde). Agora monte <b>Suporte + Vela de Alta</b> e <b>OPERE</b>.');
-        conceptToast('✅','Zona marcada certa',`Você leu o gráfico e marcou o suporte pelo <b>corpo</b> — não pelo pavio. É assim que o GAB faz. O trade liberou.`);
+        zoneMarked=true;markedPrice=price;drawTrade();blip(720);vibrate(12);sparks(B.x+B.w*0.5,pY(price,B,PR),'#37d07a',10);
+        say('✅ Você marcou <b>R$ '+price.toFixed(1)+'</b> — caiu no <b>CORPO</b> (faixa verde). Leu certo! Zona confirmada. Agora monte <b>Suporte + Vela de Alta</b> e <b>OPERE</b>.');
+        conceptToast('✅','Validado ao soltar',`No instante que você soltou, o jogo conferiu o nível <b>R$ ${price.toFixed(1)}</b>: caiu no corpo (não no pavio) → <b>certo</b>. Sua linha fica marcada no gráfico.`);
       } else if(price>=136&&price<137.9){ // PAVIO = errado (ensina)
         buzz();shake();drawTrade();
-        say('❌ Esse é o <b>PAVIO</b> (o espeto fino, ~137). A zona é o <b>CORPO</b> — a faixa <b>VERDE</b> (~139). Arraste de novo na faixa verde.');
+        say('❌ Você marcou <b>R$ '+price.toFixed(1)+'</b> — isso é o <b>PAVIO</b> (o espeto fino, ~137). A zona é o <b>CORPO</b> (~R$ 139, faixa verde). Arraste de novo e solte na faixa verde.');
+        conceptToast('🎯','Validado ao soltar',`Confiro o nível no instante que você solta. <b>R$ ${price.toFixed(1)}</b> caiu no pavio → ainda não vale. Tente de novo.`);
       } else { drawTrade();
-        say('🎯 Marque na <b>faixa VERDE</b> (onde os corpos pararam de cair). Arraste a linha até ela.');
+        say('🎯 Você marcou <b>R$ '+price.toFixed(1)+'</b> — fora da zona. Leia onde os corpos pararam de cair e solte ali (faixa verde, ~R$ 139).');
       }
     }
     cv.addEventListener('pointerup',e=>{probing=false;if(busy)return;if(!zoneMarked)tryMark(e);else drawTrade();});
@@ -1066,6 +1107,8 @@ function runAto0(){
   }
   function conceptOnSelect(c){
     if(c.trap)conceptToast('⚠','Pavio = armadilha',`O <b>pavio</b> é o espeto fino e <b>não marca zona</b>. Se ele entra no setup, a zona sai errada e você perde. <i>"The wick is useless."</i> (segure a carta pra entender)`);
+    else if(c.kind==='lev')conceptToast('⚡','Alavancagem = risco dos 2 lados',`Ela <b>DOBRA o resultado</b> — pra cima se você leu CERTO, pra baixo se errou. Só se revela no <b>final</b> da operação. Arrisque, mas <b>só com leitura limpa</b> (zona + direção certa, sem pavio, sem FOMO). [GAB: agressivo, mas disciplinado]`);
+    else if(c.kind==='fomo')conceptToast('⚠','FOMO = isca',`Parece a melhor (muitos <b>+chips</b>!), mas é <b>entrar antes do fechamento</b>. O preço chicoteia e come o ganho. O estrago só aparece <b>depois</b> que você opera. [GAB: espere a vela fechar]`);
     else if(c.buff==='body')conceptToast('🟩','Marcar só o corpo',`<b>O Corpo</b> é a parte que vale. Com ele, sua <b>zona</b> ganha +8 chips por estar bem marcada. [GAB]`);
     else if(c.tipo==='zona')conceptToast(c.dir==='buy'?'🟢':'🔴',c.nome,c.dir==='buy'?'Você está num <b>suporte</b> (piso). A direção é <b>COMPRA</b>. Confirme com uma Vela de Alta.':'Você está numa <b>resistência</b> (teto). A direção é <b>VENDA</b> — ganha na queda.');
     else if(c.tipo==='confirma')conceptToast(c.dir==='buy'?'🕯️':'🕯️',c.nome,`Esta vela <b>confirma</b> a direção ${c.dir==='buy'?'de compra':'de venda'}. Sozinha é fraca — a força vem da <b>zona</b>.`);
@@ -1217,6 +1260,8 @@ function runAto0(){
         if(s.addMult){mult+=s.addMult;setNum($('#mult'),Math.round(mult*10)/10);
           if(el){const [mx,my]=centerOf(el);pop(mx+14,my-22,'+'+s.addMult+' mult','#fe5f55');}}
         if(el){const [x,y]=centerOf(el);if(s.chips){pop(x-14,y-22,'+'+s.chips,'#3ea0e0');sparks(x,y-10,'#3ea0e0',5);}}
+        // alavancagem: "arma" o trade — o efeito (×2 pra cima ou pra baixo) só se revela no resultado
+        if(s.ref&&s.ref.kind==='lev'&&el){const [x,y]=centerOf(el);pop(x-12,y-22,'⚡ alavancado','#f4c95d');sparks(x,y-8,'#f4c95d',6);}
         // pitch crescente (kaw kaw): som sobe com os chips
         blip(420+Math.min(900,chips*3));thunk();shake();vibrate(8);
         setTimeout(runStep,420);
@@ -1255,10 +1300,29 @@ function runAto0(){
     const raw=Math.round(chips*mult);
     // direção certa? suporte = COMPRA. Vender no suporte = operar contra a zona (perde) [GAB]
     const correct=buy;
-    const gain=correct?raw:-Math.round(raw*0.5);
+    // leitura LIMPA = disciplina: direção certa, sem pavio, sem FOMO (entrada no tempo certo)
+    const clean=correct&&!k.hasTrap&&!k.hasFomo;
+    let gain=correct?raw:-Math.round(raw*0.5);
+    let riskNote='';
+    // ⚠ FOMO: entrou antes do fechamento → chicote. Os +chips do FOMO eram ISCA (não compensam).
+    if(k.hasFomo){
+      gain=correct?Math.round(raw*0.30):-Math.round(raw*0.75);
+      riskNote='<b>⚠ FOMO te pegou:</b> você antecipou a entrada (antes da vela fechar). O preço chicoteou e comeu o ganho — aqueles <b>+chips</b> grandes eram <b>isca</b>. Render menos que uma entrada paciente. [GAB: espere o fechamento]';
+    }
+    // ⚡ ALAVANCAGEM: dobra o RESULTADO. Limpo → jackpot. Falho → estouro (dobra a perda).
+    if(k.hasLev){
+      if(clean){
+        gain=gain*2;
+        riskNote=(riskNote?riskNote+'<br><br>':'')+'<b>⚡ Alavancagem disciplinada:</b> leitura limpa, então ela <b>DOBROU seu acerto</b> (+'+gain+' pips). É isso: arriscar pesado <b>quando o setup manda</b>. [GAB]';
+      }else{
+        gain=-Math.abs(Math.round(raw*0.6))*2;
+        riskNote=(riskNote?riskNote+'<br><br>':'')+'<b>⚡ Alavancagem num setup FALHO:</b> ela dobra a PERDA também. Você <b>estourou</b> ('+gain+' pips). A alavancagem não perdoa erro — só alavanque com a leitura limpa. [GAB]';
+      }
+    }
+    k._riskNote=riskNote;
     const target=Math.max(0,pips+gain);
     let n=pips;const dir=gain>=0?1:-1,stepN=Math.max(1,Math.round(Math.abs(gain)/22));
-    say(correct?'Subindo… o piso segurou!':'O preço subiu contra a venda…');
+    say(gain>=0?(correct?'Subindo… o piso segurou!':'Deu certo apesar de tudo…'):(correct?'A aposta de risco virou contra você…':'O preço subiu contra a venda…'));
     const tt=setInterval(()=>{
       n+=dir*stepN;
       if((dir>0&&n>=target)||(dir<0&&n<=target))n=target;
@@ -1288,11 +1352,15 @@ function runAto0(){
     if(reachedGoal){return endRun(true);}
     if(outOfHands){return endRun(false);}
     // continua a run: feedback + próxima mão
+    const won=gain>=0;
+    const fmt=(gain>=0?'+':'')+gain;
     const why=correct
-      ? `<div class="why"><b>✅ Por que deu certo:</b> você comprou no <b>suporte</b> (o piso, onde estão os compradores) e confirmou com a vela. ${chips} chips × ${mult} = <b>+${gain} pips</b>. Zona forte + direção certa = pips de verdade. [GAB]</div>`
-      : `<div class="why bad"><b>❌ Por que deu errado:</b> você <b>vendeu num suporte</b>. No piso se <b>COMPRA</b> (os compradores empurram pra cima). O preço subiu e bateu o stop: ${gain} pips. Não é punição — é a aula: respeite a direção da zona.</div>`;
-    showSheet(correct?'🎉 Boa jogada':'📉 Trade no vermelho',
-      `<div class="result"><div class="pipbig">${pips} <span style="font-size:16px;color:var(--mut)">/ ${blind.alvo} pips</span></div>${why}
+      ? `<div class="why${won?'':' bad'}"><b>✅ Leitura certa:</b> você comprou no <b>suporte</b> (o piso, onde estão os compradores) e confirmou com a vela — <b>direção certa</b>. Base: ${chips} chips × ${mult}. Resultado final: <b>${fmt} pips</b>.${(k&&k._riskNote)?' <i>(veja abaixo o que suas apostas de risco fizeram)</i>':' Zona forte + direção certa = pips de verdade. [GAB]'}</div>`
+      : `<div class="why bad"><b>❌ Direção errada:</b> você <b>vendeu num suporte</b>. No piso se <b>COMPRA</b> (os compradores empurram pra cima). O preço subiu e bateu o stop: <b>${fmt} pips</b>. Não é punição — é a aula: respeite a direção da zona.</div>`;
+    // CONSEQUÊNCIA DAS APOSTAS DE RISCO — só revelada DEPOIS de operar (alerta, não marca prévia)
+    const riskHTML=(k&&k._riskNote)?`<div class="riskbox"><div class="riskhd">⚠ Sua aposta de risco</div><div>${k._riskNote}</div></div>`:'';
+    showSheet(won?'🎉 Boa jogada':'📉 Trade no vermelho',
+      `<div class="result"><div class="pipbig">${pips} <span style="font-size:16px;color:var(--mut)">/ ${blind.alvo} pips</span></div>${why}${riskHTML}
        <button class="btn go" id="next">▶ Próxima mão (${blind.maos} restantes)</button></div>`,{noX:true,sticky:true});
     $('#next').onclick=()=>{closeSheet();refill();render();};
   }
@@ -1432,6 +1500,7 @@ const MESA_STEPS=[
  {sel:'.felt',title:'📈 O gráfico É JOGÁVEL',body:'Aqui você <b>JOGA</b>: <b>arraste</b> pra MARCAR o suporte na faixa <b style="color:#37d07a">VERDE</b> (o <b>corpo</b>, não o pavio). Marcou certo → <b>libera o OPERAR</b>. A linha <b style="color:#fe5f55">vermelha</b> é o alvo (roadblock). (Depois de marcar, arrastar mede pips.)'},
  {sel:'.jokers',title:'✨ Coringas',body:'<b>Multiplicam</b> a jogada (×1.5…). <b>Cada um é diferente</b> — cor e efeito próprios (verde, vermelho…) pra você reconhecer pela cara. Você os <b>conquista</b> jogando. <b>🔒</b> = cartas que ainda vão chegar.'},
  {sel:'.hand',title:'🃏 Sua mão',body:'<b>Toque</b> numa carta pra montar o setup; <b>segure</b> pra abrir a explicação completa dela.'},
+ {sel:'.hand',title:'⚡ Cartas de RISCO (a aposta)',body:'As de borda <b style="color:#f4c95d">âmbar</b> são <b>apostas</b> — não erros. <b>⚡ Alavancagem</b> DOBRA o resultado: pra cima se você leu <b>certo</b>, pra baixo se errou. <b style="color:#ff7a2e">⚠ FOMO</b> mostra muitos <b>+chips</b> (isca!) mas é entrar cedo demais. O perigo só aparece <b>DEPOIS</b> de operar — arrisque <b>o que o GAB manda</b>: só com leitura limpa.'},
  {sel:'#op',title:'▶ Operar',body:'Com o setup pronto, dispara o trade — as cartas pontuam em sequência e os pips estouram.'},
  {sel:'#dc',title:'♻️ Descartar — sua chance de virar o jogo',body:'Troca cartas que não servem por <b>NOVAS</b> (igual ao pôquer). É como você <b>conserta uma mão ruim</b>: jogue fora o <b>Pavio</b> ou cartas na <b>direção errada</b> e puxe melhores. É <b>limitado</b> (3) — parte da estratégia.'},
  {sel:'.statline',title:'📊 Seus recursos',body:'<b>PIPS</b> já feitos, e quantas <b>MÃOS</b> e <b>DESCARTES</b> ainda restam.'}
