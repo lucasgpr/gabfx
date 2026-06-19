@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b1';
+window.__BUILD='b2';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -229,7 +229,7 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 .card,.shine{border-radius:13px}
 .card .top{padding:4px 7px}
 .card .nm{font-size:12px}
-.card .rr{font-size:7.5px;padding:1.5px 5px}
+.card .rr{font-size:6.5px;padding:1px 4px;max-width:46%}
 .card .art{height:60px}
 .card.joker .art{height:50px}
 .card .desc{padding:5px 7px 6px;min-height:43px}
@@ -360,7 +360,7 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
   .card.joker{width:128px}
   .card .nm{font-size:12px}
   .card .top{min-height:36px}
-  .card .rr{font-size:7.5px;padding:2px 5px}
+  .card .rr{font-size:7px;padding:1.5px 5px}
   .card .art{height:78px}
   .card.joker .art{height:62px}
   .card .desc{padding:6px 9px 8px;min-height:50px}
@@ -676,6 +676,14 @@ function closeSheet(){$('#over').classList.remove('show');blip(360);}
    =================================================================== */
 function rrLabel(rr){return ({comum:'COMUM',incomum:'INCOMUM',coringa:'CORINGA',risco:'RISCO',lendaria:'LENDÁRIA'})[rr]||rr.toUpperCase();}
 function rrColor(rr){return ({comum:'#9aa6a0',incomum:'var(--blue)',coringa:'var(--purple)',risco:'#caa23a',lendaria:'linear-gradient(90deg,#ff5cf0,#5ce0ff,#ffe45c)'})[rr];}
+/* o que cada RARIDADE significa + a vantagem (mostrado no painel "eu não sei nada") */
+const RAR_INFO={
+  comum:'O <b>tijolo</b> do gráfico. Confirma a jogada, mas vale <b>poucos chips</b> sozinha — a força de verdade vem da ZONA. São as cartas que você mais tem.',
+  incomum:'<b>Mais forte.</b> As <b>zonas</b> (suporte/resistência) são o <b>coração do setup</b>: valem <b>+45 chips</b>, contra +12 de uma vela comum. É onde você de fato opera — por isso valem mais.',
+  risco:'<b>Alto risco.</b> Pode ser <b>armadilha</b> (o Pavio pontua 0) ou aposta agressiva. O jogo sempre <b>te alerta</b> ⚠ — o risco existe no método do GAB, mas você precisa enxergar.',
+  coringa:'<b>Coringa (JOKER).</b> Não pontua sozinho: <b>MULTIPLICA</b> a jogada inteira (×). Raros e <b>devastadores</b> quando casam com a zona certa. Você os <b>conquista</b> jogando.',
+  lendaria:'<b>A mais rara e poderosa.</b> Confluências que fazem o placar <b>EXPLODIR</b> (ex.: Multi-Timeframe). Destravadas avançando nos atos.'
+};
 function cardDetail(c){
   blip(560);vibrate(8);
   const chipBits=[];
@@ -693,6 +701,7 @@ function cardDetail(c){
          <span class="rrtag" style="background:${rrColor(c.rr)};color:${c.rr==='incomum'||c.rr==='coringa'?'#fff':'#1c1f18'}">${rrLabel(c.rr)}</span>
          <div class="chipline">${chipBits.join('')}</div></div>
      </div>
+     <div class="sect"><h4>⭐ Raridade: ${rrLabel(c.rr)}</h4><p>${RAR_INFO[c.rr]||'—'}</p></div>
      <div class="sect"><h4>📘 O que é</h4><p>${linkify(c.oque)}</p></div>
      <div class="sect game"><h4>🎮 No jogo</h4><p>${linkify(c.jogo||'—')}</p></div>
      <div class="sect method"><h4>📈 No método do GAB</h4><p>${linkify(c.metodo)}</p></div>
