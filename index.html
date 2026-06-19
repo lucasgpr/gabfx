@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b17';
+window.__BUILD='b18';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -1184,7 +1184,8 @@ function runAto0(){
   let linhaPreco=null;       // rascunho: preço da linha colocada, AINDA não confirmada (null = sem linha)
   let draggingLine=false;    // arrastando a linha pra ajuste fino
   let setupAnimado=false;    // a animação de entrada da MÃO ATUAL já rodou? (reseta por mão)
-  let animando=false;        // gráfico se formando: trava marcação (probe respeita busy/animando)
+  let animando=false;        // gráfico se formando: trava SÓ a marcação (cartas continuam livres)
+  let animTimer=null, animCb=null, animRot=true;   // controle da animação do setup (skipável)
   const clampP=v=>Math.max(PR.min,Math.min(PR.max,v));
   let jokers=['close','roadblock'];          // 2 selos-coringa do Ato 0
   let fichas=0, rerollPreco=2, ofertas=[];   // economia intra-run (zera a cada run) [LICENÇA: loja Balatro]
@@ -1279,24 +1280,25 @@ function runAto0(){
     })(t0);
   }
 
-  /* ---------- GRÁFICO ANIMADO: as velas surgem (leitura do movimento, não a resposta) ---------- */
+  /* ---------- GRÁFICO ANIMADO: as velas surgem (leitura do movimento, não a resposta).
+     NÃO trava as cartas (só a marcação, via 'animando'). Qualquer ação a pula (finalizarSetup). ---------- */
   function animarSetup(cb,opts){
-    opts=opts||{}; const rotulo=opts.rotulo!==false;
+    opts=opts||{}; animRot=opts.rotulo!==false; animCb=cb||null;
     const cv=$('#bd'); if(!cv){ setupAnimado=true; if(cb)cb(); return; }
-    const wasBusy=busy; busy=true; animando=true;
-    let n=0; const PACE=185;
-    drawTrade(SETUP,0); if(rotulo) tendLabel(0);
-    const finalizar=()=>{ animando=false; busy=wasBusy; setupAnimado=true; drawTrade(); if(rotulo) tendLabel(SETUP.length); if(cb) cb(); };
-    const tm=setInterval(()=>{
-      n++; drawTrade(SETUP,n); if(rotulo) tendLabel(n);
+    animando=true; let n=0; const PACE=170;
+    drawTrade(SETUP,0); if(animRot) tendLabel(0);
+    if(animTimer)clearInterval(animTimer);
+    animTimer=setInterval(()=>{
+      n++; drawTrade(SETUP,n); if(animRot) tendLabel(n);
       blip(300+n*22); vibrate(4);
-      if(n>=SETUP.length){ clearInterval(tm); finalizar(); }
+      if(n>=SETUP.length){ finalizarSetup(); }
     },PACE);
-    // SKIP: tocar durante a formação adianta (leigo impaciente)
-    cv.addEventListener('pointerdown',function skip(){
-      if(!animando) return;
-      clearInterval(tm); cv.removeEventListener('pointerdown',skip); finalizar();
-    },{once:true});
+  }
+  function finalizarSetup(){   // encerra/pula a animação do setup
+    if(animTimer){ clearInterval(animTimer); animTimer=null; }
+    if(!animando){ return; }
+    animando=false; setupAnimado=true; drawTrade(); if(animRot) tendLabel(SETUP.length);
+    const cb=animCb; animCb=null; if(cb) cb();
   }
   /* rótulo de TENDÊNCIA (passado, leitura) — nunca diz COMPRE/VENDA */
   function tendLabel(n){
@@ -1385,8 +1387,9 @@ function runAto0(){
       animarSetup(()=>{ say(zoneMarked
         ? '✓ Revisto. Sua zona marcada continua valendo — monte o setup e opere.'
         : `🎯 Revisto. Marque ${CEN.tipo==='suporte'?'o suporte':'a resistência'} na faixa colorida (toque no gráfico).`); }); };
-    // 1ª vez na mão → forma o gráfico, DEPOIS libera marcar. Re-render no meio da mão → não reanima.
-    if(setupAnimado || zoneMarked || animando){
+    // Anima SÓ na 1ª mão da run (mostra a tendência do cenário). Mãos 2+ desenham estático
+    // (o "▶ Rever o gráfico" replica quando quiser). Re-render no meio da mão → não reanima.
+    if(setupAnimado || zoneMarked || animando || !firstHand){
       drawTrade();
       say(zoneMarked
         ? 'Monte o setup (zona + confirmação na mesma direção) e opere. Use o <b>Corpo</b> pra valorizar a zona; evite o <b>Pavio</b>.'
@@ -1401,6 +1404,12 @@ function runAto0(){
     if($('#deckb'))$('#deckb').textContent=drawPile.length;
   }
   function say(t){const s=$('#sayt');if(s){s.innerHTML=linkify(t);bindGloss(s);}}
+  function rolarPraCima(){ // mobile: sobe pro jogador ver o gráfico + os pips contando (.view é quem rola)
+    try{
+      const v=document.querySelector('.view');
+      if(v){ if(v.scrollTo)v.scrollTo({top:0,behavior:'smooth'}); else v.scrollTop=0; }
+    }catch(e){}
+  }
 
   /* ---------- MARCAÇÃO estilo MetaTrader: TOCA pra colocar linha → ajusta → CONFIRMA ---------- */
   function bindCanvasProbe(){
@@ -1417,7 +1426,8 @@ function runAto0(){
           `Toque onde <b>os corpos pararam de ${CEN.textos.pararamDe}</b>. A linha fica fixa — toque de novo pra mover, ou arraste a bolinha pra ajustar. Quando estiver certo, aperte <b>✓ Confirmar zona</b>. (O jogo só diz se acertou ao confirmar.)`);}
     }
     cv.addEventListener('pointerdown',e=>{
-      if(busy||animando||zoneMarked) return;        // skip da animação é tratado DENTRO de animarSetup
+      if(animando){ finalizarSetup(); return; }      // tocou durante a formação → pula a animação
+      if(busy||zoneMarked) return;
       const {y}=toLocal(e);
       if(linhaPreco!=null && Math.abs(y-pY(linhaPreco,B,PR))<=HIT){ draggingLine=true; }
       else placeOrMove(e);
@@ -1481,6 +1491,7 @@ function runAto0(){
   /* ---------- descartar (com swipe + whoosh) ---------- */
   function descartar(){
     if(busy||blind.desc<=0)return;
+    if(animando){ finalizarSetup(); return; }   // tocou Descartar durante a formação → só revela o gráfico
     if(!sel.size){buzz();say('Selecione as cartas que quer descartar (toque nelas) — o Descartar troca por novas.');return;}
     const trapOut=[...sel].some(i=>DECK[hand[i]].trap);
     busy=true;blind.desc--;whoosh();vibrate(14);
@@ -1526,7 +1537,9 @@ function runAto0(){
 
   /* ---------- OPERAR: validações que ENSINAM (nunca cobra o não-ensinado) ---------- */
   function operar(){
-    if(busy)return;const k=calc();
+    if(busy)return;
+    if(animando){ finalizarSetup(); return; }   // tocou OPERAR durante a formação → só revela o gráfico
+    const k=calc();
     if(!sel.size){buzz();say('Selecione cartas pra montar o setup primeiro.');return;}
     if(!zoneMarked && linhaPreco!=null){ confirmarZona(); }   // colocou linha e esqueceu de confirmar → valida agora
     const blind_entry=!zoneMarked;                 // apertou OPERAR sem ler/marcar a zona = entrar no escuro
@@ -1546,6 +1559,7 @@ function runAto0(){
     }
     // operação válida (mesmo sem marcar: aí entra NO ESCURO e quase certo perde — explica só depois)
     busy=true;firstHand=false;blind.maos--;
+    rolarPraCima();   // sobe sozinho pro jogador ver o gráfico + os pips contando (mobile)
     $('#op').disabled=true;$('#dc').disabled=true;
     if($('#maosb'))$('#maosb').textContent=blind.maos;
     const buy=k.dir==='buy';
