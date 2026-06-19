@@ -1,0 +1,1328 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#274f3c">
+<title>GABFX — O Pregão · Ato 0</title>
+<style>
+/* ============================================================
+   GABFX — Ato 0 (Módulos 1–6): leitura crua do zero.
+   Single-file, JS vanilla, <canvas>, mobile-first (retrato), feltro Balatro.
+   Fonte da verdade: Metodo_GABFX_COMPLETO.md + ESTRUTURA_JOGO.md.
+   [LICENÇA DE DESIGN] = número/regra inventada pro jogo (não é o que o GAB ensina).
+   [GAB] = fiel ao método.
+   ============================================================ */
+:root{
+  --felt:#35684e; --felt2:#244a38; --felt3:#1c3a2c;
+  --panel:#33372e; --panel2:#42463c; --panelHi:#4d5247;
+  --ink:#1b1e17; --cream:#fbf2dd; --line:#14160f;
+  --blue:#3ea0e0; --blue2:#1c6fb0; --red:#fe5f55; --red2:#b8312a;
+  --gold:#f4c95d; --gold2:#c79320; --green:#37d07a; --green2:#1d8a4e;
+  --purple:#a06bd6; --purpleD:#6f3fa3; --chip:#2f9be0; --mult:#fe5f55;
+  --txt:#eef3ec; --mut:#9fb3a6; --warn:#e8b53d;
+  --safe-top:env(safe-area-inset-top,0px);
+}
+*{box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;font-family:'Trebuchet MS',Verdana,system-ui,sans-serif;overscroll-behavior:none}
+body{
+  background:radial-gradient(135% 100% at 50% 0%,#3f7a5b 0%,var(--felt) 38%,var(--felt2) 78%,var(--felt3) 100%);
+  color:var(--txt);overflow:hidden;position:fixed;inset:0;touch-action:manipulation}
+/* feltro vivo */
+body::before{content:"";position:fixed;inset:-15%;z-index:0;opacity:.45;mix-blend-mode:soft-light;pointer-events:none;
+  background:radial-gradient(38% 28% at 18% 26%,rgba(255,255,255,.10),transparent 60%),
+            radial-gradient(48% 38% at 82% 72%,rgba(0,0,0,.20),transparent 60%),
+            radial-gradient(32% 24% at 62% 16%,rgba(255,255,255,.07),transparent 60%);
+  animation:drift 16s ease-in-out infinite alternate}
+@keyframes drift{from{transform:translate3d(-2%,-1%,0) scale(1.03)}to{transform:translate3d(2%,2%,0) scale(1.07)}}
+
+#shake{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
+
+/* ---------- HUD topo ---------- */
+.hud{display:flex;gap:7px;align-items:center;padding:calc(7px + var(--safe-top)) 11px 7px;flex-shrink:0}
+.hud .logo{font-weight:800;font-size:16px;letter-spacing:.4px}
+.hud .logo span{color:var(--gold)}
+.hud .logo small{display:block;font-size:9px;color:var(--mut);font-weight:600;letter-spacing:2px;margin-top:-2px}
+.hud .sp{flex:1}
+.pill{font-size:11px;color:var(--mut);background:var(--panel);border:2px solid var(--line);border-radius:9px;padding:3px 8px;box-shadow:0 2px 0 var(--line);display:flex;align-items:center;gap:4px}
+.pill b{color:var(--txt);font-size:13px}
+.iconbtn{background:var(--panel2);border:2px solid var(--line);border-radius:9px;cursor:pointer;font-size:15px;padding:4px 9px;color:var(--txt);box-shadow:0 2px 0 var(--line)}
+.iconbtn:active{transform:translateY(2px);box-shadow:0 0 0 var(--line)}
+
+/* ---------- contêiner de telas ---------- */
+#screen{flex:1;min-height:0;position:relative;overflow:hidden}
+.view{position:absolute;inset:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;padding:0 10px 14px;-webkit-overflow-scrolling:touch}
+
+/* ---------- onboarding / painéis de aula ---------- */
+.card-lesson{background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 4px 0 var(--line);margin:14px auto 0;max-width:520px;width:100%}
+.lesson-head{display:flex;gap:13px;align-items:center}
+.lesson-head .tag{color:var(--mut);font-size:11px;letter-spacing:1px;text-transform:uppercase}
+.lesson-head h2{margin:1px 0 0;font-size:21px;line-height:1.1}
+.lesson-body{color:#dde7df;line-height:1.55;font-size:14.5px;margin-top:12px}
+.lesson-body b{color:#fff}
+.kw{color:var(--gold);font-weight:800;cursor:pointer;border-bottom:1px dotted var(--gold)}
+.up{color:var(--green);font-weight:800}.down{color:var(--red);font-weight:800}
+.gab-note{display:flex;gap:8px;background:rgba(160,107,214,.13);border:1px solid rgba(160,107,214,.5);border-radius:11px;padding:9px 11px;font-size:12.5px;color:#e9def8;margin-top:12px;line-height:1.45}
+.gab-note .ava{font-size:18px;flex-shrink:0}
+.alert{display:flex;gap:8px;background:rgba(232,181,61,.10);border:1px solid rgba(232,181,61,.6);border-radius:11px;padding:9px 11px;font-size:12.5px;color:#ffe6a0;margin-top:10px;line-height:1.45}
+.license{display:flex;gap:8px;background:rgba(62,160,224,.08);border:1px dashed rgba(62,160,224,.5);border-radius:10px;padding:7px 10px;font-size:11.5px;color:#bfe0f5;margin-top:8px;line-height:1.4}
+
+.btn{border:2px solid var(--line);border-radius:12px;font-weight:800;font-size:15.5px;padding:13px;cursor:pointer;box-shadow:0 4px 0 var(--line);color:#fff;width:100%;margin-top:13px;font-family:inherit}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+.btn:disabled{opacity:.45}
+.btn.primary{background:var(--blue);box-shadow:0 4px 0 var(--blue2)}
+.btn.primary:active{box-shadow:0 1px 0 var(--blue2)}
+.btn.go{background:var(--green);color:#06311a;box-shadow:0 4px 0 var(--green2)}
+.btn.go:active{box-shadow:0 1px 0 var(--green2)}
+.btn.ghost{background:var(--panel2)}
+.btn.sm{padding:9px 14px;width:auto;font-size:13.5px;margin:0}
+
+.dots{display:flex;gap:6px;justify-content:center;margin-top:14px}
+.dot{width:8px;height:8px;border-radius:50%;background:#ffffff30}
+.dot.on{background:var(--gold);width:18px;border-radius:5px}
+
+/* ---------- A MESA ---------- */
+.mesa{display:flex;flex-direction:column;gap:7px;max-width:560px;width:100%;margin:0 auto}
+.blind{display:flex;gap:10px;align-items:center;background:linear-gradient(180deg,#5e3c3c,#4a2f2f);border:2px solid var(--line);border-radius:13px;padding:8px 11px;box-shadow:0 3px 0 var(--line);margin-top:8px}
+.blind .seal{width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 36% 30%,#e88,#7c2b2b);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0;overflow:hidden;animation:bob 3s ease-in-out infinite}
+.blind .seal svg{width:100%;height:100%;display:block;border-radius:50%}
+@keyframes bob{50%{transform:translateY(-3px)}}
+.blind .bt b{font-size:14px}.blind .bt small{display:block;color:#ffd9d9;font-size:10.5px;line-height:1.25}
+.blind .goal{margin-left:auto;text-align:center;flex-shrink:0}
+.blind .goal .n{color:var(--gold);font-size:19px;font-weight:800;text-shadow:0 2px 0 #0006;white-space:nowrap}
+.blind .goal small{color:#ffeaea;font-size:9.5px;display:block}
+
+.statline{display:flex;gap:6px}
+.statline .b{flex:1;background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:5px 4px;text-align:center;box-shadow:0 2px 0 var(--line)}
+.statline small{display:block;color:var(--mut);font-size:9.5px;letter-spacing:.5px}
+.statline b{font-size:15px}
+.statline .pips b{color:var(--gold)}
+
+/* fórmula CHIPS × MULT */
+.formula{display:flex;align-items:stretch;justify-content:center;margin:1px 0}
+.chips,.mult{font-size:21px;font-weight:800;padding:6px 0;border:2px solid var(--line);box-shadow:0 3px 0 var(--line);flex:1;text-align:center;transition:transform .12s}
+.chips{background:linear-gradient(180deg,var(--chip),var(--blue2));border-radius:11px 0 0 11px;color:#fff}
+.mult{background:linear-gradient(180deg,var(--mult),var(--red2));border-radius:0 11px 11px 0;color:#fff}
+.fx{font-size:18px;font-weight:800;padding:0 8px;display:flex;align-items:center;color:var(--txt)}
+.bump{transform:scale(1.16)}
+
+/* gráfico ao vivo */
+.felt{background:rgba(0,0,0,.22);border:2px solid var(--line);border-radius:12px;padding:7px;box-shadow:inset 0 2px 16px #0007;position:relative}
+canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radius:8px;border:1px solid var(--line);display:block;touch-action:none}
+.tf-badge{position:absolute;top:13px;right:14px;background:#0008;border:1px solid #ffffff22;border-radius:7px;font-size:10px;color:#bfe0cf;padding:2px 7px;letter-spacing:1px}
+
+/* mentor */
+.say{display:flex;gap:9px;align-items:flex-start;background:rgba(160,107,214,.13);border:1px solid rgba(160,107,214,.45);border-radius:11px;padding:9px 11px;font-size:13px;color:#ece4ff;line-height:1.4;min-height:42px}
+.say .ava{font-size:21px;flex-shrink:0}
+.say b{color:#fff}
+
+/* fila de coringas */
+.lane-label{font-size:9.5px;color:var(--mut);text-transform:uppercase;letter-spacing:1.5px;margin:3px 0 -1px 5px;display:flex;justify-content:space-between;align-items:center}
+.lane-label .cnt{color:#cfe6da;letter-spacing:0}
+.jokers{display:flex;gap:7px;justify-content:center;align-items:center;min-height:74px;flex-wrap:wrap}
+.joker-empty{width:62px;height:84px;border:2px dashed #ffffff22;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#ffffff22;font-size:24px}
+
+/* mão */
+.hand{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;min-height:138px;align-items:flex-end;padding-top:14px}
+
+.actions{display:flex;gap:7px;margin-top:5px}
+.actions .btn{margin:0}
+.btn.op{background:var(--green);color:#06311a;box-shadow:0 4px 0 var(--green2)}
+.btn.op:active{box-shadow:0 1px 0 var(--green2)}
+.btn.disc{background:var(--panel2);max-width:42%}
+
+.note{text-align:center;color:var(--mut);font-size:10px;margin-top:11px;line-height:1.5;max-width:480px;margin-left:auto;margin-right:auto;padding-bottom:6px}
+.note b{color:var(--warn)}
+
+/* ============ CARTAS ============ */
+.card{position:relative;border-radius:12px;cursor:pointer;flex-shrink:0;transform-style:preserve-3d;
+  transition:transform .2s cubic-bezier(.2,1.3,.4,1),opacity .25s;will-change:transform}
+.card.hcard{width:92px}
+.card.joker{width:74px}
+.card .inner{border-radius:12px;overflow:hidden;border:2px solid var(--line);background:linear-gradient(180deg,#fffaf0,var(--cream));box-shadow:0 6px 12px #0007;position:relative}
+.card .top{display:flex;justify-content:space-between;align-items:center;padding:3px 6px;background:var(--ink);color:#fff;gap:4px}
+.card .nm{font-size:10.5px;font-weight:800;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .rr{font-size:6.5px;padding:1px 4px;border-radius:10px;font-weight:800;flex-shrink:0;letter-spacing:.3px}
+.rr.comum{background:#9aa6a0;color:#1c1f18}
+.rr.incomum{background:var(--blue);color:#fff}
+.rr.coringa{background:var(--purple);color:#fff}
+.rr.risco{background:#caa23a;color:#1c1f18}
+.rr.lendaria{background:linear-gradient(90deg,#ff5cf0,#5ce0ff,#ffe45c);color:#1c1f18}
+/* selos de raridade ANIMADOS — brilho/pulso (incomum/risco) + varredura (coringa/lendária) */
+@keyframes rrGlow{0%,100%{box-shadow:0 0 0 0 rgba(0,0,0,0)}50%{box-shadow:0 0 8px 1px var(--rrg)}}
+@keyframes rrShine{0%,55%{transform:translateX(-130%)}100%{transform:translateX(130%)}}
+.rr.incomum{--rrg:#3ea0e0cc;animation:rrGlow 2.4s ease-in-out infinite}
+.rr.risco{--rrg:#e0a93acc;animation:rrGlow 1.7s ease-in-out infinite}
+.rr.coringa{--rrg:#a06bd6dd;animation:rrGlow 2.1s ease-in-out infinite;position:relative;overflow:hidden}
+.rr.lendaria{position:relative;overflow:hidden}
+.rr.coringa::after,.rr.lendaria::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.7) 50%,transparent 65%);transform:translateX(-130%);animation:rrShine 2.6s ease-in-out infinite;pointer-events:none}
+@media(prefers-reduced-motion:reduce){.rr{animation:none!important}.rr::after{animation:none!important;display:none}}
+.card .art{height:50px;display:block;width:100%;background:#0b1320}
+.card.joker .art{height:42px}
+.card .desc{padding:4px 6px 5px;color:var(--ink);min-height:38px}
+.card .desc .v{font-size:13px;font-weight:800;display:block}
+.card .desc .vc{color:#155a96}.card .desc .vm{color:#a01c1c}.card .desc .vz{color:#155a96}
+.card .desc small{display:block;color:#5f5743;font-size:8.8px;line-height:1.18;margin-top:1px}
+.card .fam{position:absolute;top:3px;left:6px;font-size:7px;color:#ffffff66;letter-spacing:1px;text-transform:uppercase;z-index:3}
+
+/* foil que segue o dedo */
+.shine{position:absolute;inset:0;border-radius:12px;pointer-events:none;
+  background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.55),transparent 44%);
+  mix-blend-mode:overlay;opacity:0;transition:opacity .2s}
+.card:active .shine,.card.lifted .shine{opacity:1}
+/* holográfico das raras/coringas */
+/* foil holográfico SÓ NA BORDA: anel conic mascarado (border-box xor padding-box) */
+.holo{
+  position:absolute; inset:-1px;        /* abraça a borda de raridade do .inner (borda dupla) */
+  border-radius:14px;                   /* = radius do .inner (13px) + 1px do inset */
+  pointer-events:none; opacity:0; z-index:1;
+  border:4px solid transparent;         /* espessura do anel holográfico */
+  background:conic-gradient(from 0deg,
+      #ff4dd8,#54e0ff,#fff27a,#5cff9e,#7aa8ff,#b15bff,#ff4dd8);
+  -webkit-mask:
+      linear-gradient(#000 0 0) padding-box,
+      linear-gradient(#000 0 0) border-box;
+          mask:
+      linear-gradient(#000 0 0) padding-box,
+      linear-gradient(#000 0 0) border-box;
+  -webkit-mask-composite:xor;           /* Safari / iOS PWA */
+          mask-composite:exclude;       /* spec */
+  transition:opacity .2s ease;
+}
+/* ANIMAÇÃO que REPINTA de verdade: hue-rotate cicla as cores do anel.
+   (animar o ÂNGULO do conic via @property NÃO repinta sob mask no Chrome → parecia estático.
+    o filtro hue-rotate é aplicado pós-render, então força repaint mesmo com mask.) */
+@keyframes holoCycle{
+  0%  {filter:hue-rotate(0deg)   saturate(1.4) brightness(1.08) drop-shadow(0 0 5px #ffffff44)}
+  100%{filter:hue-rotate(360deg) saturate(1.4) brightness(1.08) drop-shadow(0 0 5px #ffffff44)}
+}
+.card.foil .holo{opacity:.85; animation:holoCycle 3.5s linear infinite}
+.card.foil.lifted .holo,
+.card.foil:active .holo{opacity:1; animation-duration:1.5s}
+@media(prefers-reduced-motion:reduce){.card.foil .holo{animation:none;filter:saturate(1.3) brightness(1.06)}}
+/* BRILHO rápido varrendo a carta INTEIRA (glare branco, além do anel) */
+.card.foil .inner::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;
+  background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.55) 50%,transparent 58%);
+  transform:translateX(-135%);animation:cardShine 5s ease-in-out infinite}
+@keyframes cardShine{0%,80%{transform:translateX(-135%)}100%{transform:translateX(135%)}}
+@media(prefers-reduced-motion:reduce){.card.foil .inner::after{display:none}}
+/* moldura por raridade */
+.card.incomum .inner{box-shadow:0 0 0 1px var(--blue) inset,0 6px 12px #0007}
+.card.coringa .inner{box-shadow:0 0 0 1px var(--purple) inset,0 0 11px #a06bd680,0 6px 12px #0007}
+.card.risco .inner{box-shadow:0 0 0 1px #caa23a inset,0 0 11px #caa23a88,0 6px 12px #0007}
+.card.lendaria .inner{box-shadow:0 0 0 1px #ffd86b inset,0 0 16px #ffd86b99,0 6px 12px #0007}
+.card.sel{transform:translateY(-15px) scale(1.03)!important}
+.card.sel .inner{box-shadow:0 0 0 3px var(--gold),0 0 18px var(--gold)80,0 8px 14px #0007}
+.card.trap-revealed .inner{box-shadow:0 0 0 3px var(--red),0 0 16px var(--red)!important}
+.card .warn{position:absolute;top:-7px;right:-7px;background:#caa23a;color:#1c1f18;font-size:11px;border-radius:50%;width:21px;height:21px;display:flex;align-items:center;justify-content:center;border:2px solid var(--line);z-index:4}
+.card .infodot{position:absolute;bottom:3px;right:5px;font-size:10px;color:#9b8f6e;z-index:3}
+/* ===== cartas MAIORES (base mobile-first; sobrepõe os tamanhos acima) ===== */
+.card.hcard{width:120px}
+.card.joker{width:102px}
+.card .inner{border-radius:13px}
+.card,.shine{border-radius:13px}
+.card .top{padding:4px 7px}
+.card .nm{font-size:12px}
+.card .rr{font-size:7.5px;padding:1.5px 5px}
+.card .art{height:60px}
+.card.joker .art{height:50px}
+.card .desc{padding:5px 7px 6px;min-height:43px}
+.card .desc .v{font-size:14.5px}
+.card .desc small{font-size:9.5px;line-height:1.2}
+.card .fam{font-size:7.5px;top:4px;left:7px}
+.card .infodot{font-size:11px}
+.hand{min-height:160px;gap:7px;padding-top:15px}
+.jokers{min-height:90px;gap:8px}
+.joker-empty{width:76px;height:102px;font-size:27px;border-radius:13px}
+
+/* flutuante de pontuação */
+.pop{position:fixed;z-index:60;font-weight:800;font-size:22px;text-shadow:0 2px 5px #000a,0 0 2px #000;pointer-events:none;animation:fly 1.05s cubic-bezier(.2,.7,.3,1) forwards;white-space:nowrap}
+@keyframes fly{0%{opacity:0;transform:translateY(4px) scale(.6)}14%{opacity:1;transform:translateY(-6px) scale(1.12)}100%{opacity:0;transform:translateY(-82px) scale(1.05)}}
+.spark{position:fixed;z-index:59;pointer-events:none;border-radius:50%;animation:sp .6s ease-out forwards}
+@keyframes sp{0%{opacity:1;transform:scale(.4)}100%{opacity:0;transform:scale(1.8)}}
+
+@keyframes sh{10%,90%{transform:translate(-1px,0)}30%,70%{transform:translate(2px,-2px)}50%{transform:translate(-2px,2px)}}
+.shaking{animation:sh .3s}
+.shaking.hard{animation:sh .42s}
+
+/* overlay genérico (resultado, painel da carta, dicionário) */
+.over{position:fixed;inset:0;z-index:80;display:none;align-items:flex-start;justify-content:center;background:rgba(3,6,11,.84);padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.over.show{display:flex}
+.sheet{background:var(--panel);border:3px solid var(--line);border-radius:18px;padding:0;box-shadow:0 10px 0 var(--line);max-width:460px;width:100%;margin:auto;overflow:hidden}
+.sheet-head{display:flex;align-items:center;gap:10px;padding:13px 15px;background:var(--panel2);border-bottom:2px solid var(--line)}
+.sheet-head h3{margin:0;font-size:17px;flex:1}
+.sheet-head .x{background:var(--panel);border:2px solid var(--line);border-radius:9px;color:#fff;font-size:15px;width:34px;height:34px;cursor:pointer;box-shadow:0 2px 0 var(--line);flex-shrink:0}
+.sheet-body{padding:15px}
+
+/* painel da carta (eu não sei nada) */
+.detail-card{display:flex;gap:12px;align-items:flex-start;margin-bottom:6px}
+.detail-card .mini{width:88px;flex-shrink:0}
+.detail-card .meta .nm{font-size:18px;font-weight:800}
+.detail-card .meta .rrtag{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:800;display:inline-block;margin-top:4px}
+.sect{margin-top:13px}
+.sect h4{margin:0 0 3px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:6px}
+.sect p{margin:0;font-size:13.5px;line-height:1.5;color:#dde7df}
+.sect.game h4{color:var(--blue)}
+.sect.method h4{color:var(--green)}
+.sect.example h4{color:var(--purple)}
+.sect.example p{background:#00000028;border-left:3px solid var(--purple);border-radius:6px;padding:7px 10px;font-style:italic}
+.chipline{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap}
+.chipline .ck{font-size:12px;font-weight:800;padding:4px 9px;border-radius:8px;border:2px solid var(--line);box-shadow:0 2px 0 var(--line)}
+.ck.c{background:var(--chip)}.ck.m{background:var(--mult)}.ck.z{background:var(--green);color:#06311a}.ck.t{background:#caa23a;color:#1c1f18}
+
+/* dicionário */
+.dic-row{padding:9px 2px;border-bottom:1px solid #ffffff14}
+.dic-row b{color:var(--blue);font-size:14px}
+.dic-row p{margin:2px 0 0;color:#cdd9cf;font-size:12.5px;line-height:1.45}
+
+/* tooltip-conceito (ao disparar carta) */
+.concept-toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(40px);z-index:70;
+  background:var(--panel);border:2px solid var(--gold);border-radius:13px;padding:10px 14px;max-width:330px;width:calc(100% - 32px);
+  box-shadow:0 6px 18px #000a;opacity:0;transition:transform .35s cubic-bezier(.2,1.3,.4,1),opacity .35s;pointer-events:none}
+.concept-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.concept-toast .ct-head{display:flex;align-items:center;gap:7px;font-weight:800;font-size:13px;color:var(--gold)}
+.concept-toast .ct-body{font-size:12.5px;color:#dde7df;line-height:1.4;margin-top:3px}
+
+/* resultado */
+.result-icon{font-size:46px;text-align:center;line-height:1}
+.result h2{text-align:center;margin:8px 0 4px;font-size:25px}
+.result .pipbig{text-align:center;font-size:38px;font-weight:800;color:var(--gold);text-shadow:0 3px 0 #0006}
+.result p{font-size:14px;line-height:1.5;color:#dde7df;text-align:center}
+.result .why{background:#00000026;border-left:3px solid var(--green);border-radius:8px;padding:10px 12px;text-align:left;margin-top:12px;font-size:13.5px;line-height:1.5}
+.result .why.bad{border-color:var(--red)}
+.unlock{display:flex;gap:9px;align-items:center;background:rgba(244,201,93,.12);border:1px solid rgba(244,201,93,.55);border-radius:11px;padding:9px 11px;margin-top:12px;font-size:13px;color:#ffe6a0}
+
+/* selo de fidelidade no rodapé do painel */
+.fid{font-size:10.5px;color:var(--mut);margin-top:12px;text-align:center;line-height:1.4}
+.fid .gabtag{color:var(--green);font-weight:800}
+.fid .lictag{color:var(--blue);font-weight:800}
+
+@media(min-height:760px){
+  .hand{min-height:176px}
+  .card.hcard{width:132px}
+  .card .art{height:66px}
+  .card.joker .art{height:54px}
+}
+@media(max-width:340px){
+  .card.hcard{width:92px}
+  .card.joker{width:76px}
+  .card .art{height:52px}
+  .card.joker .art{height:44px}
+  .card .desc .v{font-size:13.5px}
+  .hand{min-height:146px}
+  .jokers{min-height:82px}
+  .joker-empty{width:66px;height:90px}
+}
+/* ===== nomes sem cortar (até 2 linhas) + altura UNIFORME das cartas da mão ===== */
+.card .nm{white-space:normal;overflow:hidden;text-overflow:clip;line-height:1.08;overflow-wrap:anywhere;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.card .top{min-height:30px}
+.hand{align-items:stretch}
+.hand .card{display:flex;flex-direction:column}
+.hand .card .inner{flex:1;display:flex;flex-direction:column}
+.hand .card .desc{flex:1}
+/* coringas são mais estreitos: nome/selo menores p/ não cortar "Roadblock (TP)" */
+.card.joker .nm{font-size:9.5px;line-height:1.05;overflow-wrap:anywhere}
+.card.joker .rr{font-size:6.5px;padding:1px 4px}
+
+/* ===== ESCALA DESKTOP (só telas largas → mobile-first <820px intacto) ===== */
+@media(min-width:820px){
+  .view{padding:0 24px 26px}
+  .card-lesson{max-width:900px;padding:38px 48px;border-radius:22px;margin-top:34px}
+  .lesson-head{gap:22px}
+  .lesson-head .tag{font-size:13.5px}
+  .lesson-head h2{font-size:34px;line-height:1.12}
+  .lesson-head>div:first-child{width:132px!important}
+  .lesson-head .card.hcard{width:132px!important}
+  .lesson-body{font-size:20px;line-height:1.75;margin-top:18px}
+  .gab-note{font-size:15px}
+  .gab-note,.alert{font-size:13.5px}
+  .license{font-size:12.5px}
+  .btn{font-size:17px;padding:15px}
+  .mesa{max-width:1040px;gap:12px}
+  .sheet{max-width:560px}
+  .blind{padding:11px 15px}
+  .blind .seal{width:64px;height:64px}
+  .blind .goal .n{font-size:23px}
+  .statline b{font-size:18px}
+  .chips,.mult{font-size:26px;padding:9px 0}
+  .fx{font-size:22px}
+  .say{font-size:15px;padding:12px 14px}
+  .felt{padding:10px}
+  .note{font-size:11.5px;max-width:640px}
+  .card.hcard{width:156px}
+  .card.joker{width:128px}
+  .card .nm{font-size:12px}
+  .card .top{min-height:36px}
+  .card .rr{font-size:7.5px;padding:2px 5px}
+  .card .art{height:78px}
+  .card.joker .art{height:62px}
+  .card .desc{padding:6px 9px 8px;min-height:50px}
+  .card .desc .v{font-size:17px}
+  .card .desc small{font-size:10.8px}
+  .hand{min-height:204px;gap:10px;padding-top:20px}
+  .jokers{min-height:118px;gap:11px}
+  .joker-empty{width:92px;height:124px;font-size:34px}
+}
+/* ===== arte rica das cartas: painel com proporção fixa + SVG preenchendo ===== */
+.card .art{height:auto;aspect-ratio:130/100;overflow:hidden}
+.card .art svg{width:100%;height:100%;display:block}
+</style>
+</head>
+<body>
+<div id="shake">
+  <div class="hud">
+    <div class="logo">GAB<span>FX</span><small>O PREGÃO</small></div>
+    <div class="sp"></div>
+    <span class="pill">⭐<b id="hxp">0</b></span>
+    <span class="pill" id="actpill">Ato <b>0</b></span>
+    <button class="iconbtn" id="dicbtn" title="Dicionário">📖</button>
+  </div>
+  <div id="screen"></div>
+</div>
+
+<!-- overlays -->
+<div class="over" id="over"></div>
+<div class="concept-toast" id="concept"><div class="ct-head"><span id="ct-ic">💡</span><span id="ct-title"></span></div><div class="ct-body" id="ct-body"></div></div>
+
+<script>
+"use strict";
+var BOSS_A_SVG="";var ART_SVG={};
+/*__ART_START__*/
+BOSS_A_SVG="<svg viewBox=\"0 0 120 120\" xmlns=\"http://www.w3.org/2000/svg\" role=\"img\" aria-label=\"Selo do chefe O Grafico Limpo: olho geometrico formado por candlesticks dourados sobre fundo vermelho-escuro\"><defs><radialGradient id=\"boss_bgRed\" cx=\"50%\" cy=\"42%\" r=\"70%\"><stop offset=\"0%\" stop-color=\"#5e3c3c\"/><stop offset=\"62%\" stop-color=\"#4a2f2f\"/><stop offset=\"100%\" stop-color=\"#2e1c1c\"/></radialGradient><radialGradient id=\"boss_discDk\" cx=\"50%\" cy=\"40%\" r=\"68%\"><stop offset=\"0%\" stop-color=\"#142033\"/><stop offset=\"70%\" stop-color=\"#0b1320\"/><stop offset=\"100%\" stop-color=\"#060a13\"/></radialGradient><linearGradient id=\"boss_gold\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0%\" stop-color=\"#f6d27a\"/><stop offset=\"48%\" stop-color=\"#f4c95d\"/><stop offset=\"100%\" stop-color=\"#c79320\"/></linearGradient><linearGradient id=\"boss_goldV\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\"><stop offset=\"0%\" stop-color=\"#c79320\"/><stop offset=\"50%\" stop-color=\"#f4c95d\"/><stop offset=\"100%\" stop-color=\"#a9781a\"/></linearGradient><radialGradient id=\"boss_iris\" cx=\"50%\" cy=\"42%\" r=\"62%\"><stop offset=\"0%\" stop-color=\"#fff3d0\"/><stop offset=\"30%\" stop-color=\"#f4c95d\"/><stop offset=\"78%\" stop-color=\"#c79320\"/><stop offset=\"100%\" stop-color=\"#8a6212\"/></radialGradient><radialGradient id=\"boss_pupil\" cx=\"50%\" cy=\"42%\" r=\"60%\"><stop offset=\"0%\" stop-color=\"#3a4a63\"/><stop offset=\"55%\" stop-color=\"#101a2b\"/><stop offset=\"100%\" stop-color=\"#04070d\"/></radialGradient><linearGradient id=\"boss_rim\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0%\" stop-color=\"#fbe0a0\"/><stop offset=\"50%\" stop-color=\"#d9a634\"/><stop offset=\"100%\" stop-color=\"#8a6212\"/></linearGradient></defs>\n\n<circle cx=\"60\" cy=\"60\" r=\"60\" fill=\"url(#boss_bgRed)\"/>\n\n<g fill=\"none\" stroke=\"url(#boss_rim)\"><circle cx=\"60\" cy=\"60\" r=\"55.5\" stroke-width=\"2.4\" opacity=\"0.95\"/><circle cx=\"60\" cy=\"60\" r=\"51.5\" stroke-width=\"0.8\" opacity=\"0.6\"/></g>\n<circle cx=\"60\" cy=\"60\" r=\"49\" fill=\"url(#boss_discDk)\"/>\n\n<g opacity=\"0.9\">\n<g fill=\"url(#boss_gold)\" stroke=\"#8a6212\" stroke-width=\"0.4\">\n<g transform=\"rotate(-72 60 60)\"><line x1=\"60\" y1=\"9\" x2=\"60\" y2=\"21\" stroke=\"url(#boss_gold)\" stroke-width=\"1\"/><rect x=\"58\" y=\"11.5\" width=\"4\" height=\"9.5\" rx=\"0.6\"/></g>\n<g transform=\"rotate(-54 60 60)\"><line x1=\"60\" y1=\"10\" x2=\"60\" y2=\"22\" stroke=\"url(#boss_gold)\" stroke-width=\"1\"/><rect x=\"58.3\" y=\"12.5\" width=\"3.4\" height=\"8\" rx=\"0.6\"/></g>\n<g transform=\"rotate(-36 60 60)\"><line x1=\"60\" y1=\"8\" x2=\"60\" y2=\"21\" stroke=\"url(#boss_gold)\" stroke-width=\"1\"/><rect x=\"58\" y=\"10.5\" width=\"4\" height=\"10.5\" rx=\"0.6\"/></g>\n<g transform=\"rotate(-18 60 60)\"><line x1=\"60\" y1=\"10\" x2=\"60\" y2=\"22\" stroke=\"url(#boss_gold)\" stroke-width=\"1\"/><rect x=\"58.3\" y=\"12\" width=\"3.4\" height=\"8.5\" rx=\"0.6\"/></g>\n<g transform=\"rotate(0 60 60)\"><line x1=\"60\" y1=\"7\" x2=\"60\" y2=\"21\" stroke=\"url(#boss_gold)\" stroke-width=\"1.1\"/><rect x=\"57.7\" y=\"9.5\" width=\"4.6\" height=\"11.5\" rx=\"0.7\"/></g>\n<g transform=\"rotate(18 60 60)\"><line x1=\"60\" y1=\"10\" x2=\"60\" y2=\"22\" stroke=\"url(#boss_gold)\" stroke-width=\"1\"/><rect x=\"58.3\" y=\"12\" width=\"3.4\" height=\"8.5\" rx=\"0.6\"/></g>\n<g transform=\"rotate(36 60 60)\"><line x1=\"60\" y1=\"8\" x2=\"60\" y2=\"21\" stroke=\"url(#boss_gold)\" stroke-width=\"1\"/><rect x=\"58\" y=\"10.5\" width=\"4\" height=\"10.5\" rx=\"0.6\"/></g>\n<g transform=\"rotate(54 60 60)\"><line x1=\"60\" y1=\"10\" x2=\"60\" y2=\"22\" stroke=\"url(#boss_gold)\" stroke-width=\"1\"/><rect x=\"58.3\" y=\"12.5\" width=\"3.4\" height=\"8\" rx=\"0.6\"/></g>\n<g transform=\"rotate(72 60 60)\"><line x1=\"60\" y1=\"9\" x2=\"60\" y2=\"21\" stroke=\"url(#boss_gold)\" stroke-width=\"1\"/><rect x=\"58\" y=\"11.5\" width=\"4\" height=\"9.5\" rx=\"0.6\"/></g>\n</g>\n</g>\n\n<path d=\"M22 60 Q60 33 98 60 Q60 87 22 60 Z\" fill=\"#0a1018\" stroke=\"url(#boss_goldV)\" stroke-width=\"2.2\"/>\n<path d=\"M22 60 Q60 33 98 60\" fill=\"none\" stroke=\"#fbe0a0\" stroke-width=\"0.7\" opacity=\"0.55\"/>\n\n<circle cx=\"60\" cy=\"60\" r=\"16.5\" fill=\"url(#boss_iris)\" stroke=\"#8a6212\" stroke-width=\"0.6\"/>\n\n<g stroke=\"#9a7016\" stroke-width=\"0.5\" opacity=\"0.7\">\n<line x1=\"60\" y1=\"44.5\" x2=\"60\" y2=\"48.5\"/><line x1=\"60\" y1=\"71.5\" x2=\"60\" y2=\"75.5\"/>\n<line x1=\"44.5\" y1=\"60\" x2=\"48.5\" y2=\"60\"/><line x1=\"71.5\" y1=\"60\" x2=\"75.5\" y2=\"60\"/>\n<line x1=\"49.5\" y1=\"49.5\" x2=\"52\" y2=\"52\"/><line x1=\"68\" y1=\"68\" x2=\"70.5\" y2=\"70.5\"/>\n<line x1=\"70.5\" y1=\"49.5\" x2=\"68\" y2=\"52\"/><line x1=\"52\" y1=\"68\" x2=\"49.5\" y2=\"70.5\"/>\n</g>\n\n<circle cx=\"60\" cy=\"60\" r=\"10\" fill=\"url(#boss_pupil)\" stroke=\"#6e5210\" stroke-width=\"0.5\"/>\n\n<g fill=\"#f4c95d\" stroke=\"#8a6212\" stroke-width=\"0.3\">\n<line x1=\"60\" y1=\"52\" x2=\"60\" y2=\"68\" stroke=\"#1c2740\" stroke-width=\"0.9\"/>\n<rect x=\"58.4\" y=\"55.5\" width=\"3.2\" height=\"4.4\" rx=\"0.5\" fill=\"#37d07a\" stroke=\"#1e7a46\"/>\n<rect x=\"58.4\" y=\"60.2\" width=\"3.2\" height=\"3.6\" rx=\"0.5\" fill=\"#fe5f55\" stroke=\"#9c2f29\"/>\n</g>\n\n<line x1=\"49\" y1=\"60\" x2=\"71\" y2=\"60\" stroke=\"#fffaf0\" stroke-width=\"0.8\" opacity=\"0.85\"/>\n<circle cx=\"56.4\" cy=\"56.6\" r=\"1.7\" fill=\"#fffaf0\" opacity=\"0.6\"/>\n\n<circle cx=\"60\" cy=\"60\" r=\"10\" fill=\"none\" stroke=\"#0a0f18\" stroke-width=\"0.6\" opacity=\"0.5\">\n<animate attributeName=\"r\" values=\"10;10.7;10\" dur=\"4s\" repeatCount=\"indefinite\"/>\n</circle>\n\n<g fill=\"url(#boss_gold)\">\n<polygon points=\"60,40.5 61.3,43.3 64,43.3 61.8,45 62.6,47.7 60,46 57.4,47.7 58.2,45 56,43.3 58.7,43.3\"/>\n</g>\n<g fill=\"#f4c95d\" opacity=\"0.92\">\n<polygon points=\"33,60 35,57.5 37,60 35,62.5\"/>\n<polygon points=\"87,60 85,57.5 83,60 85,62.5\"/>\n</g>\n\n<g fill=\"none\" stroke=\"url(#boss_goldV)\" stroke-width=\"0.9\" opacity=\"0.85\">\n<path d=\"M14 60 A46 46 0 0 0 60 106\"/>\n<path d=\"M106 60 A46 46 0 0 1 60 106\"/>\n</g>\n<g fill=\"#f4c95d\">\n<circle cx=\"14\" cy=\"60\" r=\"1.5\"/><circle cx=\"106\" cy=\"60\" r=\"1.5\"/><circle cx=\"60\" cy=\"106\" r=\"1.8\"/>\n</g>\n\n<g opacity=\"0.5\">\n<animate attributeName=\"opacity\" values=\"0.35;0.7;0.35\" dur=\"3.5s\" repeatCount=\"indefinite\"/>\n<circle cx=\"60\" cy=\"60\" r=\"55.5\" fill=\"none\" stroke=\"#fbe0a0\" stroke-width=\"0.5\"/>\n</g>\n</svg>";
+ART_SVG={"bull":"<svg viewBox=\"0 0 130 100\" xmlns=\"http://www.w3.org/2000/svg\">\n  <defs>\n    <radialGradient id=\"bull_bgB\" cx=\"50%\" cy=\"38%\" r=\"80%\">\n      <stop offset=\"0%\" stop-color=\"#142033\"/>\n      <stop offset=\"58%\" stop-color=\"#0b1320\"/>\n      <stop offset=\"100%\" stop-color=\"#060a13\"/>\n    </radialGradient>\n    <linearGradient id=\"bull_goldB\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#fbe0a0\"/>\n      <stop offset=\"35%\" stop-color=\"#f4c95d\"/>\n      <stop offset=\"70%\" stop-color=\"#c79320\"/>\n      <stop offset=\"100%\" stop-color=\"#8a6212\"/>\n    </linearGradient>\n    <linearGradient id=\"bull_greenBody\" x1=\"0\" y1=\"0\" x2=\"0.4\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#5ce89a\"/>\n      <stop offset=\"45%\" stop-color=\"#37d07a\"/>\n      <stop offset=\"100%\" stop-color=\"#249a59\"/>\n    </linearGradient>\n    <linearGradient id=\"bull_greenBodyB\" x1=\"0\" y1=\"0\" x2=\"0.4\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#43d885\"/>\n      <stop offset=\"100%\" stop-color=\"#1f8a4d\"/>\n    </linearGradient>\n    <linearGradient id=\"bull_arrowG\" x1=\"0\" y1=\"1\" x2=\"0\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#c79320\"/>\n      <stop offset=\"60%\" stop-color=\"#f4c95d\"/>\n      <stop offset=\"100%\" stop-color=\"#fbe0a0\"/>\n    </linearGradient>\n    <radialGradient id=\"bull_topGlow\" cx=\"50%\" cy=\"50%\" r=\"50%\">\n      <stop offset=\"0%\" stop-color=\"#fffaf0\" stop-opacity=\"0.9\"/>\n      <stop offset=\"40%\" stop-color=\"#f4c95d\" stop-opacity=\"0.45\"/>\n      <stop offset=\"100%\" stop-color=\"#f4c95d\" stop-opacity=\"0\"/>\n    </radialGradient>\n    <filter id=\"bull_softB\" x=\"-40%\" y=\"-40%\" width=\"180%\" height=\"180%\">\n      <feGaussianBlur stdDeviation=\"1.1\"/>\n    </filter>\n  </defs>\n\n  <!-- fundo -->\n  <rect x=\"0\" y=\"0\" width=\"130\" height=\"100\" fill=\"url(#bull_bgB)\"/>\n\n  <!-- raios dourados sutis irradiando do topo da vela -->\n  <g opacity=\"0.16\" stroke=\"url(#bull_goldB)\" stroke-width=\"0.6\">\n    <line x1=\"65\" y1=\"20\" x2=\"20\" y2=\"6\"/>\n    <line x1=\"65\" y1=\"20\" x2=\"40\" y2=\"2\"/>\n    <line x1=\"65\" y1=\"20\" x2=\"65\" y2=\"-2\"/>\n    <line x1=\"65\" y1=\"20\" x2=\"92\" y2=\"2\"/>\n    <line x1=\"65\" y1=\"20\" x2=\"112\" y2=\"6\"/>\n  </g>\n\n  <!-- reticula / linhas de grade douradas discretas -->\n  <g opacity=\"0.1\" stroke=\"#f4c95d\" stroke-width=\"0.4\">\n    <line x1=\"6\" y1=\"34\" x2=\"124\" y2=\"34\"/>\n    <line x1=\"6\" y1=\"56\" x2=\"124\" y2=\"56\"/>\n    <line x1=\"6\" y1=\"78\" x2=\"124\" y2=\"78\"/>\n  </g>\n\n  <!-- velas verdes secundarias (escada de alta ao fundo) -->\n  <g opacity=\"0.55\">\n    <g>\n      <line x1=\"28\" y1=\"62\" x2=\"28\" y2=\"92\" stroke=\"#1e7a46\" stroke-width=\"0.8\"/>\n      <rect x=\"24\" y=\"70\" width=\"8\" height=\"18\" rx=\"1.2\" fill=\"url(#bull_greenBodyB)\" stroke=\"#1e7a46\" stroke-width=\"0.7\"/>\n    </g>\n    <g>\n      <line x1=\"102\" y1=\"48\" x2=\"102\" y2=\"84\" stroke=\"#1e7a46\" stroke-width=\"0.8\"/>\n      <rect x=\"98\" y=\"54\" width=\"8\" height=\"24\" rx=\"1.2\" fill=\"url(#bull_greenBodyB)\" stroke=\"#1e7a46\" stroke-width=\"0.7\"/>\n    </g>\n  </g>\n\n  <!-- moldura dourada interna -->\n  <rect x=\"4\" y=\"4\" width=\"122\" height=\"92\" rx=\"5\" fill=\"none\" stroke=\"url(#bull_goldB)\" stroke-width=\"1.1\" opacity=\"0.85\"/>\n\n  <!-- brilho no topo -->\n  <ellipse cx=\"65\" cy=\"17\" rx=\"30\" ry=\"20\" fill=\"url(#bull_topGlow)\">\n    <animate attributeName=\"opacity\" values=\"0.7;1;0.7\" dur=\"3.4s\" repeatCount=\"indefinite\"/>\n  </ellipse>\n\n  <!-- VELA DE ALTA dominante (centro) -->\n  <g>\n    <animateTransform attributeName=\"transform\" type=\"translate\" values=\"0 0.7;0 -0.7;0 0.7\" dur=\"3.8s\" repeatCount=\"indefinite\" additive=\"sum\"/>\n    <!-- pavio superior fino -->\n    <line x1=\"65\" y1=\"14\" x2=\"65\" y2=\"26\" stroke=\"#37d07a\" stroke-width=\"1.4\" stroke-linecap=\"round\"/>\n    <line x1=\"65\" y1=\"14\" x2=\"65\" y2=\"26\" stroke=\"#5ce89a\" stroke-width=\"0.5\" stroke-linecap=\"round\" opacity=\"0.8\"/>\n    <!-- pavio inferior fino -->\n    <line x1=\"65\" y1=\"80\" x2=\"65\" y2=\"90\" stroke=\"#37d07a\" stroke-width=\"1.4\" stroke-linecap=\"round\"/>\n    <!-- corpo alto -->\n    <rect x=\"56\" y=\"26\" width=\"18\" height=\"54\" rx=\"2.4\" fill=\"url(#bull_greenBody)\" stroke=\"#1e7a46\" stroke-width=\"1.3\"/>\n    <!-- realce vertical no corpo -->\n    <rect x=\"59\" y=\"28\" width=\"3.4\" height=\"50\" rx=\"1.6\" fill=\"#fffaf0\" opacity=\"0.28\"/>\n    <!-- borda dourada de realce -->\n    <rect x=\"56\" y=\"26\" width=\"18\" height=\"54\" rx=\"2.4\" fill=\"none\" stroke=\"url(#bull_goldB)\" stroke-width=\"0.5\" opacity=\"0.6\"/>\n  </g>\n\n  <!-- seta de alta dourada sutil sobre o topo -->\n  <g opacity=\"0.95\" filter=\"url(#bull_softB)\">\n    <polygon points=\"65,7 71,17 67.4,17 67.4,22 62.6,22 62.6,17 59,17\" fill=\"url(#bull_arrowG)\"/>\n  </g>\n  <polygon points=\"65,7 71,17 67.4,17 67.4,22 62.6,22 62.6,17 59,17\" fill=\"url(#bull_arrowG)\" stroke=\"#fbe0a0\" stroke-width=\"0.4\"/>\n\n  <!-- faisca / brilho no topo da seta -->\n  <g>\n    <circle cx=\"65\" cy=\"7.5\" r=\"1.6\" fill=\"#fffaf0\">\n      <animate attributeName=\"r\" values=\"1.2;2;1.2\" dur=\"2.2s\" repeatCount=\"indefinite\"/>\n      <animate attributeName=\"opacity\" values=\"0.7;1;0.7\" dur=\"2.2s\" repeatCount=\"indefinite\"/>\n    </circle>\n    <line x1=\"65\" y1=\"3.5\" x2=\"65\" y2=\"11.5\" stroke=\"#fffaf0\" stroke-width=\"0.5\" opacity=\"0.7\"/>\n    <line x1=\"61\" y1=\"7.5\" x2=\"69\" y2=\"7.5\" stroke=\"#fffaf0\" stroke-width=\"0.5\" opacity=\"0.7\"/>\n  </g>\n\n  <!-- base luminosa creme sob a vela (impulso) -->\n  <ellipse cx=\"65\" cy=\"91\" rx=\"22\" ry=\"3\" fill=\"#37d07a\" opacity=\"0.22\" filter=\"url(#bull_softB)\"/>\n</svg>","bear":"<svg viewBox=\"0 0 130 100\" xmlns=\"http://www.w3.org/2000/svg\">\n  <defs>\n    <radialGradient id=\"bear_bgB\" cx=\"50%\" cy=\"38%\" r=\"78%\">\n      <stop offset=\"0%\" stop-color=\"#142033\"/>\n      <stop offset=\"58%\" stop-color=\"#0b1320\"/>\n      <stop offset=\"100%\" stop-color=\"#060a13\"/>\n    </radialGradient>\n    <linearGradient id=\"bear_redBody\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#ff8079\"/>\n      <stop offset=\"42%\" stop-color=\"#fe5f55\"/>\n      <stop offset=\"100%\" stop-color=\"#c93a33\"/>\n    </linearGradient>\n    <linearGradient id=\"bear_redBody2\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#fe6f66\"/>\n      <stop offset=\"100%\" stop-color=\"#b8332d\"/>\n    </linearGradient>\n    <linearGradient id=\"bear_goldStroke\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#fbe0a0\"/>\n      <stop offset=\"40%\" stop-color=\"#f4c95d\"/>\n      <stop offset=\"100%\" stop-color=\"#8a6212\"/>\n    </linearGradient>\n    <linearGradient id=\"bear_goldArrow\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#fbe0a0\"/>\n      <stop offset=\"55%\" stop-color=\"#f4c95d\"/>\n      <stop offset=\"100%\" stop-color=\"#c79320\"/>\n    </linearGradient>\n    <radialGradient id=\"bear_glowR\" cx=\"50%\" cy=\"50%\" r=\"50%\">\n      <stop offset=\"0%\" stop-color=\"#fe5f55\" stop-opacity=\"0.55\"/>\n      <stop offset=\"100%\" stop-color=\"#fe5f55\" stop-opacity=\"0\"/>\n    </radialGradient>\n    <filter id=\"bear_soft\" x=\"-40%\" y=\"-40%\" width=\"180%\" height=\"180%\">\n      <feGaussianBlur stdDeviation=\"0.9\"/>\n    </filter>\n  </defs>\n\n  <!-- fundo -->\n  <rect x=\"0\" y=\"0\" width=\"130\" height=\"100\" fill=\"url(#bear_bgB)\"/>\n\n  <!-- retícula sutil -->\n  <g stroke=\"#f4c95d\" stroke-opacity=\"0.07\" stroke-width=\"0.5\">\n    <line x1=\"8\" y1=\"22\" x2=\"122\" y2=\"22\"/>\n    <line x1=\"8\" y1=\"40\" x2=\"122\" y2=\"40\"/>\n    <line x1=\"8\" y1=\"58\" x2=\"122\" y2=\"58\"/>\n    <line x1=\"8\" y1=\"76\" x2=\"122\" y2=\"76\"/>\n    <line x1=\"34\" y1=\"8\" x2=\"34\" y2=\"92\"/>\n    <line x1=\"65\" y1=\"8\" x2=\"65\" y2=\"92\"/>\n    <line x1=\"96\" y1=\"8\" x2=\"96\" y2=\"92\"/>\n  </g>\n\n  <!-- raios dourados sutis atrás da vela -->\n  <g stroke=\"url(#bear_goldStroke)\" stroke-opacity=\"0.16\" stroke-width=\"0.6\">\n    <line x1=\"65\" y1=\"50\" x2=\"22\" y2=\"14\"/>\n    <line x1=\"65\" y1=\"50\" x2=\"108\" y2=\"14\"/>\n    <line x1=\"65\" y1=\"50\" x2=\"14\" y2=\"58\"/>\n    <line x1=\"65\" y1=\"50\" x2=\"116\" y2=\"58\"/>\n  </g>\n\n  <!-- moldura dourada -->\n  <rect x=\"6\" y=\"6\" width=\"118\" height=\"88\" rx=\"6\" fill=\"none\" stroke=\"url(#bear_goldStroke)\" stroke-width=\"1.1\" stroke-opacity=\"0.85\"/>\n  <rect x=\"9\" y=\"9\" width=\"112\" height=\"82\" rx=\"4.5\" fill=\"none\" stroke=\"#c79320\" stroke-width=\"0.4\" stroke-opacity=\"0.45\"/>\n\n  <!-- velas de contexto, descendo em escada (queda) -->\n  <g>\n    <!-- esquerda alta -->\n    <line x1=\"26\" y1=\"20\" x2=\"26\" y2=\"40\" stroke=\"#9c2f29\" stroke-width=\"1\"/>\n    <rect x=\"22.5\" y=\"24\" width=\"7\" height=\"13\" rx=\"1.2\" fill=\"url(#bear_redBody2)\" stroke=\"#9c2f29\" stroke-width=\"0.6\"/>\n    <!-- meio -->\n    <line x1=\"42\" y1=\"30\" x2=\"42\" y2=\"52\" stroke=\"#9c2f29\" stroke-width=\"1\"/>\n    <rect x=\"38.5\" y=\"35\" width=\"7\" height=\"14\" rx=\"1.2\" fill=\"url(#bear_redBody2)\" stroke=\"#9c2f29\" stroke-width=\"0.6\"/>\n  </g>\n  <g>\n    <!-- direita, mais baixas ainda -->\n    <line x1=\"92\" y1=\"40\" x2=\"92\" y2=\"64\" stroke=\"#9c2f29\" stroke-width=\"1\"/>\n    <rect x=\"88.5\" y=\"45\" width=\"7\" height=\"15\" rx=\"1.2\" fill=\"url(#bear_redBody2)\" stroke=\"#9c2f29\" stroke-width=\"0.6\"/>\n    <line x1=\"106\" y1=\"52\" x2=\"106\" y2=\"78\" stroke=\"#9c2f29\" stroke-width=\"1\"/>\n    <rect x=\"102.5\" y=\"58\" width=\"7\" height=\"16\" rx=\"1.2\" fill=\"url(#bear_redBody2)\" stroke=\"#9c2f29\" stroke-width=\"0.6\"/>\n  </g>\n\n  <!-- VELA PRINCIPAL: vermelha de baixa, corpo alto, centro -->\n  <g>\n    <!-- glow -->\n    <ellipse cx=\"65\" cy=\"52\" rx=\"22\" ry=\"34\" fill=\"url(#bear_glowR)\" filter=\"url(#bear_soft)\"/>\n    <!-- pavio -->\n    <line x1=\"65\" y1=\"14\" x2=\"65\" y2=\"86\" stroke=\"#fe5f55\" stroke-width=\"1.4\" stroke-opacity=\"0.5\"/>\n    <line x1=\"65\" y1=\"14\" x2=\"65\" y2=\"86\" stroke=\"#9c2f29\" stroke-width=\"0.8\"/>\n    <!-- corpo alto -->\n    <rect x=\"55\" y=\"26\" width=\"20\" height=\"50\" rx=\"2.6\" fill=\"url(#bear_redBody)\" stroke=\"url(#bear_goldStroke)\" stroke-width=\"1.2\"/>\n    <!-- brilho lateral do corpo -->\n    <rect x=\"57\" y=\"28\" width=\"3.2\" height=\"46\" rx=\"1.6\" fill=\"#fffaf0\" fill-opacity=\"0.22\"/>\n    <!-- linha de abertura (topo) dourada -->\n    <line x1=\"55\" y1=\"34\" x2=\"75\" y2=\"34\" stroke=\"#f4c95d\" stroke-width=\"0.5\" stroke-opacity=\"0.6\"/>\n  </g>\n\n  <!-- seta de baixa dourada, sutil, descendo do corpo -->\n  <g opacity=\"0.95\">\n    <line x1=\"65\" y1=\"62\" x2=\"65\" y2=\"84\" stroke=\"url(#bear_goldArrow)\" stroke-width=\"2\" stroke-linecap=\"round\" opacity=\"0.85\"/>\n    <polygon points=\"65,90 59.5,80.5 70.5,80.5\" fill=\"url(#bear_goldArrow)\" stroke=\"#8a6212\" stroke-width=\"0.4\"/>\n    <animateTransform attributeName=\"transform\" type=\"translate\" values=\"0 -1.2; 0 1.2; 0 -1.2\" dur=\"3.2s\" repeatCount=\"indefinite\"/>\n  </g>\n\n  <!-- brilho de canto -->\n  <circle cx=\"60\" cy=\"30\" r=\"1.1\" fill=\"#fffaf0\" opacity=\"0.8\">\n    <animate attributeName=\"opacity\" values=\"0.3;0.9;0.3\" dur=\"2.6s\" repeatCount=\"indefinite\"/>\n  </circle>\n  <circle cx=\"105\" cy=\"60\" r=\"0.9\" fill=\"#fbe0a0\" opacity=\"0.6\"/>\n</svg>","body":"<svg viewBox=\"0 0 130 100\" xmlns=\"http://www.w3.org/2000/svg\">\n<defs>\n<radialGradient id=\"body_bgC\" cx=\"50%\" cy=\"42%\" r=\"75%\">\n<stop offset=\"0%\" stop-color=\"#142033\"/>\n<stop offset=\"55%\" stop-color=\"#0b1320\"/>\n<stop offset=\"100%\" stop-color=\"#060a13\"/>\n</radialGradient>\n<linearGradient id=\"body_goldC\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n<stop offset=\"0%\" stop-color=\"#fbe0a0\"/>\n<stop offset=\"35%\" stop-color=\"#f4c95d\"/>\n<stop offset=\"75%\" stop-color=\"#c79320\"/>\n<stop offset=\"100%\" stop-color=\"#8a6212\"/>\n</linearGradient>\n<linearGradient id=\"body_goldStroke\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\">\n<stop offset=\"0%\" stop-color=\"#fbe0a0\"/>\n<stop offset=\"50%\" stop-color=\"#f4c95d\"/>\n<stop offset=\"100%\" stop-color=\"#c79320\"/>\n</linearGradient>\n<linearGradient id=\"body_greenBody\" x1=\"0\" y1=\"0\" x2=\"0.4\" y2=\"1\">\n<stop offset=\"0%\" stop-color=\"#5ee79a\"/>\n<stop offset=\"45%\" stop-color=\"#37d07a\"/>\n<stop offset=\"100%\" stop-color=\"#1e7a46\"/>\n</linearGradient>\n<radialGradient id=\"body_glowC\" cx=\"50%\" cy=\"50%\" r=\"50%\">\n<stop offset=\"0%\" stop-color=\"#37d07a\" stop-opacity=\"0.45\"/>\n<stop offset=\"100%\" stop-color=\"#37d07a\" stop-opacity=\"0\"/>\n</radialGradient>\n<filter id=\"body_softC\" x=\"-30%\" y=\"-30%\" width=\"160%\" height=\"160%\">\n<feGaussianBlur stdDeviation=\"0.7\"/>\n</filter>\n</defs>\n\n<rect x=\"0\" y=\"0\" width=\"130\" height=\"100\" fill=\"url(#body_bgC)\"/>\n\n<!-- subtle gold reticle rays -->\n<g stroke=\"url(#body_goldStroke)\" stroke-width=\"0.35\" opacity=\"0.13\">\n<line x1=\"65\" y1=\"50\" x2=\"6\" y2=\"10\"/>\n<line x1=\"65\" y1=\"50\" x2=\"124\" y2=\"10\"/>\n<line x1=\"65\" y1=\"50\" x2=\"6\" y2=\"90\"/>\n<line x1=\"65\" y1=\"50\" x2=\"124\" y2=\"90\"/>\n<line x1=\"65\" y1=\"50\" x2=\"65\" y2=\"6\"/>\n<line x1=\"65\" y1=\"50\" x2=\"65\" y2=\"94\"/>\n</g>\n<!-- faint gold grid lines -->\n<g stroke=\"url(#body_goldStroke)\" stroke-width=\"0.3\" opacity=\"0.1\">\n<line x1=\"8\" y1=\"30\" x2=\"122\" y2=\"30\"/>\n<line x1=\"8\" y1=\"70\" x2=\"122\" y2=\"70\"/>\n</g>\n\n<!-- green ambient glow behind candle -->\n<ellipse cx=\"65\" cy=\"50\" rx=\"34\" ry=\"40\" fill=\"url(#body_glowC)\">\n<animate attributeName=\"opacity\" values=\"0.8;1;0.8\" dur=\"4.5s\" repeatCount=\"indefinite\"/>\n</ellipse>\n\n<!-- DIMMED thin wick (faded) -->\n<line x1=\"65\" y1=\"14\" x2=\"65\" y2=\"32\" stroke=\"#fffaf0\" stroke-width=\"0.7\" opacity=\"0.22\" stroke-linecap=\"round\"/>\n<line x1=\"65\" y1=\"68\" x2=\"65\" y2=\"86\" stroke=\"#fffaf0\" stroke-width=\"0.7\" opacity=\"0.22\" stroke-linecap=\"round\"/>\n\n<!-- HIGHLIGHTED body: green candle -->\n<rect x=\"56\" y=\"32\" width=\"18\" height=\"36\" rx=\"2.2\" fill=\"url(#body_greenBody)\" stroke=\"#1e7a46\" stroke-width=\"1.1\"/>\n<!-- body inner sheen -->\n<rect x=\"58.4\" y=\"34.2\" width=\"4.5\" height=\"31.5\" rx=\"1.6\" fill=\"#fffaf0\" opacity=\"0.22\"/>\n<rect x=\"56\" y=\"32\" width=\"18\" height=\"9\" rx=\"2.2\" fill=\"#fffaf0\" opacity=\"0.1\"/>\n\n<!-- GOLD framing brackets emphasizing the body -->\n<g fill=\"none\" stroke=\"url(#body_goldC)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" filter=\"url(#body_softC)\">\n<!-- top-left -->\n<path d=\"M44 28 L44 26 L51 26\"/>\n<!-- top-right -->\n<path d=\"M86 28 L86 26 L79 26\"/>\n<!-- bottom-left -->\n<path d=\"M44 72 L44 74 L51 74\"/>\n<!-- bottom-right -->\n<path d=\"M86 72 L86 74 L79 74\"/>\n</g>\n<!-- gold vertical bracket arms -->\n<g stroke=\"url(#body_goldStroke)\" stroke-width=\"1.5\" stroke-linecap=\"round\">\n<line x1=\"44\" y1=\"29\" x2=\"44\" y2=\"71\"/>\n<line x1=\"86\" y1=\"29\" x2=\"86\" y2=\"71\"/>\n</g>\n<!-- bright accent dots on brackets -->\n<g fill=\"#fbe0a0\">\n<circle cx=\"44\" cy=\"26\" r=\"1.1\"/>\n<circle cx=\"86\" cy=\"26\" r=\"1.1\"/>\n<circle cx=\"44\" cy=\"74\" r=\"1.1\"/>\n<circle cx=\"86\" cy=\"74\" r=\"1.1\"/>\n</g>\n\n<!-- short label -->\n<text x=\"65\" y=\"95\" font-family=\"Georgia, 'Times New Roman', serif\" font-size=\"7.5\" font-weight=\"bold\" letter-spacing=\"1.2\" text-anchor=\"middle\" fill=\"url(#body_goldC)\">O CORPO</text>\n\n<!-- corner gold flourishes -->\n<g fill=\"none\" stroke=\"url(#body_goldStroke)\" stroke-width=\"0.7\" opacity=\"0.55\">\n<path d=\"M6 12 Q10 6 16 6\"/>\n<path d=\"M124 12 Q120 6 114 6\"/>\n</g>\n\n<!-- subtle pulse highlight on body edge -->\n<rect x=\"56\" y=\"32\" width=\"18\" height=\"36\" rx=\"2.2\" fill=\"none\" stroke=\"#5ee79a\" stroke-width=\"0.6\" opacity=\"0\">\n<animate attributeName=\"opacity\" values=\"0;0.5;0\" dur=\"3.8s\" repeatCount=\"indefinite\"/>\n</rect>\n</svg>","wick":"<svg viewBox=\"0 0 130 100\" xmlns=\"http://www.w3.org/2000/svg\">\n  <defs>\n    <radialGradient id=\"wick_bg\" cx=\"50%\" cy=\"40%\" r=\"75%\">\n      <stop offset=\"0%\" stop-color=\"#142033\"/>\n      <stop offset=\"60%\" stop-color=\"#0b1320\"/>\n      <stop offset=\"100%\" stop-color=\"#060a13\"/>\n    </radialGradient>\n    <linearGradient id=\"wick_gold\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#fbe0a0\"/>\n      <stop offset=\"35%\" stop-color=\"#f4c95d\"/>\n      <stop offset=\"75%\" stop-color=\"#c79320\"/>\n      <stop offset=\"100%\" stop-color=\"#8a6212\"/>\n    </linearGradient>\n    <linearGradient id=\"wick_goldH\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#8a6212\"/>\n      <stop offset=\"50%\" stop-color=\"#f6d27a\"/>\n      <stop offset=\"100%\" stop-color=\"#8a6212\"/>\n    </linearGradient>\n    <linearGradient id=\"wick_redBody\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#fe7b72\"/>\n      <stop offset=\"55%\" stop-color=\"#fe5f55\"/>\n      <stop offset=\"100%\" stop-color=\"#c33b34\"/>\n    </linearGradient>\n    <linearGradient id=\"wick_wickG\" x1=\"0\" y1=\"1\" x2=\"0\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#9c2f29\"/>\n      <stop offset=\"45%\" stop-color=\"#fe5f55\"/>\n      <stop offset=\"100%\" stop-color=\"#fffaf0\"/>\n    </linearGradient>\n    <radialGradient id=\"wick_danger\" cx=\"50%\" cy=\"50%\" r=\"50%\">\n      <stop offset=\"0%\" stop-color=\"#fbe0a0\" stop-opacity=\"0.55\"/>\n      <stop offset=\"70%\" stop-color=\"#c79320\" stop-opacity=\"0.12\"/>\n      <stop offset=\"100%\" stop-color=\"#c79320\" stop-opacity=\"0\"/>\n    </radialGradient>\n    <radialGradient id=\"wick_vignette\" cx=\"50%\" cy=\"45%\" r=\"65%\">\n      <stop offset=\"60%\" stop-color=\"#000000\" stop-opacity=\"0\"/>\n      <stop offset=\"100%\" stop-color=\"#000000\" stop-opacity=\"0.45\"/>\n    </radialGradient>\n    <filter id=\"wick_soft\" x=\"-40%\" y=\"-40%\" width=\"180%\" height=\"180%\">\n      <feGaussianBlur stdDeviation=\"0.7\"/>\n    </filter>\n    <filter id=\"wick_glow\" x=\"-80%\" y=\"-80%\" width=\"260%\" height=\"260%\">\n      <feGaussianBlur stdDeviation=\"1.6\"/>\n    </filter>\n  </defs>\n\n  <!-- fundo -->\n  <rect x=\"0\" y=\"0\" width=\"130\" height=\"100\" fill=\"url(#wick_bg)\"/>\n\n  <!-- grade sutil de candlestick -->\n  <g stroke=\"#3ea0e0\" stroke-opacity=\"0.10\" stroke-width=\"0.4\">\n    <line x1=\"6\" y1=\"26\" x2=\"124\" y2=\"26\"/>\n    <line x1=\"6\" y1=\"50\" x2=\"124\" y2=\"50\"/>\n    <line x1=\"6\" y1=\"74\" x2=\"124\" y2=\"74\"/>\n    <line x1=\"34\" y1=\"6\" x2=\"34\" y2=\"94\"/>\n    <line x1=\"96\" y1=\"6\" x2=\"96\" y2=\"94\"/>\n  </g>\n\n  <!-- velas de fundo (esmaecidas) -->\n  <g opacity=\"0.5\">\n    <line x1=\"20\" y1=\"34\" x2=\"20\" y2=\"64\" stroke=\"#1e7a46\" stroke-width=\"0.8\"/>\n    <rect x=\"17\" y=\"42\" width=\"6\" height=\"14\" rx=\"1\" fill=\"#37d07a\" stroke=\"#1e7a46\" stroke-width=\"0.6\"/>\n    <line x1=\"112\" y1=\"30\" x2=\"112\" y2=\"62\" stroke=\"#9c2f29\" stroke-width=\"0.8\"/>\n    <rect x=\"109\" y=\"38\" width=\"6\" height=\"16\" rx=\"1\" fill=\"#fe5f55\" stroke=\"#9c2f29\" stroke-width=\"0.6\"/>\n    <line x1=\"103\" y1=\"40\" x2=\"103\" y2=\"70\" stroke=\"#1e7a46\" stroke-width=\"0.8\"/>\n    <rect x=\"100\" y=\"50\" width=\"6\" height=\"13\" rx=\"1\" fill=\"#37d07a\" stroke=\"#1e7a46\" stroke-width=\"0.6\"/>\n  </g>\n\n  <!-- VELA PRINCIPAL (vermelha) com pavio enganoso longo -->\n  <g>\n    <!-- sombra de base -->\n    <ellipse cx=\"58\" cy=\"86\" rx=\"16\" ry=\"3.2\" fill=\"#000000\" opacity=\"0.35\"/>\n\n    <!-- pavio longo e fino (enganoso) -->\n    <line x1=\"58\" y1=\"64\" x2=\"58\" y2=\"80\" stroke=\"#9c2f29\" stroke-width=\"1.4\"/>\n    <line x1=\"58\" y1=\"64\" x2=\"58\" y2=\"9\" stroke=\"url(#wick_wickG)\" stroke-width=\"1.6\" stroke-linecap=\"round\"/>\n    <line x1=\"58\" y1=\"64\" x2=\"58\" y2=\"9\" stroke=\"#fffaf0\" stroke-width=\"0.5\" opacity=\"0.6\" filter=\"url(#wick_soft)\"/>\n\n    <!-- corpo da vela -->\n    <rect x=\"46\" y=\"64\" width=\"24\" height=\"18\" rx=\"2.2\" fill=\"url(#wick_redBody)\" stroke=\"#9c2f29\" stroke-width=\"1\"/>\n    <rect x=\"49\" y=\"66.5\" width=\"4.5\" height=\"13\" rx=\"1.5\" fill=\"#fffaf0\" opacity=\"0.22\"/>\n  </g>\n\n  <!-- glow de perigo na ponta -->\n  <circle cx=\"58\" cy=\"13\" r=\"20\" fill=\"url(#wick_danger)\"/>\n\n  <!-- RETICULA / X DOURADO de PERIGO na ponta do pavio -->\n  <g filter=\"url(#wick_glow)\">\n    <circle cx=\"58\" cy=\"13\" r=\"0.1\" fill=\"none\"/>\n  </g>\n  <g stroke=\"url(#wick_gold)\" fill=\"none\">\n    <!-- anel de mira -->\n    <circle cx=\"58\" cy=\"13\" r=\"9.5\" stroke-width=\"1.3\"/>\n    <circle cx=\"58\" cy=\"13\" r=\"5\" stroke=\"#f6d27a\" stroke-width=\"0.7\" stroke-opacity=\"0.8\"/>\n    <!-- ticks da reticula -->\n    <line x1=\"58\" y1=\"1.5\" x2=\"58\" y2=\"6.5\" stroke-width=\"1.1\"/>\n    <line x1=\"58\" y1=\"19.5\" x2=\"58\" y2=\"24.5\" stroke-width=\"1.1\"/>\n    <line x1=\"46.5\" y1=\"13\" x2=\"51.5\" y2=\"13\" stroke-width=\"1.1\"/>\n    <line x1=\"64.5\" y1=\"13\" x2=\"69.5\" y2=\"13\" stroke-width=\"1.1\"/>\n  </g>\n  <!-- X de alerta sobre a mira -->\n  <g stroke=\"url(#wick_goldH)\" stroke-width=\"1.7\" stroke-linecap=\"round\">\n    <line x1=\"53.4\" y1=\"8.4\" x2=\"62.6\" y2=\"17.6\"/>\n    <line x1=\"62.6\" y1=\"8.4\" x2=\"53.4\" y2=\"17.6\"/>\n  </g>\n  <circle cx=\"58\" cy=\"13\" r=\"1.5\" fill=\"#fbe0a0\"/>\n\n  <!-- raios de alerta dourados sutis saindo da mira -->\n  <g stroke=\"#f4c95d\" stroke-width=\"0.6\" stroke-opacity=\"0.45\" stroke-linecap=\"round\">\n    <line x1=\"48\" y1=\"4\" x2=\"51\" y2=\"6.5\"/>\n    <line x1=\"68\" y1=\"4\" x2=\"65\" y2=\"6.5\"/>\n    <line x1=\"47\" y1=\"22\" x2=\"50.5\" y2=\"19.5\"/>\n    <line x1=\"69\" y1=\"22\" x2=\"65.5\" y2=\"19.5\"/>\n  </g>\n\n  <!-- selo de armadilha: triangulo de alerta discreto -->\n  <g transform=\"translate(96,78)\">\n    <path d=\"M0 -7 L7 6 L-7 6 Z\" fill=\"none\" stroke=\"url(#wick_gold)\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/>\n    <line x1=\"0\" y1=\"-2\" x2=\"0\" y2=\"2.2\" stroke=\"#f6d27a\" stroke-width=\"1.2\" stroke-linecap=\"round\"/>\n    <circle cx=\"0\" cy=\"4\" r=\"0.8\" fill=\"#f6d27a\"/>\n  </g>\n\n  <!-- moldura dourada -->\n  <rect x=\"3\" y=\"3\" width=\"124\" height=\"94\" rx=\"5\" fill=\"none\" stroke=\"url(#wick_gold)\" stroke-width=\"1.2\" opacity=\"0.9\"/>\n  <rect x=\"4.6\" y=\"4.6\" width=\"120.8\" height=\"90.8\" rx=\"4\" fill=\"none\" stroke=\"#8a6212\" stroke-width=\"0.4\" opacity=\"0.6\"/>\n\n  <!-- vinheta -->\n  <rect x=\"0\" y=\"0\" width=\"130\" height=\"100\" fill=\"url(#wick_vignette)\"/>\n\n  <!-- pulso sutil na mira de perigo -->\n  <circle cx=\"58\" cy=\"13\" r=\"9.5\" fill=\"none\" stroke=\"#fbe0a0\" stroke-width=\"0.8\" opacity=\"0\">\n    <animate attributeName=\"r\" values=\"9.5;13;9.5\" dur=\"3.2s\" repeatCount=\"indefinite\"/>\n    <animate attributeName=\"opacity\" values=\"0.5;0;0.5\" dur=\"3.2s\" repeatCount=\"indefinite\"/>\n  </circle>\n</svg>","sup":"<svg viewBox=\"0 0 130 100\" xmlns=\"http://www.w3.org/2000/svg\">\n  <defs>\n    <radialGradient id=\"sup_supBg\" cx=\"42%\" cy=\"34%\" r=\"86%\">\n      <stop offset=\"0%\" stop-color=\"#142033\"/>\n      <stop offset=\"58%\" stop-color=\"#0b1320\"/>\n      <stop offset=\"100%\" stop-color=\"#060a13\"/>\n    </radialGradient>\n    <linearGradient id=\"sup_supGold\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#fbe0a0\"/>\n      <stop offset=\"34%\" stop-color=\"#f4c95d\"/>\n      <stop offset=\"74%\" stop-color=\"#c79320\"/>\n      <stop offset=\"100%\" stop-color=\"#8a6212\"/>\n    </linearGradient>\n    <linearGradient id=\"sup_supGoldH\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#8a6212\"/>\n      <stop offset=\"50%\" stop-color=\"#f6d27a\"/>\n      <stop offset=\"100%\" stop-color=\"#8a6212\"/>\n    </linearGradient>\n    <linearGradient id=\"sup_supGreen\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#5fe79b\"/>\n      <stop offset=\"48%\" stop-color=\"#37d07a\"/>\n      <stop offset=\"100%\" stop-color=\"#22995a\"/>\n    </linearGradient>\n    <linearGradient id=\"sup_supRed\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#ff7c73\"/>\n      <stop offset=\"55%\" stop-color=\"#fe5f55\"/>\n      <stop offset=\"100%\" stop-color=\"#c43a33\"/>\n    </linearGradient>\n    <linearGradient id=\"sup_supZone\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#37d07a\" stop-opacity=\"0.05\"/>\n      <stop offset=\"100%\" stop-color=\"#37d07a\" stop-opacity=\"0.30\"/>\n    </linearGradient>\n    <radialGradient id=\"sup_supGlow\" cx=\"50%\" cy=\"50%\" r=\"50%\">\n      <stop offset=\"0%\" stop-color=\"#f6d27a\" stop-opacity=\"0.55\"/>\n      <stop offset=\"100%\" stop-color=\"#f6d27a\" stop-opacity=\"0\"/>\n    </radialGradient>\n    <filter id=\"sup_supSoft\" x=\"-40%\" y=\"-40%\" width=\"180%\" height=\"180%\">\n      <feGaussianBlur stdDeviation=\"0.7\"/>\n    </filter>\n  </defs>\n\n  <!-- fundo escuro -->\n  <rect x=\"0\" y=\"0\" width=\"130\" height=\"100\" fill=\"url(#sup_supBg)\"/>\n\n  <!-- reticula sutil -->\n  <g stroke=\"#f6d27a\" stroke-opacity=\"0.06\" stroke-width=\"0.4\">\n    <line x1=\"6\" y1=\"22\" x2=\"124\" y2=\"22\"/>\n    <line x1=\"6\" y1=\"40\" x2=\"124\" y2=\"40\"/>\n    <line x1=\"6\" y1=\"58\" x2=\"124\" y2=\"58\"/>\n    <line x1=\"30\" y1=\"8\" x2=\"30\" y2=\"92\"/>\n    <line x1=\"62\" y1=\"8\" x2=\"62\" y2=\"92\"/>\n    <line x1=\"94\" y1=\"8\" x2=\"94\" y2=\"92\"/>\n  </g>\n\n  <!-- raios dourados sutis a partir do canto -->\n  <g stroke=\"#f6d27a\" stroke-opacity=\"0.05\" stroke-width=\"0.5\">\n    <line x1=\"14\" y1=\"14\" x2=\"120\" y2=\"46\"/>\n    <line x1=\"14\" y1=\"14\" x2=\"116\" y2=\"74\"/>\n    <line x1=\"14\" y1=\"14\" x2=\"74\" y2=\"90\"/>\n  </g>\n\n  <!-- ZONA DE SUPORTE (faixa verde, borda dourada, base do painel) -->\n  <rect x=\"8\" y=\"71\" width=\"114\" height=\"20\" rx=\"2.5\" fill=\"url(#sup_supZone)\"/>\n  <rect x=\"8\" y=\"71\" width=\"114\" height=\"20\" rx=\"2.5\" fill=\"none\" stroke=\"url(#sup_supGoldH)\" stroke-width=\"1.3\"/>\n  <!-- piso/linha de suporte forte -->\n  <line x1=\"9\" y1=\"74.5\" x2=\"121\" y2=\"74.5\" stroke=\"#fffaf0\" stroke-opacity=\"0.85\" stroke-width=\"0.9\"/>\n  <line x1=\"9\" y1=\"74.5\" x2=\"121\" y2=\"74.5\" stroke=\"#f4c95d\" stroke-opacity=\"0.5\" stroke-width=\"2.4\" filter=\"url(#sup_supSoft)\"/>\n  <text x=\"12\" y=\"86.5\" font-family=\"Georgia, 'Times New Roman', serif\" font-size=\"7\" font-weight=\"bold\" letter-spacing=\"0.4\" fill=\"#fbe0a0\" fill-opacity=\"0.92\">SUPORTE</text>\n\n  <!-- glow de compra subindo do piso -->\n  <ellipse cx=\"66\" cy=\"73\" rx=\"46\" ry=\"14\" fill=\"url(#sup_supGlow)\" opacity=\"0.5\">\n    <animate attributeName=\"opacity\" values=\"0.34;0.6;0.34\" dur=\"3.6s\" repeatCount=\"indefinite\"/>\n  </ellipse>\n\n  <!-- VELAS quicando para cima a partir do suporte -->\n  <!-- vela 1: vermelha tocando o piso (queda contida) -->\n  <g>\n    <line x1=\"34\" y1=\"48\" x2=\"34\" y2=\"73\" stroke=\"#fffaf0\" stroke-opacity=\"0.7\" stroke-width=\"0.9\"/>\n    <rect x=\"30.4\" y=\"53\" width=\"7.2\" height=\"18\" rx=\"1.1\" fill=\"url(#sup_supRed)\" stroke=\"#9c2f29\" stroke-width=\"0.7\"/>\n  </g>\n  <!-- vela 2: verde, reversao no piso -->\n  <g>\n    <line x1=\"58\" y1=\"36\" x2=\"58\" y2=\"68\" stroke=\"#fffaf0\" stroke-opacity=\"0.7\" stroke-width=\"0.9\"/>\n    <rect x=\"54.4\" y=\"42\" width=\"7.2\" height=\"24\" rx=\"1.1\" fill=\"url(#sup_supGreen)\" stroke=\"#1e7a46\" stroke-width=\"0.7\"/>\n  </g>\n  <!-- vela 3: verde forte, impulso de alta -->\n  <g>\n    <line x1=\"84\" y1=\"22\" x2=\"84\" y2=\"58\" stroke=\"#fffaf0\" stroke-opacity=\"0.75\" stroke-width=\"0.9\"/>\n    <rect x=\"80.2\" y=\"27\" width=\"7.6\" height=\"29\" rx=\"1.2\" fill=\"url(#sup_supGreen)\" stroke=\"#1e7a46\" stroke-width=\"0.8\"/>\n    <rect x=\"81.4\" y=\"28.5\" width=\"2\" height=\"25\" rx=\"1\" fill=\"#fffaf0\" fill-opacity=\"0.28\"/>\n  </g>\n\n  <!-- SETA DOURADA DE ALTA -->\n  <g>\n    <line x1=\"34\" y1=\"58\" x2=\"106\" y2=\"22\" stroke=\"url(#sup_supGoldH)\" stroke-width=\"2\" stroke-linecap=\"round\" opacity=\"0.85\"/>\n    <polygon points=\"106,22 99,21 103.5,28.5\" fill=\"url(#sup_supGold)\" stroke=\"#8a6212\" stroke-width=\"0.5\"/>\n    <polygon points=\"110,18 100.5,19.5 105,27.5 108.5,24\" fill=\"url(#sup_supGold)\" stroke=\"#8a6212\" stroke-width=\"0.6\"/>\n  </g>\n\n  <!-- brilho discreto de topo -->\n  <circle cx=\"108\" cy=\"18\" r=\"2.4\" fill=\"url(#sup_supGlow)\">\n    <animate attributeName=\"r\" values=\"2;3.2;2\" dur=\"2.8s\" repeatCount=\"indefinite\"/>\n  </circle>\n\n  <!-- moldura dourada interna -->\n  <rect x=\"3\" y=\"3\" width=\"124\" height=\"94\" rx=\"4\" fill=\"none\" stroke=\"url(#sup_supGold)\" stroke-width=\"1.1\" stroke-opacity=\"0.55\"/>\n</svg>","res":"<svg viewBox=\"0 0 130 100\" xmlns=\"http://www.w3.org/2000/svg\">\n  <defs>\n    <radialGradient id=\"res_resBg\" cx=\"50%\" cy=\"34%\" r=\"85%\">\n      <stop offset=\"0%\" stop-color=\"#142033\"/>\n      <stop offset=\"58%\" stop-color=\"#0b1320\"/>\n      <stop offset=\"100%\" stop-color=\"#060a13\"/>\n    </radialGradient>\n    <linearGradient id=\"res_resGold\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#fbe0a0\"/>\n      <stop offset=\"35%\" stop-color=\"#f4c95d\"/>\n      <stop offset=\"70%\" stop-color=\"#c79320\"/>\n      <stop offset=\"100%\" stop-color=\"#8a6212\"/>\n    </linearGradient>\n    <linearGradient id=\"res_resGoldH\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#8a6212\"/>\n      <stop offset=\"50%\" stop-color=\"#f6d27a\"/>\n      <stop offset=\"100%\" stop-color=\"#8a6212\"/>\n    </linearGradient>\n    <linearGradient id=\"res_resZone\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#fe5f55\" stop-opacity=\"0.55\"/>\n      <stop offset=\"100%\" stop-color=\"#9c2f29\" stop-opacity=\"0.18\"/>\n    </linearGradient>\n    <linearGradient id=\"res_resRed\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#ff7d74\"/>\n      <stop offset=\"50%\" stop-color=\"#fe5f55\"/>\n      <stop offset=\"100%\" stop-color=\"#c2403a\"/>\n    </linearGradient>\n    <radialGradient id=\"res_resGlow\" cx=\"50%\" cy=\"50%\" r=\"50%\">\n      <stop offset=\"0%\" stop-color=\"#fe5f55\" stop-opacity=\"0.45\"/>\n      <stop offset=\"100%\" stop-color=\"#fe5f55\" stop-opacity=\"0\"/>\n    </radialGradient>\n    <filter id=\"res_resSoft\" x=\"-30%\" y=\"-30%\" width=\"160%\" height=\"160%\">\n      <feGaussianBlur stdDeviation=\"0.5\"/>\n    </filter>\n  </defs>\n\n  <!-- fundo -->\n  <rect x=\"0\" y=\"0\" width=\"130\" height=\"100\" fill=\"url(#res_resBg)\"/>\n\n  <!-- raios/reticulas douradas sutis -->\n  <g stroke=\"#f6d27a\" stroke-width=\"0.3\" opacity=\"0.10\">\n    <line x1=\"65\" y1=\"26\" x2=\"6\" y2=\"6\"/>\n    <line x1=\"65\" y1=\"26\" x2=\"124\" y2=\"6\"/>\n    <line x1=\"65\" y1=\"26\" x2=\"14\" y2=\"94\"/>\n    <line x1=\"65\" y1=\"26\" x2=\"116\" y2=\"94\"/>\n    <line x1=\"65\" y1=\"26\" x2=\"65\" y2=\"96\"/>\n  </g>\n  <g stroke=\"#3ea0e0\" stroke-width=\"0.25\" opacity=\"0.10\">\n    <line x1=\"8\" y1=\"58\" x2=\"122\" y2=\"58\"/>\n    <line x1=\"8\" y1=\"74\" x2=\"122\" y2=\"74\"/>\n    <line x1=\"8\" y1=\"90\" x2=\"122\" y2=\"90\"/>\n  </g>\n\n  <!-- ZONA DE RESISTENCIA (teto vermelho com borda dourada) -->\n  <rect x=\"8\" y=\"20\" width=\"114\" height=\"14\" fill=\"url(#res_resZone)\"/>\n  <rect x=\"8\" y=\"20\" width=\"114\" height=\"14\" fill=\"none\" stroke=\"url(#res_resGoldH)\" stroke-width=\"1.1\"/>\n  <line x1=\"8\" y1=\"20.6\" x2=\"122\" y2=\"20.6\" stroke=\"#fffaf0\" stroke-width=\"0.45\" opacity=\"0.5\"/>\n  <line x1=\"8\" y1=\"33.4\" x2=\"122\" y2=\"33.4\" stroke=\"#fbe0a0\" stroke-width=\"0.5\" opacity=\"0.7\"/>\n  <!-- hachuras leves na zona -->\n  <g stroke=\"#fe5f55\" stroke-width=\"0.4\" opacity=\"0.22\">\n    <line x1=\"20\" y1=\"34\" x2=\"30\" y2=\"20\"/>\n    <line x1=\"40\" y1=\"34\" x2=\"50\" y2=\"20\"/>\n    <line x1=\"60\" y1=\"34\" x2=\"70\" y2=\"20\"/>\n    <line x1=\"80\" y1=\"34\" x2=\"90\" y2=\"20\"/>\n    <line x1=\"100\" y1=\"34\" x2=\"110\" y2=\"20\"/>\n  </g>\n\n  <!-- brilho de rejeicao no teto -->\n  <ellipse cx=\"58\" cy=\"33\" rx=\"40\" ry=\"9\" fill=\"url(#res_resGlow)\"/>\n\n  <!-- CANDLES rejeitados pra baixo (pavios longos batendo na zona) -->\n  <!-- candle 1 -->\n  <g filter=\"url(#res_resSoft)\">\n    <line x1=\"34\" y1=\"32\" x2=\"34\" y2=\"44\" stroke=\"#9c2f29\" stroke-width=\"0.9\"/>\n    <line x1=\"34\" y1=\"58\" x2=\"34\" y2=\"66\" stroke=\"#9c2f29\" stroke-width=\"0.9\"/>\n    <rect x=\"30\" y=\"44\" width=\"8\" height=\"14\" rx=\"1\" fill=\"url(#res_resRed)\" stroke=\"#9c2f29\" stroke-width=\"0.7\"/>\n    <line x1=\"31\" y1=\"45\" x2=\"31\" y2=\"56\" stroke=\"#fffaf0\" stroke-width=\"0.4\" opacity=\"0.4\"/>\n  </g>\n  <!-- candle 2 (maior rejeicao, pavio mais longo) -->\n  <g filter=\"url(#res_resSoft)\">\n    <line x1=\"58\" y1=\"30\" x2=\"58\" y2=\"48\" stroke=\"#9c2f29\" stroke-width=\"0.9\"/>\n    <line x1=\"58\" y1=\"64\" x2=\"58\" y2=\"74\" stroke=\"#9c2f29\" stroke-width=\"0.9\"/>\n    <rect x=\"54\" y=\"48\" width=\"8\" height=\"16\" rx=\"1\" fill=\"url(#res_resRed)\" stroke=\"#9c2f29\" stroke-width=\"0.7\"/>\n    <line x1=\"55\" y1=\"49\" x2=\"55\" y2=\"62\" stroke=\"#fffaf0\" stroke-width=\"0.4\" opacity=\"0.4\"/>\n  </g>\n  <!-- candle 3 -->\n  <g filter=\"url(#res_resSoft)\">\n    <line x1=\"82\" y1=\"32\" x2=\"82\" y2=\"52\" stroke=\"#9c2f29\" stroke-width=\"0.9\"/>\n    <line x1=\"82\" y1=\"70\" x2=\"82\" y2=\"80\" stroke=\"#9c2f29\" stroke-width=\"0.9\"/>\n    <rect x=\"78\" y=\"52\" width=\"8\" height=\"18\" rx=\"1\" fill=\"url(#res_resRed)\" stroke=\"#9c2f29\" stroke-width=\"0.7\"/>\n    <line x1=\"79\" y1=\"53\" x2=\"79\" y2=\"68\" stroke=\"#fffaf0\" stroke-width=\"0.4\" opacity=\"0.4\"/>\n  </g>\n\n  <!-- pontos de rejeicao (toques no teto) -->\n  <circle cx=\"34\" cy=\"33\" r=\"1.3\" fill=\"#fbe0a0\" opacity=\"0.9\"/>\n  <circle cx=\"58\" cy=\"33\" r=\"1.5\" fill=\"#fffaf0\" opacity=\"0.95\">\n    <animate attributeName=\"opacity\" values=\"0.95;0.5;0.95\" dur=\"2.6s\" repeatCount=\"indefinite\"/>\n  </circle>\n  <circle cx=\"82\" cy=\"33\" r=\"1.3\" fill=\"#fbe0a0\" opacity=\"0.9\"/>\n\n  <!-- SETA DOURADA DE BAIXA -->\n  <g>\n    <rect x=\"106.5\" y=\"46\" width=\"3\" height=\"28\" rx=\"1.5\" fill=\"url(#res_resGold)\"/>\n    <polygon points=\"102,70 113,70 107.5,84\" fill=\"url(#res_resGold)\" stroke=\"#8a6212\" stroke-width=\"0.5\"/>\n    <line x1=\"107.8\" y1=\"48\" x2=\"107.8\" y2=\"68\" stroke=\"#fbe0a0\" stroke-width=\"0.5\" opacity=\"0.6\"/>\n    <polygon points=\"103.8,71 111.2,71 107.5,80.5\" fill=\"#fbe0a0\" opacity=\"0.35\"/>\n  </g>\n\n  <!-- moldura dourada interna -->\n  <rect x=\"3.2\" y=\"3.2\" width=\"123.6\" height=\"93.6\" rx=\"3\" fill=\"none\" stroke=\"url(#res_resGold)\" stroke-width=\"0.8\" opacity=\"0.55\"/>\n\n  <!-- brilho discreto canto -->\n  <circle cx=\"18\" cy=\"14\" r=\"1\" fill=\"#fffaf0\" opacity=\"0.5\"/>\n</svg>","close":"<svg viewBox=\"0 0 130 100\" xmlns=\"http://www.w3.org/2000/svg\">\n<defs>\n<radialGradient id=\"close_cpanel\" cx=\"42%\" cy=\"38%\" r=\"78%\">\n<stop offset=\"0%\" stop-color=\"#142033\"/>\n<stop offset=\"55%\" stop-color=\"#0b1320\"/>\n<stop offset=\"100%\" stop-color=\"#060a13\"/>\n</radialGradient>\n<linearGradient id=\"close_cgold\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n<stop offset=\"0%\" stop-color=\"#fbe0a0\"/>\n<stop offset=\"35%\" stop-color=\"#f6d27a\"/>\n<stop offset=\"62%\" stop-color=\"#f4c95d\"/>\n<stop offset=\"88%\" stop-color=\"#c79320\"/>\n<stop offset=\"100%\" stop-color=\"#8a6212\"/>\n</linearGradient>\n<linearGradient id=\"close_cgoldH\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\">\n<stop offset=\"0%\" stop-color=\"#fbe0a0\"/>\n<stop offset=\"50%\" stop-color=\"#f4c95d\"/>\n<stop offset=\"100%\" stop-color=\"#c79320\"/>\n</linearGradient>\n<radialGradient id=\"close_cseal\" cx=\"40%\" cy=\"35%\" r=\"75%\">\n<stop offset=\"0%\" stop-color=\"#1b2c44\"/>\n<stop offset=\"60%\" stop-color=\"#0d1626\"/>\n<stop offset=\"100%\" stop-color=\"#070c16\"/>\n</radialGradient>\n<linearGradient id=\"close_cgreen\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\">\n<stop offset=\"0%\" stop-color=\"#5ee79a\"/>\n<stop offset=\"45%\" stop-color=\"#37d07a\"/>\n<stop offset=\"100%\" stop-color=\"#1e9255\"/>\n</linearGradient>\n<radialGradient id=\"close_cglow\" cx=\"50%\" cy=\"50%\" r=\"50%\">\n<stop offset=\"0%\" stop-color=\"#37d07a\" stop-opacity=\"0.55\"/>\n<stop offset=\"70%\" stop-color=\"#37d07a\" stop-opacity=\"0.08\"/>\n<stop offset=\"100%\" stop-color=\"#37d07a\" stop-opacity=\"0\"/>\n</radialGradient>\n<filter id=\"close_csoft\" x=\"-40%\" y=\"-40%\" width=\"180%\" height=\"180%\">\n<feGaussianBlur stdDeviation=\"0.7\"/>\n</filter>\n</defs>\n\n<rect x=\"0\" y=\"0\" width=\"130\" height=\"100\" fill=\"url(#close_cpanel)\"/>\n\n<!-- subtle gold reticle rays from seal center -->\n<g stroke=\"#f4c95d\" stroke-width=\"0.4\" opacity=\"0.16\">\n<line x1=\"65\" y1=\"50\" x2=\"12\" y2=\"14\"/>\n<line x1=\"65\" y1=\"50\" x2=\"118\" y2=\"14\"/>\n<line x1=\"65\" y1=\"50\" x2=\"12\" y2=\"86\"/>\n<line x1=\"65\" y1=\"50\" x2=\"118\" y2=\"86\"/>\n<line x1=\"65\" y1=\"50\" x2=\"65\" y2=\"8\"/>\n<line x1=\"65\" y1=\"50\" x2=\"65\" y2=\"92\"/>\n</g>\n\n<!-- outer gold frame -->\n<rect x=\"6\" y=\"6\" width=\"118\" height=\"88\" rx=\"9\" fill=\"none\" stroke=\"url(#close_cgold)\" stroke-width=\"1.4\" opacity=\"0.85\"/>\n<rect x=\"8.5\" y=\"8.5\" width=\"113\" height=\"83\" rx=\"7\" fill=\"none\" stroke=\"#c79320\" stroke-width=\"0.4\" opacity=\"0.5\"/>\n\n<!-- corner purple joker accents -->\n<g fill=\"#a06bd6\" opacity=\"0.7\">\n<circle cx=\"12\" cy=\"12\" r=\"1.5\"/>\n<circle cx=\"118\" cy=\"12\" r=\"1.5\"/>\n<circle cx=\"12\" cy=\"88\" r=\"1.5\"/>\n<circle cx=\"118\" cy=\"88\" r=\"1.5\"/>\n</g>\n\n<!-- green ambient glow behind seal -->\n<circle cx=\"65\" cy=\"50\" r=\"40\" fill=\"url(#close_cglow)\"/>\n\n<!-- MINI-SEAL: gold ring on dark -->\n<circle cx=\"65\" cy=\"50\" r=\"33\" fill=\"url(#close_cseal)\" stroke=\"url(#close_cgold)\" stroke-width=\"2.4\"/>\n<circle cx=\"65\" cy=\"50\" r=\"33\" fill=\"none\" stroke=\"#fbe0a0\" stroke-width=\"0.35\" opacity=\"0.6\"/>\n<circle cx=\"65\" cy=\"50\" r=\"29.5\" fill=\"none\" stroke=\"#c79320\" stroke-width=\"0.5\" opacity=\"0.55\"/>\n\n<!-- seal tick marks (clock-like) -->\n<g stroke=\"#f4c95d\" stroke-width=\"0.7\" opacity=\"0.55\">\n<line x1=\"65\" y1=\"19.5\" x2=\"65\" y2=\"22.5\"/>\n<line x1=\"65\" y1=\"77.5\" x2=\"65\" y2=\"80.5\"/>\n<line x1=\"34.5\" y1=\"50\" x2=\"37.5\" y2=\"50\"/>\n<line x1=\"92.5\" y1=\"50\" x2=\"95.5\" y2=\"50\"/>\n<line x1=\"43\" y1=\"28\" x2=\"45\" y2=\"30\"/>\n<line x1=\"85\" y1=\"70\" x2=\"87\" y2=\"72\"/>\n<line x1=\"87\" y1=\"28\" x2=\"85\" y2=\"30\"/>\n<line x1=\"45\" y1=\"70\" x2=\"43\" y2=\"72\"/>\n</g>\n\n<!-- dashed CLOSE line crossing the seal horizontally -->\n<line x1=\"40\" y1=\"55\" x2=\"90\" y2=\"55\" stroke=\"#f4c95d\" stroke-width=\"0.8\" stroke-dasharray=\"2.4 2\" opacity=\"0.85\"/>\n\n<!-- the GREEN candle that CLOSED -->\n<!-- upper + lower wick -->\n<line x1=\"62\" y1=\"30\" x2=\"62\" y2=\"38\" stroke=\"#1e7a46\" stroke-width=\"1.4\"/>\n<line x1=\"62\" y1=\"67\" x2=\"62\" y2=\"73\" stroke=\"#1e7a46\" stroke-width=\"1.4\"/>\n<!-- body -->\n<rect x=\"55.5\" y=\"38\" width=\"13\" height=\"29\" rx=\"2\" fill=\"url(#close_cgreen)\" stroke=\"#1e7a46\" stroke-width=\"1.2\"/>\n<!-- body sheen -->\n<rect x=\"57.5\" y=\"40\" width=\"3\" height=\"25\" rx=\"1.5\" fill=\"#fffaf0\" opacity=\"0.3\"/>\n\n<!-- gold CHECK / seal mark (confirmation) overlapping candle -->\n<g filter=\"url(#close_csoft)\">\n<path d=\"M70 47 L78 56 L94 38\" fill=\"none\" stroke=\"#8a6212\" stroke-width=\"5.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" opacity=\"0.6\"/>\n</g>\n<path d=\"M70 47 L78 56 L94 38\" fill=\"none\" stroke=\"url(#close_cgoldH)\" stroke-width=\"3.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n<path d=\"M70.5 46 L78 55 L93.5 37.5\" fill=\"none\" stroke=\"#fbe0a0\" stroke-width=\"0.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" opacity=\"0.7\"/>\n\n<!-- coringa x1.5 label, gold on dark pill -->\n<g>\n<rect x=\"48\" y=\"82\" width=\"34\" height=\"11\" rx=\"5.5\" fill=\"#0d1626\" stroke=\"url(#close_cgold)\" stroke-width=\"0.9\"/>\n<text x=\"65\" y=\"90\" text-anchor=\"middle\" font-family=\"Georgia, 'Times New Roman', serif\" font-size=\"7.4\" font-weight=\"bold\" fill=\"url(#close_cgoldH)\">×1.5</text>\n</g>\n\n<!-- small purple joker gem top of seal -->\n<circle cx=\"65\" cy=\"50\" r=\"33\" fill=\"none\" stroke=\"#a06bd6\" stroke-width=\"0.35\" opacity=\"0.35\"/>\n\n<!-- discrete sparkle on the check -->\n<g opacity=\"0.9\">\n<circle cx=\"94\" cy=\"38\" r=\"1.1\" fill=\"#fffaf0\">\n<animate attributeName=\"opacity\" values=\"0.4;1;0.4\" dur=\"2.6s\" repeatCount=\"indefinite\"/>\n</circle>\n</g>\n<circle cx=\"48\" cy=\"33\" r=\"0.8\" fill=\"#fffaf0\" opacity=\"0.5\"/>\n<circle cx=\"82\" cy=\"66\" r=\"0.7\" fill=\"#fffaf0\" opacity=\"0.4\"/>\n</svg>","road":"<svg viewBox=\"0 0 130 100\" xmlns=\"http://www.w3.org/2000/svg\">\n  <defs>\n    <radialGradient id=\"road_rbPanel\" cx=\"50%\" cy=\"42%\" r=\"75%\">\n      <stop offset=\"0%\" stop-color=\"#142033\"/>\n      <stop offset=\"55%\" stop-color=\"#0b1320\"/>\n      <stop offset=\"100%\" stop-color=\"#060a13\"/>\n    </radialGradient>\n    <linearGradient id=\"road_rbGold\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#fbe0a0\"/>\n      <stop offset=\"35%\" stop-color=\"#f4c95d\"/>\n      <stop offset=\"70%\" stop-color=\"#c79320\"/>\n      <stop offset=\"100%\" stop-color=\"#8a6212\"/>\n    </linearGradient>\n    <linearGradient id=\"road_rbGoldH\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n      <stop offset=\"0%\" stop-color=\"#8a6212\"/>\n      <stop offset=\"50%\" stop-color=\"#f6d27a\"/>\n      <stop offset=\"100%\" stop-color=\"#8a6212\"/>\n    </linearGradient>\n    <radialGradient id=\"road_rbSeal\" cx=\"50%\" cy=\"38%\" r=\"68%\">\n      <stop offset=\"0%\" stop-color=\"#1a2942\"/>\n      <stop offset=\"60%\" stop-color=\"#0d1526\"/>\n      <stop offset=\"100%\" stop-color=\"#070b15\"/>\n    </radialGradient>\n    <linearGradient id=\"road_rbGreen\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#5be39a\"/>\n      <stop offset=\"100%\" stop-color=\"#37d07a\"/>\n    </linearGradient>\n    <linearGradient id=\"road_rbRed\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#fe7a72\"/>\n      <stop offset=\"100%\" stop-color=\"#fe5f55\"/>\n    </linearGradient>\n    <radialGradient id=\"road_rbTarget\" cx=\"50%\" cy=\"50%\" r=\"50%\">\n      <stop offset=\"0%\" stop-color=\"#fe5f55\"/>\n      <stop offset=\"100%\" stop-color=\"#9c2f29\"/>\n    </radialGradient>\n    <radialGradient id=\"road_rbGlow\" cx=\"50%\" cy=\"50%\" r=\"50%\">\n      <stop offset=\"0%\" stop-color=\"#fbe0a0\" stop-opacity=\"0.5\"/>\n      <stop offset=\"100%\" stop-color=\"#fbe0a0\" stop-opacity=\"0\"/>\n    </radialGradient>\n    <filter id=\"road_rbSoft\" x=\"-40%\" y=\"-40%\" width=\"180%\" height=\"180%\">\n      <feGaussianBlur stdDeviation=\"0.8\"/>\n    </filter>\n  </defs>\n\n  <!-- panel background -->\n  <rect x=\"0\" y=\"0\" width=\"130\" height=\"100\" fill=\"url(#road_rbPanel)\"/>\n\n  <!-- subtle gold reticle rays from seal -->\n  <g stroke=\"#f6d27a\" stroke-width=\"0.4\" opacity=\"0.1\">\n    <line x1=\"65\" y1=\"50\" x2=\"14\" y2=\"12\"/>\n    <line x1=\"65\" y1=\"50\" x2=\"116\" y2=\"12\"/>\n    <line x1=\"65\" y1=\"50\" x2=\"14\" y2=\"88\"/>\n    <line x1=\"65\" y1=\"50\" x2=\"116\" y2=\"88\"/>\n    <line x1=\"65\" y1=\"50\" x2=\"65\" y2=\"8\"/>\n    <line x1=\"65\" y1=\"50\" x2=\"65\" y2=\"92\"/>\n  </g>\n\n  <!-- gold inner frame -->\n  <rect x=\"4\" y=\"4\" width=\"122\" height=\"92\" rx=\"6\" fill=\"none\" stroke=\"url(#road_rbGoldH)\" stroke-width=\"1\" opacity=\"0.55\"/>\n\n  <!-- glow halo behind seal -->\n  <circle cx=\"65\" cy=\"50\" r=\"40\" fill=\"url(#road_rbGlow)\">\n    <animate attributeName=\"r\" values=\"38;42;38\" dur=\"4s\" repeatCount=\"indefinite\"/>\n  </circle>\n\n  <!-- ======= MINI-SELO (circular gold-on-dark) ======= -->\n  <g>\n    <!-- outer gold ring -->\n    <circle cx=\"65\" cy=\"50\" r=\"36\" fill=\"none\" stroke=\"url(#road_rbGold)\" stroke-width=\"3\"/>\n    <circle cx=\"65\" cy=\"50\" r=\"36\" fill=\"none\" stroke=\"#fbe0a0\" stroke-width=\"0.5\" opacity=\"0.6\"/>\n    <!-- inner dark disc -->\n    <circle cx=\"65\" cy=\"50\" r=\"32.5\" fill=\"url(#road_rbSeal)\" stroke=\"#8a6212\" stroke-width=\"0.8\"/>\n    <!-- thin gold inner accent ring -->\n    <circle cx=\"65\" cy=\"50\" r=\"29.5\" fill=\"none\" stroke=\"#c79320\" stroke-width=\"0.5\" opacity=\"0.7\"/>\n\n    <!-- engraved tick marks around the seal -->\n    <g stroke=\"#f6d27a\" stroke-width=\"0.7\" opacity=\"0.55\">\n      <line x1=\"65\" y1=\"15.5\" x2=\"65\" y2=\"18.5\"/>\n      <line x1=\"65\" y1=\"81.5\" x2=\"65\" y2=\"84.5\"/>\n      <line x1=\"30.5\" y1=\"50\" x2=\"33.5\" y2=\"50\"/>\n      <line x1=\"96.5\" y1=\"50\" x2=\"99.5\" y2=\"50\"/>\n      <line x1=\"41\" y1=\"26\" x2=\"43\" y2=\"28\"/>\n      <line x1=\"87\" y1=\"72\" x2=\"89\" y2=\"74\"/>\n      <line x1=\"89\" y1=\"26\" x2=\"87\" y2=\"28\"/>\n      <line x1=\"43\" y1=\"72\" x2=\"41\" y2=\"74\"/>\n    </g>\n\n    <!-- clip the inner scene -->\n    <clipPath id=\"road_rbClip\"><circle cx=\"65\" cy=\"50\" r=\"32\"/></clipPath>\n    <g clip-path=\"url(#road_rbClip)\">\n\n      <!-- TAKE-PROFIT ZONE band (the roadblock zone) -->\n      <rect x=\"33\" y=\"28\" width=\"64\" height=\"13\" fill=\"#c79320\" opacity=\"0.1\"/>\n      <line x1=\"33\" y1=\"28\" x2=\"97\" y2=\"28\" stroke=\"url(#road_rbGoldH)\" stroke-width=\"1.4\"/>\n      <line x1=\"33\" y1=\"41\" x2=\"97\" y2=\"41\" stroke=\"url(#road_rbGoldH)\" stroke-width=\"0.8\" opacity=\"0.7\"/>\n      <!-- TP label -->\n      <text x=\"36\" y=\"35.5\" font-family=\"Georgia,serif\" font-size=\"7\" font-weight=\"bold\" fill=\"#f6d27a\" opacity=\"0.9\">TP</text>\n\n      <!-- candlesticks approaching the barrier (rising toward the top zone) -->\n      <!-- down candle (red) lower-left -->\n      <g>\n        <line x1=\"46\" y1=\"58\" x2=\"46\" y2=\"72\" stroke=\"#9c2f29\" stroke-width=\"0.9\"/>\n        <rect x=\"43.6\" y=\"62\" width=\"4.8\" height=\"8\" rx=\"0.6\" fill=\"url(#road_rbRed)\" stroke=\"#9c2f29\" stroke-width=\"0.5\"/>\n      </g>\n      <!-- up candle (green) -->\n      <g>\n        <line x1=\"54\" y1=\"52\" x2=\"54\" y2=\"68\" stroke=\"#1e7a46\" stroke-width=\"0.9\"/>\n        <rect x=\"51.6\" y=\"55\" width=\"4.8\" height=\"10\" rx=\"0.6\" fill=\"url(#road_rbGreen)\" stroke=\"#1e7a46\" stroke-width=\"0.5\"/>\n      </g>\n      <!-- up candle taller -->\n      <g>\n        <line x1=\"62\" y1=\"45\" x2=\"62\" y2=\"62\" stroke=\"#1e7a46\" stroke-width=\"0.9\"/>\n        <rect x=\"59.6\" y=\"48\" width=\"4.8\" height=\"11\" rx=\"0.6\" fill=\"url(#road_rbGreen)\" stroke=\"#1e7a46\" stroke-width=\"0.5\"/>\n      </g>\n      <!-- up candle reaching the barrier zone -->\n      <g>\n        <line x1=\"70\" y1=\"40\" x2=\"70\" y2=\"56\" stroke=\"#1e7a46\" stroke-width=\"0.9\"/>\n        <rect x=\"67.6\" y=\"42.5\" width=\"4.8\" height=\"11\" rx=\"0.6\" fill=\"url(#road_rbGreen)\" stroke=\"#1e7a46\" stroke-width=\"0.5\"/>\n      </g>\n    </g>\n\n    <!-- TARGET on the opposite zone (top), red accent over gold -->\n    <g transform=\"translate(81,31)\">\n      <circle r=\"7.6\" fill=\"#0d1526\" stroke=\"url(#road_rbGold)\" stroke-width=\"1.4\"/>\n      <circle r=\"5.4\" fill=\"none\" stroke=\"#f6d27a\" stroke-width=\"0.8\" opacity=\"0.7\"/>\n      <circle r=\"3\" fill=\"url(#road_rbTarget)\" stroke=\"#9c2f29\" stroke-width=\"0.5\"/>\n      <circle r=\"1\" fill=\"#fffaf0\"/>\n      <!-- crosshair ticks -->\n      <line x1=\"0\" y1=\"-9.4\" x2=\"0\" y2=\"-7\" stroke=\"#f6d27a\" stroke-width=\"0.8\"/>\n      <line x1=\"0\" y1=\"7\" x2=\"0\" y2=\"9.4\" stroke=\"#f6d27a\" stroke-width=\"0.8\"/>\n      <line x1=\"-9.4\" y1=\"0\" x2=\"-7\" y2=\"0\" stroke=\"#f6d27a\" stroke-width=\"0.8\"/>\n      <line x1=\"7\" y1=\"0\" x2=\"9.4\" y2=\"0\" stroke=\"#f6d27a\" stroke-width=\"0.8\"/>\n      <circle r=\"3\" fill=\"none\" stroke=\"#fe5f55\" stroke-width=\"0.6\" opacity=\"0.8\">\n        <animate attributeName=\"r\" values=\"3;4.4;3\" dur=\"2.2s\" repeatCount=\"indefinite\"/>\n        <animate attributeName=\"opacity\" values=\"0.8;0;0.8\" dur=\"2.2s\" repeatCount=\"indefinite\"/>\n      </circle>\n    </g>\n\n    <!-- specular highlight on ring -->\n    <path d=\"M40 30 A36 36 0 0 1 70 15\" fill=\"none\" stroke=\"#fffaf0\" stroke-width=\"1.2\" opacity=\"0.4\" stroke-linecap=\"round\" filter=\"url(#road_rbSoft)\"/>\n  </g>\n\n  <!-- joker purple corner accents -->\n  <g fill=\"#a06bd6\" opacity=\"0.85\">\n    <circle cx=\"14\" cy=\"14\" r=\"2.1\"/>\n    <circle cx=\"116\" cy=\"14\" r=\"2.1\"/>\n    <circle cx=\"14\" cy=\"86\" r=\"2.1\"/>\n    <circle cx=\"116\" cy=\"86\" r=\"2.1\"/>\n  </g>\n  <g stroke=\"#a06bd6\" stroke-width=\"0.6\" opacity=\"0.45\" fill=\"none\">\n    <path d=\"M9 14 H19 M14 9 V19\"/>\n    <path d=\"M111 14 H121 M116 9 V19\"/>\n    <path d=\"M9 86 H19 M14 81 V91\"/>\n    <path d=\"M111 86 H121 M116 81 V91\"/>\n  </g>\n\n  <!-- multiplier label x1.4 -->\n  <g>\n    <rect x=\"48\" y=\"88.5\" width=\"34\" height=\"9\" rx=\"4.5\" fill=\"#0d1526\" stroke=\"url(#road_rbGold)\" stroke-width=\"0.9\"/>\n    <text x=\"65\" y=\"95.2\" text-anchor=\"middle\" font-family=\"Georgia,serif\" font-size=\"6.4\" font-weight=\"bold\" fill=\"#f6d27a\">x1.4</text>\n  </g>\n</svg>"};
+/*__ART_END__*/
+/* ===================================================================
+   0. ESTADO PERSISTENTE  (meta-progressão leve estilo Hades — item 1/núcleo)
+   =================================================================== */
+const SAVE_KEY='gabfx_ato0_v1';
+const S=Object.assign({xp:0,onbDone:false,bossWon:false,unlocked:[],runs:0},JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'));
+function save(){localStorage.setItem(SAVE_KEY,JSON.stringify(S));hud();}
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+function hud(){$('#hxp').textContent=S.xp;}
+
+/* ===================================================================
+   1. ÁUDIO (WebAudio) — count-up com pitch crescente, sons por gatilho
+   =================================================================== */
+let AC=null;
+function ac(){ if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}} return AC; }
+function tone(freq,dur,type,vol){
+  const c=ac(); if(!c)return;
+  try{
+    const o=c.createOscillator(),g=c.createGain();
+    o.type=type||'triangle'; o.frequency.value=freq;
+    g.gain.value=vol||.05; o.connect(g); g.connect(c.destination);
+    o.start(); g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+(dur||.12));
+    o.stop(c.currentTime+(dur||.12)+.02);
+  }catch(e){}
+}
+function blip(f){tone(f,.11,'triangle',.05);}
+function thunk(){tone(120,.16,'sine',.10);tone(70,.18,'sine',.07);}
+function whoosh(){const c=ac();if(!c)return;try{const o=c.createOscillator(),g=c.createGain();o.type='sawtooth';o.frequency.setValueAtTime(700,c.currentTime);o.frequency.exponentialRampToValueAtTime(120,c.currentTime+.28);g.gain.value=.05;o.connect(g);g.connect(c.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+.3);o.stop(c.currentTime+.32);}catch(e){}}
+function buzz(){tone(150,.18,'square',.06);}
+function fanfare(){[523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,.22,'triangle',.06),i*110));}
+function vibrate(ms){try{navigator.vibrate&&navigator.vibrate(ms);}catch(e){}}
+
+/* ===================================================================
+   2. JUICE COMPARTILHADO — pop flutuante, faísca, screen shake
+   =================================================================== */
+function pop(x,y,txt,col,big){
+  const p=document.createElement('div');p.className='pop';p.textContent=txt;
+  p.style.left=x+'px';p.style.top=y+'px';p.style.color=col||'var(--gold)';
+  if(big)p.style.fontSize='30px';
+  document.body.appendChild(p);setTimeout(()=>p.remove(),1100);
+}
+function sparks(x,y,col,n){
+  for(let i=0;i<(n||7);i++){
+    const s=document.createElement('div');s.className='spark';
+    const sz=4+Math.random()*6;s.style.width=sz+'px';s.style.height=sz+'px';
+    s.style.background=col;s.style.left=x+'px';s.style.top=y+'px';
+    const a=Math.random()*Math.PI*2,d=18+Math.random()*34;
+    s.style.transform='translate(-50%,-50%)';
+    document.body.appendChild(s);
+    s.animate([{transform:'translate(-50%,-50%) scale(1)',opacity:1},
+      {transform:`translate(${Math.cos(a)*d-50}%,${Math.sin(a)*d-50}%) scale(0)`,opacity:0}],
+      {duration:520+Math.random()*200,easing:'cubic-bezier(.2,.7,.3,1)'});
+    setTimeout(()=>s.remove(),760);
+  }
+}
+let shakeT;
+function shake(hard){const s=$('#shake');s.classList.remove('shaking','hard');void s.offsetWidth;
+  s.classList.add('shaking');if(hard)s.classList.add('hard');
+  clearTimeout(shakeT);shakeT=setTimeout(()=>s.classList.remove('shaking','hard'),hard?440:320);}
+
+/* ===================================================================
+   3. MOTOR DE CANDLE  (reusa pY/yToP/candles/zone do GABFX.html antigo)
+   =================================================================== */
+function cssv(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+function pY(p,b,pr){return b.y+b.h*(pr.max-p)/(pr.max-pr.min);}            // preço -> y
+function yToP(y,b,pr){return pr.max-(y-b.y)/b.h*(pr.max-pr.min);}          // y -> preço (do GABFX onDrag)
+function drawGrid(ctx,b,pr){
+  ctx.strokeStyle='#ffffff0e';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const y=b.y+b.h*i/4;ctx.beginPath();ctx.moveTo(b.x,y);ctx.lineTo(b.x+b.w,y);ctx.stroke();}
+}
+function candles(ctx,arr,b,pr,n){
+  const N=arr.length,show=(n==null?N:Math.min(n,N)),slot=b.w/N,cw=Math.min(18,slot*.56);
+  for(let i=0;i<show;i++){
+    const c=arr[i],cx=b.x+slot*i+slot/2,up=c.c>=c.o;
+    const col=up?cssv('--green'):cssv('--red');
+    // brilho na vela mais nova (a que está fechando)
+    const fresh=(i===show-1);
+    if(fresh){ctx.save();ctx.shadowColor=col;ctx.shadowBlur=10;}
+    ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(cx,pY(c.h,b,pr));ctx.lineTo(cx,pY(c.l,b,pr));ctx.stroke();
+    const yo=pY(c.o,b,pr),yc=pY(c.c,b,pr);
+    ctx.fillRect(cx-cw/2,Math.min(yo,yc),cw,Math.max(2.5,Math.abs(yo-yc)));
+    if(fresh)ctx.restore();
+  }
+}
+function zone(ctx,z,b,pr){
+  const yt=pY(z.top,b,pr),yb=pY(z.bottom,b,pr);
+  ctx.fillStyle=z.fill;ctx.fillRect(b.x,yt,b.w,yb-yt);
+  ctx.strokeStyle=z.stroke;ctx.lineWidth=z.lit?2.4:1.4;
+  ctx.setLineDash([5,4]);ctx.strokeRect(b.x,yt,b.w,yb-yt);ctx.setLineDash([]);
+  if(z.lit){ // ACENDE quando o preço testa a zona
+    ctx.save();ctx.shadowColor=z.stroke;ctx.shadowBlur=16;
+    ctx.strokeStyle=z.stroke;ctx.lineWidth=2.6;ctx.strokeRect(b.x,yt,b.w,yb-yt);ctx.restore();
+  }
+  if(z.label){ctx.fillStyle=z.lc||'#fff';ctx.font='bold 10.5px system-ui';
+    ctx.fillText(z.label,b.x+6,yt-4<b.y+10?yt+13:yt-5);}
+}
+function arrow(ctx,x,y1,y2,col,txt){
+  ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(x,y1);ctx.lineTo(x,y2);ctx.stroke();
+  const d=y2<y1?-1:1;
+  ctx.beginPath();ctx.moveTo(x,y2);ctx.lineTo(x-6,y2-d*9);ctx.lineTo(x+6,y2-d*9);ctx.closePath();ctx.fill();
+  if(txt){ctx.font='bold 12px system-ui';ctx.save();ctx.shadowColor='#000';ctx.shadowBlur=4;
+    ctx.fillText(txt,x+9,y2+(d<0?-3:15));ctx.restore();}
+}
+
+/* ===================================================================
+   4. ARTE DAS CARTAS (SVG candle) — fiel ao demo, vela só corpo p/ pavio etc.
+   =================================================================== */
+function cdl(x,o,c,h,l,col){ // x, open, close, high, low (em coord SVG), cor
+  const top=Math.min(o,c),bot=Math.max(o,c);
+  return `<line x1="${x}" y1="${h}" x2="${x}" y2="${l}" stroke="${col}" stroke-width="1.6"/>`+
+         `<rect x="${x-5}" y="${top}" width="10" height="${Math.max(3,bot-top)}" rx="1" fill="${col}"/>`;
+}
+function art(kind){
+  if(ART_SVG[kind])return ART_SVG[kind];   /* arte rica estilo A injetada (apply_art.js) */
+  const W=92,H=50,G='#37d07a',R='#ff6b5e',B='#3ea0e0',GD='#f4c95d';
+  let s='';
+  if(kind==='bull')      s=cdl(46,40,12,6,46,G);
+  else if(kind==='bear') s=cdl(46,12,40,6,46,R);
+  else if(kind==='body') s=`<rect x="33" y="14" width="26" height="22" rx="2" fill="${GD}" opacity=".25"/>`+cdl(46,36,16,10,42,G)+`<text x="46" y="47" font-size="8" text-anchor="middle" fill="${GD}">só o corpo</text>`;
+  else if(kind==='wick'){ s=cdl(46,28,30,6,44,R)+`<circle cx="46" cy="11" r="9" fill="none" stroke="${GD}" stroke-width="1.6" stroke-dasharray="2 2"/>`+`<line x1="40" y1="6" x2="52" y2="17" stroke="${R}" stroke-width="1.6"/>`;}
+  else if(kind==='sup')  s=`<rect x="0" y="34" width="${W}" height="10" fill="rgba(55,208,122,.22)" stroke="${G}" stroke-dasharray="3 3"/>`+cdl(34,26,40,22,42,R)+cdl(58,40,26,22,42,G)+`<path d="M74 30 l0 -10 m0 0 l-3 4 m3 -4 l3 4" stroke="${G}" stroke-width="1.6" fill="none"/>`;
+  else if(kind==='res')  s=`<rect x="0" y="8" width="${W}" height="10" fill="rgba(255,107,94,.22)" stroke="${R}" stroke-dasharray="3 3"/>`+cdl(34,28,14,8,30,G)+cdl(58,14,28,8,30,R)+`<path d="M74 22 l0 10 m0 0 l-3 -4 m3 4 l3 -4" stroke="${R}" stroke-width="1.6" fill="none"/>`;
+  else if(kind==='close')s=cdl(46,38,16,10,42,G)+`<line x1="20" y1="16" x2="72" y2="16" stroke="${GD}" stroke-width="1.4" stroke-dasharray="3 2"/><text x="46" y="11" font-size="7.5" text-anchor="middle" fill="${GD}">fechou ✓</text>`;
+  else if(kind==='road') s=`<rect x="0" y="10" width="${W}" height="8" fill="rgba(255,107,94,.2)" stroke="${R}" stroke-dasharray="3 3"/>`+cdl(30,42,30,26,46,G)+cdl(50,30,18,12,34,G)+`<text x="74" y="16" font-size="9" fill="${GD}">🎯</text>`;
+  else if(kind==='mtf')  s=`<rect x="5" y="8" width="36" height="34" rx="3" fill="none" stroke="${G}" opacity=".7"/><rect x="51" y="8" width="36" height="34" rx="3" fill="none" stroke="${B}" opacity=".7"/>`+cdl(20,32,20,14,40,G)+cdl(68,32,20,14,40,G);
+  else                   s=`<text x="46" y="32" font-size="20" text-anchor="middle" fill="${GD}">?</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="none">`+
+         `<rect width="${W}" height="${H}" fill="#0b1320"/>`+s+`</svg>`;
+}
+
+/* ===================================================================
+   5. O BARALHO DO ATO 0  (Módulos 1–6) — 100% FIEL ao Metodo_GABFX_COMPLETO.md
+   Cada carta tem TODO o conteúdo "eu não sei nada":
+   oque (o que é) / jogo (o que faz no jogo) / metodo (no método do GAB) / ex (exemplo).
+   chips = qualidade da zona [GAB]; mult/risco = agressividade.
+   =================================================================== */
+const DECK={
+  /* ---- naipes crus (Módulos 1-3) ---- */
+  bull:{nome:'Vela de Alta',kind:'bull',fam:'vela',rr:'comum',tipo:'confirma',dir:'buy',chips:12,
+    oque:'Uma vela VERDE: o preço fechou ACIMA de onde abriu — os compradores venceram aquele período.',
+    jogo:'Vale +12 chips e CONFIRMA uma compra. Sozinha é fraca: o forte é a ZONA. Use a vela pra confirmar que o suporte segurou.',
+    metodo:'[GAB] É o "tijolo" do gráfico. Na regra dos 2 candles, o suporte se forma com uma vela de baixa SEGUIDA de uma vela de alta — a vela de alta é a virada dos compradores.',
+    ex:'O ouro cai até R$ 138, aparece uma vela verde forte: os compradores assumiram. Sinal de que o piso segurou.'},
+  bear:{nome:'Vela de Baixa',kind:'bear',fam:'vela',rr:'comum',tipo:'confirma',dir:'sell',chips:12,
+    oque:'Uma vela VERMELHA: o preço fechou ABAIXO de onde abriu — os vendedores venceram aquele período.',
+    jogo:'Vale +12 chips e CONFIRMA uma venda. Você GANHA na queda quando opera vender. Combine com uma Resistência.',
+    metodo:'[GAB] Na regra dos 2 candles, a resistência se forma com uma vela de alta SEGUIDA de uma vela de baixa — a vela de baixa é a virada dos vendedores. "Vender" = ganhar quando o preço cai.',
+    ex:'O ouro sobe até o teto, surge uma vela vermelha pesada: os vendedores assumiram. O preço tende a cair.'},
+  body:{nome:'O Corpo',kind:'body',fam:'vela',rr:'comum',tipo:'selo',dir:null,chips:0,buff:'body',
+    oque:'O CORPO é o retângulo grosso da vela (entre abertura e fechamento). É a parte que VALE pra marcar zona.',
+    jogo:'Selo de regra. Ativa o "marcar só o corpo": some +8 chips por carta de ZONA do seu setup (zona bem marcada vale mais). Não tem direção.',
+    metodo:'[GAB] "Mark only the body, never the wick — the wick is useless." A zona (suporte/resistência) é desenhada pelo CORPO das velas, nunca pelo pavio. Marcar pelo pavio engana o olho.',
+    ex:'Pra marcar o suporte, olhe onde os CORPOS pararam de cair — não o espeto fino lá embaixo.'},
+  wick:{nome:'O Pavio',kind:'wick',fam:'vela',rr:'risco',tipo:'armadilha',dir:null,chips:0,trap:true,
+    oque:'O PAVIO (sombra/wick) é o espeto fino acima/abaixo do corpo. Mostra até onde o preço foi e VOLTOU — uma rejeição.',
+    jogo:'⚠ ARMADILHA. Pontua 0 e NÃO marca zona. Se você montar o setup pela ponta do pavio, marca a zona errada. O jogo te mostra por que evitar.',
+    metodo:'[GAB] "The wick is useless" pra MARCAR zona. O pavio é informação de rejeição, mas a LINHA da zona vem do corpo. Marcar pelo pavio = zona falsa = stop fácil.',
+    ex:'O preço espetou até R$ 137 (pavio) mas o corpo fechou em R$ 139. A zona é R$ 139 (corpo), não R$ 137 (pavio).'},
+
+  /* ---- zonas (Módulos 4-5) ---- */
+  sup:{nome:'Suporte',kind:'sup',fam:'zona',rr:'incomum',tipo:'zona',dir:'buy',chips:45,
+    oque:'O SUPORTE é o PISO: a faixa onde o preço caiu, parou e voltou a subir. É onde estão os COMPRADORES.',
+    jogo:'+45 chips e define a direção COMPRA. É a base do setup. Toque numa Vela de Alta junto pra confirmar.',
+    metodo:'[GAB] Regra dos 2 candles: suporte = vela de BAIXA seguida de vela de ALTA. É a SNR Tradicional — a zona mais FORTE do método. Compra-se aqui; o alvo é o "roadblock" (a zona oposta acima).',
+    ex:'O ouro vem caindo, faz uma vela vermelha e logo uma verde no mesmo nível: ali nasceu um suporte. Compra.'},
+  res:{nome:'Resistência',kind:'res',fam:'zona',rr:'incomum',tipo:'zona',dir:'sell',chips:45,
+    oque:'A RESISTÊNCIA é o TETO: a faixa onde o preço subiu, parou e voltou a cair. É onde estão os VENDEDORES.',
+    jogo:'+45 chips e define a direção VENDA. Toque numa Vela de Baixa junto pra confirmar.',
+    metodo:'[GAB] Regra dos 2 candles: resistência = vela de ALTA seguida de vela de BAIXA. SNR Tradicional, a zona mais forte. Vende-se aqui; o alvo é o roadblock abaixo.',
+    ex:'O ouro sobe, faz uma vela verde e logo uma vermelha no mesmo nível: nasceu uma resistência. Vende.'}
+};
+
+/* selos de regra que entram como "coringas" do Ato 0 (multiplicador leve). */
+const SEALS={
+  close:{nome:'Candle-Close',kind:'close',rr:'coringa',mult:1.5,buff:'close',
+    oque:'Regra do FECHAMENTO: uma zona só vale DEPOIS que a vela FECHA naquele nível — não vale durante a formação.',
+    jogo:'Coringa de regra: ×1,5 nos chips por operar "no fechamento" (paciência). Recompensa esperar a vela fechar.',
+    metodo:'[GAB] "Candle-close": a SNR só conta após o fechamento da vela. Entrar antes do candle fechar é apostar no que ainda não aconteceu — o GAB espera fechar.',
+    ex:'A vela parece que vai virar suporte, mas ainda está aberta. Espere fechar: se fechou, vale; se não, era ilusão.'},
+  roadblock:{nome:'Roadblock (TP)',kind:'road',rr:'coringa',mult:1.4,buff:'tp',
+    oque:'O ROADBLOCK é o "muro" à frente: a próxima zona oposta. É onde você REALIZA o lucro (Take Profit).',
+    jogo:'Coringa de alvo: ×1,4 por mirar o alvo certo (a zona oposta), em vez de chutar a saída.',
+    metodo:'[GAB] O TP fica no roadblock — a zona contrária mais próxima. Comprou no suporte? O alvo é a resistência acima. Dá direção pro trade ter fim definido.',
+    ex:'Comprou em R$ 138 (suporte). O roadblock é a resistência em R$ 152 — é ali que você realiza.'}
+};
+
+/* coringa lendário do Ato 0 — TRAVADO (preview de fidelidade da hierarquia). */
+const LOCKED_PREVIEW={nome:'Multi-Timeframe',kind:'mtf',rr:'lendaria',
+  oque:'A MESMA zona aparecendo em vários tempos gráficos (Monthly, Weekly, Daily...). "The most important thing."',
+  metodo:'[GAB] MTF é a confluência mais forte de todas — uma zona alinhada em vários TFs é "infinitely stronger". Entra no Ato 4. Aqui só aparece como vislumbre do que vem.'};
+
+/* ===================================================================
+   6. DICIONÁRIO VIVO  (item 4) — termos clicáveis em qualquer texto
+   =================================================================== */
+const GLOSS={
+  vela:['Vela (candle)','Cada barra do gráfico mostra o que o preço fez num período. VERDE = fechou em alta. VERMELHA = fechou em baixa. Tem corpo (grosso) e pavio (fino).'],
+  corpo:['Corpo (body)','O retângulo grosso da vela, entre a abertura e o fechamento. É o que VALE pra marcar zona — "the wick is useless".'],
+  pavio:['Pavio (wick/sombra)','O espeto fino da vela. Mostra rejeição, mas NÃO se usa pra marcar a linha da zona. Marcar pelo pavio = zona falsa.'],
+  comprar:['Comprar (buy)','Apostar que o preço vai SUBIR. Você compra num suporte (piso) e ganha se subir.'],
+  vender:['Vender (sell)','Apostar que o preço vai CAIR. Você vende numa resistência (teto) e GANHA NA QUEDA. Não precisa "ter" o ativo.'],
+  pip:['Pip','A menor unidade de variação do preço. No jogo, os "pips" são seus pontos — quanto o trade andou a seu favor.'],
+  suporte:['Suporte','O PISO: onde o preço caiu, parou e subiu (compradores). Regra dos 2 candles: vela de baixa + vela de alta → COMPRA.'],
+  resistencia:['Resistência','O TETO: onde o preço subiu, parou e caiu (vendedores). Regra dos 2 candles: vela de alta + vela de baixa → VENDE.'],
+  zona:['Zona','Uma FAIXA de preço importante (suporte ou resistência), não uma linha exata. É onde se opera no método do GAB.'],
+  fechamento:['Fechamento (candle-close)','Uma zona só vale DEPOIS que a vela fecha. Esperar o fechamento evita entrar numa ilusão que se desfaz.'],
+  roadblock:['Roadblock','O "muro" à frente — a próxima zona oposta. É onde se realiza o lucro (TP).'],
+  chips:['Chips','Os pontos-base de cada carta. CHIPS = qualidade da ZONA. Quanto melhor a zona, mais chips.'],
+  mult:['Mult (×)','O multiplicador. MULT = agressividade/confluência. CHIPS × MULT = sua pontuação.'],
+  coringa:['Coringa (joker)','Carta de regra/confluência que fica fixa e MULTIPLICA a jogada. Ex.: Candle-Close, Roadblock.'],
+  snr:['SNR','Support & Resistance — suporte e resistência. A base do método. A SNR Tradicional (regra dos 2 candles) é a mais forte.'],
+  mtf:['Multi-Timeframe (MTF)','A mesma zona em vários tempos gráficos ao mesmo tempo. A confluência mais forte. (Entra no Ato 4.)']
+};
+/* transforma termos conhecidos em <span class="kw"> clicável */
+function linkify(html){
+  // só os 1ª ocorrência de cada termo pra não poluir
+  const used=new Set();
+  const terms=[['resistência','resistencia'],['resistencia','resistencia'],['suporte','suporte'],['roadblock','roadblock'],
+    ['candle-close','fechamento'],['fechamento','fechamento'],['pavio','pavio'],['corpo','corpo'],
+    ['multi-timeframe','mtf'],['vender','vender'],['comprar','comprar'],['zona','zona'],['pip','pip'],['snr','snr']];
+  for(const [word,key] of terms){
+    if(used.has(key))continue;
+    const re=new RegExp('(?<![\\w>])('+word.replace(/[-]/g,'\\-')+')(?![\\w<])','i');
+    if(re.test(html)){html=html.replace(re,(m,p1)=>`<span class="kw" data-g="${key}">${p1}</span>`);used.add(key);}
+  }
+  return html;
+}
+function bindGloss(root){
+  (root||document).querySelectorAll('.kw[data-g]').forEach(el=>{
+    el.onclick=ev=>{ev.stopPropagation();openGloss(el.dataset.g);};
+  });
+}
+function openGloss(key){
+  const g=GLOSS[key];if(!g)return;blip(620);
+  showSheet('📖 '+g[0],`<p class="sect"><span style="font-size:14px;line-height:1.55;color:#dde7df">${g[1]}</span></p>`+
+    `<button class="btn ghost" onclick="openDictionary()">Ver dicionário completo</button>`);
+}
+function openDictionary(){
+  let h='';
+  for(const k in GLOSS){h+=`<div class="dic-row"><b>${GLOSS[k][0]}</b><p>${GLOSS[k][1]}</p></div>`;}
+  showSheet('📖 Dicionário',h);
+}
+$('#dicbtn').onclick=openDictionary;
+
+/* ===================================================================
+   7. OVERLAY GENÉRICO (sheet)  — usado por painel-de-carta, dicionário, resultado
+   =================================================================== */
+function showSheet(title,bodyHTML,opts){
+  opts=opts||{};
+  const o=$('#over');
+  o.innerHTML=`<div class="sheet"><div class="sheet-head"><h3>${title}</h3>`+
+    (opts.noX?'':`<button class="x" id="sheetx">✕</button>`)+`</div><div class="sheet-body">${bodyHTML}</div></div>`;
+  o.classList.add('show');
+  bindGloss(o);
+  const x=$('#sheetx');if(x)x.onclick=closeSheet;
+  o.onclick=e=>{if(e.target===o&&!opts.sticky)closeSheet();};
+}
+function closeSheet(){$('#over').classList.remove('show');blip(360);}
+
+/* ===================================================================
+   8. PAINEL "EU NÃO SEI NADA" (item 4) — clicar/segurar QUALQUER carta
+   =================================================================== */
+function rrLabel(rr){return ({comum:'COMUM',incomum:'INCOMUM',coringa:'CORINGA',risco:'RISCO',lendaria:'LENDÁRIA'})[rr]||rr.toUpperCase();}
+function rrColor(rr){return ({comum:'#9aa6a0',incomum:'var(--blue)',coringa:'var(--purple)',risco:'#caa23a',lendaria:'linear-gradient(90deg,#ff5cf0,#5ce0ff,#ffe45c)'})[rr];}
+function cardDetail(c){
+  blip(560);vibrate(8);
+  const chipBits=[];
+  if(c.chips)chipBits.push(`<span class="ck c">+${c.chips} chips</span>`);
+  if(c.mult)chipBits.push(`<span class="ck m">×${c.mult} mult</span>`);
+  if(c.tipo==='zona')chipBits.push(`<span class="ck z">${c.dir==='buy'?'↑ COMPRA':'↓ VENDA'}</span>`);
+  if(c.trap)chipBits.push(`<span class="ck t">⚠ pontua 0</span>`);
+  const fidGab=(c.metodo||'').includes('[GAB]');
+  const body=
+    `<div class="detail-card">
+       <div class="mini"><div class="card hcard ${c.rr} ${(c.rr==='lendaria'||c.rr==='coringa'||c.rr==='incomum')?'foil':''}" style="width:88px;cursor:default">
+          <div class="inner"><div class="top"><span class="nm">${c.nome}</span></div><div class="art">${art(c.kind)}</div></div>
+          <div class="holo"></div><div class="shine" style="opacity:.4"></div></div></div>
+       <div class="meta"><div class="nm">${c.nome}</div>
+         <span class="rrtag" style="background:${rrColor(c.rr)};color:${c.rr==='incomum'||c.rr==='coringa'?'#fff':'#1c1f18'}">${rrLabel(c.rr)}</span>
+         <div class="chipline">${chipBits.join('')}</div></div>
+     </div>
+     <div class="sect"><h4>📘 O que é</h4><p>${linkify(c.oque)}</p></div>
+     <div class="sect game"><h4>🎮 No jogo</h4><p>${linkify(c.jogo||'—')}</p></div>
+     <div class="sect method"><h4>📈 No método do GAB</h4><p>${linkify(c.metodo)}</p></div>
+     ${c.ex?`<div class="sect example"><h4>🔎 Exemplo</h4><p>${linkify(c.ex)}</p></div>`:''}
+     <div class="fid">${fidGab?'<span class="gabtag">● FIEL AO GAB</span> — conteúdo direto do método.':'<span class="lictag">● LICENÇA DE DESIGN</span> — adaptação do jogo.'}</div>`;
+  showSheet(c.fam?('Carta · '+c.fam.toUpperCase()):'Carta',body);
+}
+
+/* ===================================================================
+   9. RENDER DE CARTA + tilt 3D + foil + clique-curto x segurar
+   =================================================================== */
+function makeCard(c,kind){ // kind: 'hand' | 'joker'
+  const d=document.createElement('div');
+  const foil=(c.rr==='lendaria'||c.rr==='coringa'||c.rr==='incomum'||c.rr==='risco');
+  d.className='card '+(kind==='joker'?'joker ':'hcard ')+c.rr+(foil?' foil':'');
+  let valHTML;
+  if(kind==='joker') valHTML=`<span class="v" style="color:#7b3fb0">×${c.mult}</span>`;
+  else if(c.trap)    valHTML=`<span class="v vm">+0</span>`;
+  else if(c.tipo==='zona') valHTML=`<span class="v vz">+${c.chips} · ${c.dir==='buy'?'COMPRA':'VENDA'}</span>`;
+  else if(c.buff)    valHTML=`<span class="v" style="color:#7b3fb0">selo</span>`;
+  else               valHTML=`<span class="v ${c.dir==='buy'?'vc':'vm'}">+${c.chips}</span>`;
+  d.innerHTML=
+    `<div class="inner">
+       <span class="fam">${c.fam||c.rr}</span>
+       <div class="top"><span class="nm">${c.nome}</span><span class="rr ${c.rr}">${(c.rr==='coringa'?'JOKER':rrLabel(c.rr)).slice(0,6)}</span></div>
+       <div class="art">${art(c.kind)}</div>
+       <div class="desc">${valHTML}<small>${shortDesc(c)}</small></div>
+       <span class="infodot">ⓘ</span>
+     </div>
+     <div class="holo"></div><div class="shine"></div>`+
+    (c.trap?'<div class="warn">⚠</div>':'');
+  tilt(d);
+  bindPress(d,c,kind);
+  return d;
+}
+function shortDesc(c){
+  if(c.trap)return 'Armadilha: marca zona errada.';
+  if(c.tipo==='zona')return c.dir==='buy'?'Piso → compra.':'Teto → venda.';
+  if(c.buff==='body')return 'Marca só o corpo.';
+  if(c.buff==='close')return 'Espera a vela fechar.';
+  if(c.buff==='tp')return 'Alvo na zona oposta.';
+  if(c.dir==='buy')return 'Confirma compra.';
+  if(c.dir==='sell')return 'Confirma venda.';
+  return '';
+}
+function tilt(d){
+  const sh=d.querySelector('.shine');
+  d.addEventListener('pointermove',e=>{
+    if(d.classList.contains('flying'))return;
+    const r=d.getBoundingClientRect();
+    const px=(e.clientX-r.left)/r.width-.5,py=(e.clientY-r.top)/r.height-.5;
+    const baseY=d.classList.contains('sel')?-15:0;
+    d.style.transform=`perspective(620px) translateY(${baseY}px) rotateY(${px*22}deg) rotateX(${-py*22}deg) scale(${d.classList.contains('sel')?1.05:1.04})`;
+    d.classList.add('lifted');
+    sh.style.setProperty('--mx',(px*120+50)+'%');sh.style.setProperty('--my',(py*120+50)+'%');
+  });
+  d.addEventListener('pointerleave',()=>{d.classList.remove('lifted');if(!d.classList.contains('flying'))d.style.transform='';});
+}
+/* clique curto = selecionar (mão) ; segurar (>=380ms) ou ⓘ = painel "eu não sei nada" */
+function bindPress(d,c,kind){
+  let timer=null,longed=false,sx=0,sy=0,moved=false;
+  const start=e=>{longed=false;moved=false;sx=e.clientX;sy=e.clientY;
+    timer=setTimeout(()=>{longed=true;cardDetail(c);vibrate(12);},380);};
+  const move=e=>{if(Math.abs(e.clientX-sx)>10||Math.abs(e.clientY-sy)>10){moved=true;clearTimeout(timer);}};
+  const end=e=>{clearTimeout(timer);
+    if(longed)return;
+    if(d.dataset.infohit){d.dataset.infohit='';return;}
+    if(kind==='hand'&&!moved&&d._toggle)d._toggle();
+    else if(kind!=='hand'&&!moved)cardDetail(c); // coringa: toque abre painel
+  };
+  d.addEventListener('pointerdown',start);
+  d.addEventListener('pointermove',move);
+  d.addEventListener('pointerup',end);
+  d.addEventListener('pointercancel',()=>clearTimeout(timer));
+  // ⓘ sempre abre painel
+  const dot=d.querySelector('.infodot');
+  if(dot)dot.addEventListener('pointerdown',e=>{e.stopPropagation();d.dataset.infohit='1';clearTimeout(timer);cardDetail(c);});
+}
+
+/* ===================================================================
+   10. TOOLTIP-CONCEITO (item 4) — dispara quando uma carta entra na jogada
+   =================================================================== */
+let conceptT;
+function conceptToast(ic,title,body){
+  $('#ct-ic').textContent=ic;$('#ct-title').textContent=title;$('#ct-body').innerHTML=body;
+  const t=$('#concept');t.classList.add('show');
+  clearTimeout(conceptT);conceptT=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+/* ===================================================================
+   11. SCORING ENGINE (item 2) — Score = CHIPS × MULT, 4 fases encenadas.
+   Fiel ao Balatro: base da mão -> cartas pontuadas esq->dir -> seguradas
+   -> coringas esq->dir. +Mult e ×Mult NÃO comutam (×Mult é aplicado DEPOIS).
+   CHIPS = qualidade da zona. MULT = agressividade (risco/confluência).
+   No Ato 0 o ×Mult vem dos selos-coringa; o +Mult ainda não tem carta
+   (entra no Ato 1) — mas o pipeline já o suporta e o aplica antes do ×.
+   =================================================================== */
+function buildScorePlan(setup){
+  // setup = {cards:[deckObj...], idxs:[handIndex...], jokers:[sealObj...], dir, hasZone, zoneCards}
+  const plan=[]; // lista de passos encenados
+  // FASE 1 — base da mão (tipo de setup): no Ato 0, base = +0/×1 mas nomeia a mão
+  plan.push({phase:1,kind:'base',label:'Base do setup',chips:0,addMult:0,xMult:1,
+    note:setupName(setup)});
+  // FASE 2 — cartas pontuadas, esquerda -> direita
+  // i = índice REAL na mão (não a posição no setup) p/ casar o DOM mesmo com cartas repetidas.
+  setup.cards.forEach((c,pos)=>{
+    let chips=c.chips||0, add=c.addMult||0, x=1;
+    // selo Corpo (body) aplicado às cartas de zona: +8 chips [GAB: marcar só o corpo]
+    if(setup.hasBody && (c.tipo==='zona')) chips+=8;
+    plan.push({phase:2,kind:'card',ref:c,idx:setup.idxs?setup.idxs[pos]:-1,
+      chips,addMult:add,xMult:x,trap:!!c.trap});
+  });
+  // FASE 3 — cartas "seguradas" (held): no Ato 0 não há mão segurada relevante (placeholder p/ Ato 7+)
+  // FASE 4 — coringas, esquerda -> direita (×Mult — NÃO comutativo, vem por último)
+  setup.jokers.forEach(j=>{
+    plan.push({phase:4,kind:'joker',ref:j,chips:0,addMult:0,xMult:j.mult});
+  });
+  return plan;
+}
+function setupName(s){
+  if(!s.hasZone)return 'Sem zona (inválido)';
+  if(s.cards.some(c=>c.trap))return 'Contém pavio (armadilha)';
+  const conf=s.cards.some(c=>c.tipo==='confirma'&&c.dir===s.dir);
+  if(conf)return 'Zona + Confirmação';
+  return 'Zona solta';
+}
+
+/* ===================================================================
+   12. FASE — A MESA DO ATO 0 (run = operação; chefe "O Gráfico Limpo")
+   =================================================================== */
+function runAto0(){
+  const screen=$('#screen');
+  /* ----- mundo do gráfico ----- */
+  const PR={min:130,max:166};
+  const B={x:14,y:12,w:520,h:188};
+  // cenário: o preço desce até um SUPORTE (corpo ~138-141; pavio fura até 137 = a armadilha).
+  const SETUP=[
+    {o:160,h:161,l:156,c:157},{o:157,h:158,l:152,c:153},{o:153,h:154,l:148,c:149},
+    {o:149,h:150,l:144,c:145},{o:145,h:146,l:140,c:141},{o:141,h:142,l:137,c:139} // última: pavio fura 137, corpo fecha 139
+  ];
+  const SUPZ={top:141,bottom:138};        // [GAB] zona pelo CORPO (138-141), NÃO pelo pavio (137)
+  const ROAD={top:153,bottom:150};        // roadblock (resistência acima) = alvo do TP
+  const CONT_BUY=[
+    {o:139,h:140,l:138,c:139.5},{o:139.5,h:142,l:139,c:141.5},{o:141.5,h:145,l:141,c:144},
+    {o:144,h:148,l:143.5,c:147},{o:147,h:151,l:146.5,c:150.5},{o:150.5,h:154,l:150,c:153}
+  ];
+  const CONT_SELL=[ // vendeu no suporte = errado: o preço sobe e estopa
+    {o:139,h:141,l:138,c:140.5},{o:140.5,h:144,l:140,c:143},{o:143,h:147,l:142.5,c:146}
+  ];
+
+  /* ----- estado da run (Hades: 1 run = 1 operação) ----- */
+  let blind={alvo:300,maos:4,desc:3},        // [LICENÇA] Ato 0, Ante 1 = 300 pips (escala do doc)
+      pips=0,sel=new Set(),busy=false,firstHand=true,priceTested=false;
+  let jokers=['close','roadblock'];          // 2 selos-coringa do Ato 0
+  // mão inicial: garante as peças do tutorial + a armadilha (pavio) presente
+  let hand=['sup','bull','wick','bear','res','body'];
+
+  function jokerObjs(){return jokers.map(id=>SEALS[id]);}
+
+  /* ---------- desenho do gráfico (zona acende ao ser testada) ---------- */
+  function drawTrade(arr,n){
+    const cv=$('#bd');if(!cv)return;const ctx=cv.getContext('2d');
+    ctx.clearRect(0,0,cv.width,cv.height);
+    drawGrid(ctx,B,PR);
+    const shown=arr||SETUP, count=(n==null?shown.length:n);
+    // a zona ACENDE se alguma vela visível tocou a faixa do corpo
+    let lit=false;
+    for(let i=0;i<Math.min(count,shown.length);i++){
+      const c=shown[i],lowBody=Math.max(c.o,c.c),hiBody=Math.min(c.o,c.c);
+      if(Math.min(c.o,c.c)<=SUPZ.top && Math.max(c.o,c.c)>=SUPZ.bottom){lit=true;}
+      // tocar pelo corpo dentro da faixa
+      if(c.c<=SUPZ.top+0.6 && c.c>=SUPZ.bottom-0.6){lit=true;}
+    }
+    zone(ctx,{top:ROAD.top,bottom:ROAD.bottom,fill:'rgba(255,107,94,.10)',stroke:'#ff6b5e',label:'ROADBLOCK (alvo)',lc:'#ffb4ac'},B,PR);
+    zone(ctx,{top:SUPZ.top,bottom:SUPZ.bottom,fill:lit?'rgba(55,208,122,.30)':'rgba(55,208,122,.14)',stroke:'#37d07a',lit:lit,label:'SUPORTE (compra) — marcado no CORPO',lc:'#9af3bf'},B,PR);
+    candles(ctx,shown,B,PR,count);
+    if(lit&&!priceTested){priceTested=true;blip(720);sparks(B.x+B.w*0.86,pY(SUPZ.bottom,B,PR)+58,'#37d07a',6);}
+  }
+
+  /* ---------- cálculo (preview da fórmula no HUD) ---------- */
+  function calc(){
+    let chips=0,dir=null,hasZone=false,hasBody=false,hasTrap=false;
+    const idxs=[...sel];
+    const cards=idxs.map(i=>DECK[hand[i]]);
+    cards.forEach(c=>{
+      if(c.tipo==='zona'){hasZone=true;dir=c.dir;}
+      if(c.buff==='body')hasBody=true;
+      if(c.trap)hasTrap=true;
+    });
+    cards.forEach(c=>{let cc=c.chips||0;if(hasBody&&c.tipo==='zona')cc+=8;chips+=cc;});
+    let mult=1;jokers.forEach(id=>mult*=SEALS[id].mult);
+    mult=Math.round(mult*10)/10;
+    return {chips,mult,dir,hasZone,hasBody,hasTrap,cards,idxs};
+  }
+  function updFormula(){
+    const k=calc();
+    setNum($('#chips'),k.chips);setNum($('#mult'),k.mult);
+  }
+  function setNum(el,n){if(!el)return;el.textContent=(typeof n==='number'&&n%1)?n.toFixed(1):n;el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}
+
+  /* ---------- render completo da mesa ---------- */
+  function render(){
+    screen.innerHTML=`<div class="view"><div class="mesa">
+      <div class="blind">
+        <div class="seal">${BOSS_A_SVG||'🎯'}</div>
+        <div class="bt"><b>Chefe: O Gráfico Limpo</b><small>Marque a zona certa: só o <b>corpo</b>, só após o <b>fechamento</b>.</small></div>
+        <div class="goal"><div class="n" id="goalp">${pips} / ${blind.alvo}</div><small>pips</small></div>
+      </div>
+      <div class="statline">
+        <div class="b pips"><small>PIPS</small><b id="pipsb">${pips}</b></div>
+        <div class="b"><small>MÃOS</small><b id="maosb">${blind.maos}</b></div>
+        <div class="b"><small>DESCARTES</small><b id="descb">${blind.desc}</b></div>
+      </div>
+      <div class="formula"><div class="chips" id="chips">0</div><div class="fx">×</div><div class="mult" id="mult">1</div></div>
+      <div class="felt"><canvas id="bd" width="548" height="212"></canvas><span class="tf-badge">DAILY · XAUUSD</span></div>
+      <div class="say"><span class="ava">🥋</span><span id="sayt"></span></div>
+      <div class="lane-label"><span>Coringas · selos de regra (multiplicam)</span><span class="cnt" id="jkcnt"></span></div>
+      <div class="jokers" id="jk"></div>
+      <div class="lane-label"><span>Sua mão · toque pra montar o setup, segure pra explicar</span></div>
+      <div class="hand" id="hd"></div>
+      <div class="actions">
+        <button class="btn op" id="op">▶ OPERAR</button>
+        <button class="btn disc" id="dc">Descartar (${blind.desc})</button>
+      </div>
+      <div class="note">⚠️ Simulação para aprender — não é recomendação. O método do GAB usa risco agressivo (~10% por setup) e alavancagem; a maioria dos traders perde. "95% garantido" é <b>marketing</b>, não número. Nada vai a dinheiro real sem backtest.</div>
+    </div></div>`;
+    drawTrade();
+    // canvas: tocar/arrastar mostra o preço (reusa yToP — leitura do gráfico)
+    bindCanvasProbe();
+    // coringas
+    const jk=$('#jk');
+    jokerObjs().forEach(j=>jk.appendChild(makeCard(j,'joker')));
+    // slot bloqueado mostrando o MTF lendário (preview de fidelidade)
+    const lock=document.createElement('div');lock.className='joker-empty';lock.textContent='🔒';
+    lock.style.cursor='pointer';
+    lock.onclick=()=>{blip(300);showSheet('🔒 '+LOCKED_PREVIEW.nome+' (travado)',
+      `<div class="sect"><h4>📘 O que é</h4><p>${linkify(LOCKED_PREVIEW.oque)}</p></div>
+       <div class="sect method"><h4>📈 No método do GAB</h4><p>${linkify(LOCKED_PREVIEW.metodo)}</p></div>
+       <div class="fid"><span class="gabtag">● FIEL AO GAB</span> — a hierarquia (MTF acima de tudo) é do método. Você destrava no Ato 4.</div>`);};
+    jk.appendChild(lock);
+    $('#jkcnt').textContent=jokers.length+'/4';
+    // mão
+    const hd=$('#hd');
+    hand.forEach((id,i)=>{const c=DECK[id];const el=makeCard(c,'hand');el.dataset.i=i;
+      el._toggle=()=>toggle(i,el,c);if(sel.has(i))el.classList.add('sel');hd.appendChild(el);});
+    $('#op').onclick=operar;$('#dc').onclick=descartar;
+    say(firstHand
+      ? 'Bem-vindo ao pregão! O ouro caiu até um <b>suporte</b> (faixa verde). Pra <b>comprar</b>, monte: carta <b>Suporte</b> + <b>Vela de Alta</b>. Dica: junte <b>O Corpo</b> pra marcar a zona certa — e <b>fuja do Pavio</b>. 📏 <b>Arraste no gráfico</b> pra medir a distância em pips.'
+      : 'Monte um setup (zona + confirmação na mesma direção) e opere. Use o <b>Corpo</b> pra valorizar a zona; evite o <b>Pavio</b> (marca errado).');
+    updFormula();
+    if($('#descb'))$('#descb').textContent=blind.desc;
+  }
+  function say(t){const s=$('#sayt');if(s){s.innerHTML=linkify(t);bindGloss(s);}}
+
+  /* ---------- canvas probe: leitura do preço (reusa yToP) ---------- */
+  /* ---------- RÉGUA DE PIPS: arraste no gráfico = mede a distância em pips (igual MetaTrader) ---------- */
+  function bindCanvasProbe(){
+    const cv=$('#bd');if(!cv)return;let probing=false,sy=0,hinted=false;
+    const toLocal=e=>{const r=cv.getBoundingClientRect();return {x:(e.clientX-r.left)*cv.width/r.width,y:(e.clientY-r.top)*cv.height/r.height};};
+    const toPips=d=>Math.round(Math.abs(d)*10);  // ouro: ~10 pips por R$1,00 [LICENÇA: escala didática]
+    const hLine=(ctx,yy,c)=>{ctx.strokeStyle=c;ctx.setLineDash([4,3]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(B.x,yy);ctx.lineTo(B.x+B.w,yy);ctx.stroke();ctx.setLineDash([]);};
+    const draw=e=>{const {x,y}=toLocal(e);const price=yToP(y,B,PR);
+      drawTrade();const ctx=cv.getContext('2d');
+      if(Math.abs(y-sy)<7){ // toque/parado: só lê o preço naquele nível
+        hLine(ctx,y,'#f4c95d');
+        ctx.fillStyle='#f4c95d';ctx.font='bold 11px system-ui';
+        ctx.fillText('R$ '+price.toFixed(1),Math.min(x+6,B.x+B.w-60),Math.max(B.y+12,y-4));
+        return;
+      }
+      // RÉGUA: mede do ponto onde você apertou (âncora) até o atual, em PIPS
+      const p0=yToP(sy,B,PR),pips=toPips(price-p0),up=y<sy,col=up?'#37d07a':'#fe5f55';
+      hLine(ctx,sy,'#f4c95d');                          // âncora
+      hLine(ctx,y,col);                                 // ponto atual
+      ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x,sy);ctx.lineTo(x,y);ctx.stroke(); // conector
+      ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-3,y+(up?5:-5));ctx.moveTo(x,y);ctx.lineTo(x+3,y+(up?5:-5));ctx.stroke(); // seta
+      const lx=Math.min(x+8,B.x+B.w-72),ly=(sy+y)/2;     // rótulo
+      ctx.fillStyle='rgba(11,19,32,.85)';ctx.fillRect(lx-4,ly-13,70,28);
+      ctx.strokeStyle=col;ctx.lineWidth=1;ctx.strokeRect(lx-4,ly-13,70,28);
+      ctx.fillStyle=col;ctx.font='bold 13px system-ui';ctx.fillText(pips+' pips',lx,ly+1);
+      ctx.fillStyle='#f4c95d';ctx.font='10px system-ui';ctx.fillText('Δ R$ '+Math.abs(price-p0).toFixed(1),lx,ly+12);
+      if(!hinted){hinted=true;conceptToast('📏','Régua de pips',`Você está medindo a distância em <b>pips</b> entre dois pontos do preço — igual à ferramenta de medição do <b>MetaTrader</b>. É assim que se mede o alvo (e o risco) de um trade.`);}
+    };
+    cv.addEventListener('pointerdown',e=>{if(busy)return;sy=toLocal(e).y;probing=true;draw(e);});
+    cv.addEventListener('pointermove',e=>{if(probing&&!busy)draw(e);});
+    cv.addEventListener('pointerup',()=>{probing=false;if(!busy)drawTrade();});
+    cv.addEventListener('pointercancel',()=>{probing=false;if(!busy)drawTrade();});
+  }
+
+  /* ---------- selecionar carta ---------- */
+  function toggle(i,el,c){
+    if(busy)return;
+    if(sel.has(i)){sel.delete(i);el.classList.remove('sel');el.style.transform='';blip(420);}
+    else{
+      if(sel.size>=4){buzz();say('Máximo de 4 cartas no setup do Ato 0.');return;}
+      sel.add(i);el.classList.add('sel');el.style.transform='';blip(560);vibrate(6);
+      // tooltip-conceito ao ENTRAR a carta na jogada (item 4)
+      conceptOnSelect(c);
+    }
+    updFormula();
+  }
+  function conceptOnSelect(c){
+    if(c.trap)conceptToast('⚠','Pavio = armadilha',`O <b>pavio</b> é o espeto fino e <b>não marca zona</b>. Se ele entra no setup, a zona sai errada e você perde. <i>"The wick is useless."</i> (segure a carta pra entender)`);
+    else if(c.buff==='body')conceptToast('🟩','Marcar só o corpo',`<b>O Corpo</b> é a parte que vale. Com ele, sua <b>zona</b> ganha +8 chips por estar bem marcada. [GAB]`);
+    else if(c.tipo==='zona')conceptToast(c.dir==='buy'?'🟢':'🔴',c.nome,c.dir==='buy'?'Você está num <b>suporte</b> (piso). A direção é <b>COMPRA</b>. Confirme com uma Vela de Alta.':'Você está numa <b>resistência</b> (teto). A direção é <b>VENDA</b> — ganha na queda.');
+    else if(c.tipo==='confirma')conceptToast(c.dir==='buy'?'🕯️':'🕯️',c.nome,`Esta vela <b>confirma</b> a direção ${c.dir==='buy'?'de compra':'de venda'}. Sozinha é fraca — a força vem da <b>zona</b>.`);
+  }
+
+  /* ---------- descartar (com swipe + whoosh) ---------- */
+  function descartar(){
+    if(busy||blind.desc<=0)return;
+    if(!sel.size){buzz();say('Selecione as cartas que quer descartar.');return;}
+    busy=true;blind.desc--;whoosh();vibrate(14);
+    const els=$$('.hand .card.sel');
+    els.forEach((el,k)=>{
+      el.classList.add('flying');
+      el.animate([{transform:'translateY(-15px)',opacity:1},
+        {transform:`translate(${(k%2?1:-1)*260}px,40px) rotate(${(k%2?1:-1)*30}deg)`,opacity:0}],
+        {duration:420,easing:'cubic-bezier(.5,0,.8,.4)',fill:'forwards'});
+    });
+    setTimeout(()=>{
+      [...sel].sort((a,b)=>b-a).forEach(i=>hand.splice(i,1));
+      sel.clear();refill();render();busy=false;
+    },440);
+  }
+  function refill(){
+    const pool=['sup','bull','bear','res','body','wick'];
+    while(hand.length<6){hand.push(pool[Math.floor(Math.random()*pool.length)]);}
+    // [GAB] garante jogada vencedora: ao menos 1 zona + 1 confirmação na MESMA direção
+    // (sup→bull / res→bear). 'wick' (armadilha) e 'body' (selo) seguem aparecendo — são
+    // pedagógicos — mas nunca travam a mão.
+    const temZona=d=>hand.some(id=>DECK[id].tipo==='zona'&&DECK[id].dir===d);
+    const temConf=d=>hand.some(id=>DECK[id].tipo==='confirma'&&DECK[id].dir===d);
+    if((temZona('buy')&&temConf('buy'))||(temZona('sell')&&temConf('sell')))return; // já jogável
+    // reaproveita o que a mão já esboça; mão neutra (só wick/body) → compra (o cenário é um suporte)
+    const buyComp=temZona('buy')||temConf('buy'),sellComp=temZona('sell')||temConf('sell');
+    const dir=(buyComp||!sellComp)?'buy':'sell';
+    const zCard=dir==='buy'?'sup':'res',cCard=dir==='buy'?'bull':'bear';
+    const keep=[];
+    // qual carta sacrificar p/ abrir slot: pavio → selo → direção oposta → resto (nunca o par certo)
+    const slotLivre=()=>{
+      const rank=id=>{const c=DECK[id];return c.trap?0:c.tipo==='selo'?1:(c.dir&&c.dir!==dir)?2:3;};
+      let best=0,bestR=9;
+      for(let i=0;i<hand.length;i++){if(keep.includes(i))continue;const r=rank(hand[i]);if(r<bestR){bestR=r;best=i;}}
+      return best;
+    };
+    if(!temZona(dir)){const s=slotLivre();hand[s]=zCard;keep.push(s);}
+    if(!temConf(dir)){const s=slotLivre();hand[s]=cCard;keep.push(s);}
+  }
+
+  /* ---------- OPERAR: validações que ENSINAM (nunca cobra o não-ensinado) ---------- */
+  function operar(){
+    if(busy)return;const k=calc();
+    if(!sel.size){buzz();say('Selecione cartas pra montar o setup primeiro.');return;}
+    if(k.hasTrap){ // armadilha do pavio: explica o erro, não pune escondido
+      buzz();shake();
+      say('❌ Você colocou o <b>Pavio</b> no setup. O pavio marca a zona pela ponta errada — a entrada fica falsa. Tire o pavio: marque pelo <b>Corpo</b>.');
+      conceptToast('⚠','Por que falhou',`O <b>pavio</b> não marca zona ("the wick is useless"). Descarte-o e use <b>O Corpo</b>. Isso não gasta uma mão — só remova a carta.`);
+      const trapEl=$$('.hand .card.sel').find(el=>DECK[hand[+el.dataset.i]].trap);
+      if(trapEl){trapEl.classList.add('trap-revealed');sparks(...centerOf(trapEl),'#fe5f55',8);}
+      return;
+    }
+    if(!k.hasZone){
+      buzz();shake();
+      say('❌ Sem <b>zona</b> não há trade. O GAB sempre entra num <b>suporte</b> ou <b>resistência</b>. Toque numa carta de zona.');
+      conceptToast('🧭','Precisa de zona',`A força do trade vem da <b>zona</b>, não da vela solta. Adicione um <b>Suporte</b> (compra) ou <b>Resistência</b> (venda).`);
+      return;
+    }
+    // operação válida -> encena
+    busy=true;firstHand=false;blind.maos--;
+    $('#op').disabled=true;$('#dc').disabled=true;
+    if($('#maosb'))$('#maosb').textContent=blind.maos;
+    const buy=k.dir==='buy';
+    const cont=buy?CONT_BUY:CONT_SELL,full=SETUP.concat(cont);
+    animateTrade(full,buy,k);
+  }
+  function centerOf(el){const r=el.getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2];}
+
+  /* ---------- 1) o trade roda candle a candle no gráfico ---------- */
+  function animateTrade(full,buy,k){
+    let n=SETUP.length;
+    const cv=$('#bd'),ctx=cv.getContext('2d');
+    say(buy?'Comprando no suporte… vamos ver se o piso segura.':'Vendendo no suporte… (atenção: no piso se COMPRA).');
+    const tm=setInterval(()=>{
+      n++;drawTrade(full,n);blip(300+n*12);
+      if(n>=full.length){
+        clearInterval(tm);
+        const slot=B.w/full.length,ax=B.x+slot*(SETUP.length-0.5);
+        arrow(ctx,ax,pY(SUPZ.bottom,B,PR),pY(buy?ROAD.bottom:SUPZ.bottom-10,B,PR),buy?'#37d07a':'#fe5f55',buy?'COMPRA':'VENDA');
+        setTimeout(()=>flyCardsToCenter(k,buy),360);
+      }
+    },150);
+  }
+
+  /* ---------- 2) cartas VOAM pro centro (bezier + overshoot) ---------- */
+  function flyCardsToCenter(k,buy){
+    const els=$$('.hand .card.sel');
+    const cx=window.innerWidth/2, cy=$('#bd').getBoundingClientRect().bottom+10;
+    els.forEach((el,i)=>{
+      const r=el.getBoundingClientRect();
+      const dx=cx-(r.left+r.width/2)+(i-(els.length-1)/2)*70;
+      const dy=cy-(r.top+r.height/2);
+      el.classList.add('flying');
+      el.style.zIndex=50;
+      el.animate([
+        {transform:'translate(0,0) scale(1.03)'},
+        {transform:`translate(${dx*0.6}px,${dy*0.6}px) scale(1.12) rotate(${(i-1)*4}deg)`,offset:.6},
+        {transform:`translate(${dx}px,${dy}px) scale(1.18) rotate(0deg)`,offset:.82}, // overshoot
+        {transform:`translate(${dx}px,${dy*0.97}px) scale(1.1)`} // settle
+      ],{duration:560,easing:'cubic-bezier(.34,1.56,.5,1)',fill:'forwards'});
+      blip(500+i*60);
+    });
+    whoosh();
+    setTimeout(()=>scorePipeline(k,buy,els),600);
+  }
+
+  /* ---------- 3) PIPELINE DE 4 FASES encenado (item 2) ---------- */
+  function scorePipeline(k,buy,cardEls){
+    const setup={cards:k.cards,idxs:k.idxs,jokers:jokerObjs(),dir:k.dir,hasZone:k.hasZone,hasBody:k.hasBody};
+    const plan=buildScorePlan(setup);
+    // NÃO-COMUTATIVIDADE (fiel ao Balatro): mult acumula PRIMEIRO os +Mult
+    // (fases 1-3, encenadas), e só DEPOIS os coringas aplicam ×Mult (fase 4).
+    // Pôr o ×Mult por último maximiza — furar a ordem desperdiça. No Ato 0 não
+    // há carta de +Mult ainda (entra no Ato 1), mas o motor já soma de verdade.
+    let chips=0,mult=1;
+    let step=0;
+    setNum($('#chips'),0);setNum($('#mult'),1);
+    say('Pontuando o setup, carta a carta — igual o trade rodando no real.');
+
+    function runStep(){
+      if(step>=plan.length){ return finish(chips,Math.round(mult*10)/10,buy,k); }
+      const s=plan[step];step++;
+      if(s.kind==='base'){
+        // FASE 1 — nomeia o setup (mão)
+        say('Setup: <b>'+s.note+'</b>.');
+        setTimeout(runStep,360);
+        return;
+      }
+      if(s.kind==='card'){
+        // FASE 2 — cada carta de pontuação PULA e solta o número (azul = +chips)
+        // casa o DOM pelo ÍNDICE da mão (robusto a cartas repetidas).
+        const el=cardEls.find(e=>(+e.dataset.i)===s.idx)
+              || cardEls.find(e=>DECK[hand[+e.dataset.i]]===s.ref);
+        if(el)bumpCard(el);
+        chips+=s.chips;
+        setNum($('#chips'),chips);
+        // +Mult (vermelho) entra ANTES do ×Mult — encena a soma quando houver
+        if(s.addMult){mult+=s.addMult;setNum($('#mult'),Math.round(mult*10)/10);
+          if(el){const [mx,my]=centerOf(el);pop(mx+14,my-22,'+'+s.addMult+' mult','#fe5f55');}}
+        if(el){const [x,y]=centerOf(el);if(s.chips){pop(x-14,y-22,'+'+s.chips,'#3ea0e0');sparks(x,y-10,'#3ea0e0',5);}}
+        // pitch crescente (kaw kaw): som sobe com os chips
+        blip(420+Math.min(900,chips*3));thunk();shake();vibrate(8);
+        setTimeout(runStep,420);
+        return;
+      }
+      if(s.kind==='joker'){
+        // FASE 4 — coringas, ×Mult (dourado), aplicado por ÚLTIMO (não comuta)
+        const jkEls=$$('.jokers .card');
+        const idx=jokerObjs().indexOf(s.ref);
+        const el=jkEls[idx];
+        if(el)bumpCard(el,true);
+        // ×Mult em dourado (os +Mult já foram somados acima):
+        mult=Math.round(mult*s.xMult*10)/10;
+        setNum($('#mult'),mult);
+        if(el){const [x,y]=centerOf(el);pop(x-12,y-20,'×'+s.xMult,'#f4c95d');sparks(x,y-8,'#f4c95d',6);}
+        blip(720+idx*90);shake(true);vibrate(10);
+        // feedback que ENSINA (item: avisa quando usou o coringa certo)
+        if(s.ref.buff==='close')conceptToast('⏳','Candle-Close ✓',`Você operou no <b>fechamento</b> da vela: ×${s.xMult}. Paciência paga. [GAB]`);
+        if(s.ref.buff==='tp')conceptToast('🎯','Roadblock ✓',`Você mirou o <b>alvo</b> certo (a zona oposta): ×${s.xMult}. [GAB]`);
+        setTimeout(runStep,460);
+        return;
+      }
+      setTimeout(runStep,200);
+    }
+    setTimeout(runStep,260);
+  }
+  function bumpCard(el,joker){
+    el.animate(joker
+      ?[{transform:el.style.transform||'none'},{transform:'scale(1.22) rotate(-4deg)'},{transform:el.style.transform||'none'}]
+      :[{},{transform:(el.style.transform||'translateY(0)')+' scale(1.16)'},{}],
+      {duration:300,easing:'cubic-bezier(.2,1.5,.4,1)'});
+  }
+
+  /* ---------- 4) resultado: count-up dos pips com pitch crescente ---------- */
+  function finish(chips,mult,buy,k){
+    const raw=Math.round(chips*mult);
+    // direção certa? suporte = COMPRA. Vender no suporte = operar contra a zona (perde) [GAB]
+    const correct=buy;
+    const gain=correct?raw:-Math.round(raw*0.5);
+    const target=Math.max(0,pips+gain);
+    let n=pips;const dir=gain>=0?1:-1,stepN=Math.max(1,Math.round(Math.abs(gain)/22));
+    say(correct?'Subindo… o piso segurou!':'O preço subiu contra a venda…');
+    const tt=setInterval(()=>{
+      n+=dir*stepN;
+      if((dir>0&&n>=target)||(dir<0&&n<=target))n=target;
+      pips=Math.max(0,n);
+      if($('#pipsb'))$('#pipsb').textContent=pips;
+      if($('#goalp'))$('#goalp').textContent=pips+' / '+blind.alvo;
+      // pitch crescente = o "kaw kaw"
+      blip(300+(pips/blind.alvo)*620);
+      if(n===target){
+        clearInterval(tt);
+        if(gain>=0){fanfare();sparks(window.innerWidth/2,window.innerHeight*0.4,'#f4c95d',16);}
+        else{buzz();shake(true);}
+        S.xp+=correct?8:2;save();
+        // restaura cartas
+        $$('.hand .card').forEach(el=>{el.classList.remove('flying','sel','trap-revealed');el.style.zIndex='';el.style.transform='';});
+        sel.clear();
+        setTimeout(()=>roundResult(correct,chips,mult,gain,k),520);
+      }
+    },46);
+  }
+
+  /* ---------- tela de mão (resultado parcial / fim de run) ---------- */
+  function roundResult(correct,chips,mult,gain,k){
+    const reachedGoal=pips>=blind.alvo;
+    const outOfHands=blind.maos<=0;
+    busy=false;
+    if(reachedGoal){return endRun(true);}
+    if(outOfHands){return endRun(false);}
+    // continua a run: feedback + próxima mão
+    const why=correct
+      ? `<div class="why"><b>✅ Por que deu certo:</b> você comprou no <b>suporte</b> (o piso, onde estão os compradores) e confirmou com a vela. ${chips} chips × ${mult} = <b>+${gain} pips</b>. Zona forte + direção certa = pips de verdade. [GAB]</div>`
+      : `<div class="why bad"><b>❌ Por que deu errado:</b> você <b>vendeu num suporte</b>. No piso se <b>COMPRA</b> (os compradores empurram pra cima). O preço subiu e bateu o stop: ${gain} pips. Não é punição — é a aula: respeite a direção da zona.</div>`;
+    showSheet(correct?'🎉 Boa jogada':'📉 Trade no vermelho',
+      `<div class="result"><div class="pipbig">${pips} <span style="font-size:16px;color:var(--mut)">/ ${blind.alvo} pips</span></div>${why}
+       <button class="btn go" id="next">▶ Próxima mão (${blind.maos} restantes)</button></div>`,{noX:true,sticky:true});
+    $('#next').onclick=()=>{closeSheet();refill();render();};
+  }
+
+  /* ---------- fim da run (Hades: death is progress) ---------- */
+  function endRun(win){
+    S.runs=(S.runs||0)+1;
+    if(win&&!S.bossWon){S.bossWon=true;S.xp+=20;}
+    save();
+    if(win){
+      const unlockHTML=`<div class="unlock"><span style="font-size:20px">🃏</span><div>Próximo: <b>Ato 1 — Flip de Polaridade</b>. Entram <b>RBS</b>, <b>SBR</b>, <b>Breakout</b> e o <b>Pullback</b>. As cartas ficam mais fortes e os coringas começam a <b>somar +Mult</b> antes do ×Mult.</div></div>`;
+      showSheet('🏆 Chefe derrotado!',
+        `<div class="result"><div class="result-icon">🏆</div><h2 style="color:var(--gold)">O Gráfico Limpo caiu</h2>
+         <div class="pipbig">${pips} <span style="font-size:16px;color:var(--mut)">/ ${blind.alvo} pips</span></div>
+         <p>Você dominou a <b>leitura crua</b>: vela, compra×venda, pip, a regra dos 2 candles, marcar só o <b>corpo</b> e esperar o <b>fechamento</b>. Esse é o coração do método do GAB.</p>
+         ${unlockHTML}
+         <div class="alert"><div>⚠️</div><div>Lembre: aqui é simulação. No real o GAB arrisca ~10% por setup e usa alavancagem — agressivo. A gestão de risco fiel vem nos Atos 7+.</div></div>
+         <button class="btn primary" id="again">▶ Jogar a run de novo</button>
+         <button class="btn ghost" id="menu">Voltar ao menu</button></div>`,{noX:true,sticky:true});
+    }else{
+      showSheet('📊 Run encerrada',
+        `<div class="result"><div class="result-icon">📉</div><h2>A operação fechou</h2>
+         <div class="pipbig">${pips} <span style="font-size:16px;color:var(--mut)">/ ${blind.alvo} pips</span></div>
+         <p>Perder uma run <b>não é o fim</b> — é a aula (death is progress). No real, gestão de risco é o que te mantém vivo.</p>
+         <div class="why"><b>Dica do mestre:</b> monte <b>Suporte + Vela de Alta</b> (mesma direção, COMPRA), junte <b>O Corpo</b> pra valorizar a zona e <b>evite o Pavio</b>. Vendeu no suporte? Aí perde — no piso se compra.</div>
+         <button class="btn primary" id="again">▶ Tentar a run de novo</button>
+         <button class="btn ghost" id="menu">Voltar ao menu</button></div>`,{noX:true,sticky:true});
+    }
+    const ag=$('#again');if(ag)ag.onclick=()=>{closeSheet();runAto0();};
+    const mn=$('#menu');if(mn)mn.onclick=()=>{closeSheet();menu();};
+  }
+
+  render();
+  $('#screen').scrollTop=0;
+}
+
+/* ===================================================================
+   13. ONBOARDING (item 5: ensina do ZERO antes de cobrar)
+   Módulos 1–6: vela, compra×venda, pip, regra dos 2 candles, corpo, fechamento.
+   =================================================================== */
+const LESSONS=[
+ {tag:'Módulo 1',h:'🕯️ O que é uma vela',art:'bull',
+  body:`O gráfico do ouro é feito de <b>velas</b>. Cada vela mostra o que o preço fez num período.<br><br>
+        <span class="up">VERDE</span> = o preço fechou pra <b>cima</b> (alta). <span class="down">VERMELHA</span> = fechou pra <b>baixo</b> (baixa).<br><br>
+        A vela tem duas partes: o <b>corpo</b> (o retângulo grosso) e o <b>pavio</b> (o espeto fino). Você vai usar muito essa diferença.`,
+  gab:'No método, cada vela é um "tijolo". Tudo começa em saber ler uma vela.'},
+ {tag:'Módulo 2',h:'⚖️ Comprar e Vender',art:'res',
+  body:`Existem <b>dois jeitos</b> de ganhar:<br><br>
+        <b><span class="up">Comprar</span></b> = apostar que o preço vai <b>subir</b>. Você compra barato e ganha se subir.<br>
+        <b><span class="down">Vender</span></b> = apostar que vai <b>cair</b>. E aqui está o pulo do gato: você <b>ganha na queda</b> — não precisa "ter" o ouro pra vender.<br><br>
+        Onde comprar? No <b>piso</b>. Onde vender? No <b>teto</b>. (Já já você vê o que são.)`,
+  gab:'[GAB] Ganhar na queda é metade do jogo. O método opera os dois lados — compra nos suportes, vende nas resistências.'},
+ {tag:'Módulo 3',h:'📏 O que é um pip',art:'close',
+  body:`<b>Pip</b> é a menor "casa" de variação do preço — a unidade que você conta pra saber quanto o trade andou.<br><br>
+        No jogo, seus pontos são <b>pips</b>: quanto mais o preço foi a seu favor, mais pips você faz. A meta de cada chefe é uma quantidade de <b>pips</b>.<br><br>
+        Pip é simples: é o <b>placar</b> do trader.`,
+  gab:'Os GABs vivem citando "fiz +300 pips". Pip é o jeito honesto de medir o movimento, sem falar de dinheiro ainda.'},
+ {tag:'Módulo 4',h:'⚔️ A regra dos 2 candles',art:'sup',
+  body:`A base de TUDO no método. Uma <b>zona</b> nasce de <b>duas velas</b>:<br><br>
+        🟢 <b>Suporte</b> (piso → <span class="up">compra</span>): uma vela de <b>baixa</b> seguida de uma vela de <b>alta</b>. Os compradores assumiram.<br>
+        🔴 <b>Resistência</b> (teto → <span class="down">venda</span>): uma vela de <b>alta</b> seguida de uma vela de <b>baixa</b>. Os vendedores assumiram.<br><br>
+        É só isso: <b>2 velas</b> que viram o jogo marcam a zona.`,
+  gab:'[GAB] Esta é a "SNR Tradicional" — a zona mais FORTE do método. Suporte = baixa+alta. Resistência = alta+baixa.'},
+ {tag:'Módulo 5',h:'🟩 Só o corpo, nunca o pavio',art:'body',
+  body:`Pra marcar a zona, você olha o <b>corpo</b> das velas — <b>nunca o pavio</b>.<br><br>
+        O <b>pavio</b> (espeto fino) mostra até onde o preço foi e <b>voltou</b>. Se você marcar a zona pela ponta do pavio, marca no lugar errado e leva stop fácil.<br><br>
+        Regra de ouro do GAB, em inglês: <i>"the wick is useless"</i> — o pavio é inútil pra marcar zona. <b>Marque pelo corpo.</b>`,
+  gab:'[GAB] "Mark only the body, never the wick." No jogo, a carta <b>O Corpo</b> valoriza sua zona; o <b>Pavio</b> é uma armadilha que marca errado.'},
+ {tag:'Módulo 6',h:'⏳ Espere a vela FECHAR',art:'close',
+  body:`Uma zona só vale <b>depois que a vela fecha</b> naquele nível. Enquanto a vela está aberta, ela ainda pode mudar tudo.<br><br>
+        Entrar antes de fechar é apostar no que <b>ainda não aconteceu</b>. O GAB espera o <b>fechamento</b> (candle-close) — paciência que evita armadilha.<br><br>
+        No jogo, o coringa <b>Candle-Close</b> te recompensa por esperar. E o <b>Roadblock</b> te dá o alvo: a próxima zona oposta (onde você realiza o lucro).`,
+  gab:'[GAB] Candle-close + body-only + regra dos 2 candles = a leitura crua completa. Agora você está pronto pra operar.'}
+];
+function lesson(i){
+  i=i||0;const o=LESSONS[i];const screen=$('#screen');
+  screen.innerHTML=`<div class="view"><div class="card-lesson">
+    <div class="lesson-head">
+      <div style="width:84px;flex-shrink:0"><div class="card hcard comum" style="width:84px;cursor:default"><div class="inner"><div class="art">${art(o.art)}</div></div><div class="shine" style="opacity:.3"></div></div></div>
+      <div><div class="tag">${o.tag} · ${i+1}/${LESSONS.length}</div><h2>${o.h}</h2></div>
+    </div>
+    <div class="lesson-body">${linkify(o.body)}</div>
+    <div class="gab-note"><span class="ava">🥋</span><div>${linkify(o.gab)}</div></div>
+    <button class="btn ${i<LESSONS.length-1?'primary':'go'}" id="ln">${i<LESSONS.length-1?'Continuar ›':'▶ Operar o Ato 0'}</button>
+    <div class="dots">${LESSONS.map((_,k)=>`<span class="dot ${k===i?'on':''}"></span>`).join('')}</div>
+  </div></div>`;
+  bindGloss(screen);
+  $('#ln').onclick=()=>{blip(560);S.xp+=2;save();if(i<LESSONS.length-1)lesson(i+1);else{S.onbDone=true;save();runAto0();}};
+  screen.scrollTop=0;
+}
+
+/* ===================================================================
+   14. MENU / ABERTURA
+   =================================================================== */
+function menu(){
+  const screen=$('#screen');
+  const cont=S.onbDone?'<button class="btn go" id="play">▶ '+(S.bossWon?'Rejogar o Ato 0':'Operar o Ato 0')+'</button>':'';
+  screen.innerHTML=`<div class="view"><div class="card-lesson" style="text-align:center">
+    <div style="font-size:13px;color:var(--mut);letter-spacing:3px">DECKBUILDER ROGUELIKE</div>
+    <h2 style="font-size:30px;margin:4px 0 2px">GAB<span style="color:var(--gold)">FX</span></h2>
+    <div style="color:var(--mut);font-size:13px;margin-bottom:8px">O Pregão · <b style="color:var(--txt)">Ato 0 — Leitura Crua</b></div>
+    <div class="card hcard incomum foil" style="width:104px;margin:8px auto;cursor:default">
+      <div class="inner"><span class="fam">zona</span><div class="top"><span class="nm">Suporte</span><span class="rr incomum">INCOM</span></div><div class="art">${art('sup')}</div>
+      <div class="desc"><span class="v vz">+45 · COMPRA</span><small>Piso → compra.</small></div></div>
+      <div class="holo"></div><div class="shine" style="opacity:.35"></div></div>
+    <p style="color:#dde7df;font-size:14px;line-height:1.5">Aprenda o método de trading de ouro do <b>GAB</b> do <b>zero absoluto</b>, jogando. Cada conceito vira uma <b>carta</b>: você monta o setup, o gráfico roda o trade ao vivo e os <b>pips</b> estouram.</p>
+    ${S.bossWon?'<div class="unlock"><span>🏆</span><div>Ato 0 concluído — <b>O Gráfico Limpo</b> derrotado. (Atos 1+ em construção.)</div></div>':''}
+    <button class="btn primary" id="start">${S.onbDone?'📚 Rever as aulas (Módulos 1–6)':'▶ Começar do zero'}</button>
+    ${cont}
+    <div class="fid" style="margin-top:14px">Conteúdo <span class="gabtag">FIEL</span> ao método do GAB · adaptações marcadas como <span class="lictag">LICENÇA DE DESIGN</span>. PT-BR.</div>
+  </div></div>`;
+  $('#start').onclick=()=>{blip(560);lesson(0);};
+  const p=$('#play');if(p)p.onclick=()=>{blip(560);runAto0();};
+  screen.scrollTop=0;
+  $('#actpill').innerHTML='Ato <b>0</b>';
+}
+
+/* ===================================================================
+   15. BOOT
+   =================================================================== */
+hud();
+// destrava o áudio no 1º toque (política mobile)
+document.body.addEventListener('pointerdown',()=>{const c=ac();if(c&&c.state==='suspended')c.resume();},{once:true});
+menu();
+</script>
+</body>
+</html>
