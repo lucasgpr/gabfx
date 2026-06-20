@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b23';
+window.__BUILD='b24';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -353,13 +353,15 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 .shaking.hard{animation:sh .42s}
 
 /* overlay genérico (resultado, painel da carta, dicionário) */
-.over{position:fixed;inset:0;z-index:80;display:none;align-items:flex-start;justify-content:center;background:rgba(3,6,11,.84);padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.over{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;background:rgba(3,6,11,.84);padding:16px;overflow:hidden}
 .over.show{display:flex}
-.sheet{background:var(--panel);border:3px solid var(--line);border-radius:18px;padding:0;box-shadow:0 10px 0 var(--line);max-width:460px;width:100%;margin:0 auto;overflow:hidden}
-.sheet-head{display:flex;align-items:center;gap:10px;padding:13px 15px;background:var(--panel2);border-bottom:2px solid var(--line)}
+/* sheet CABE na tela; o CONTEÚDO rola por dentro (botões sempre alcançáveis no cel) */
+.sheet{background:var(--panel);border:3px solid var(--line);border-radius:18px;padding:0;box-shadow:0 10px 0 var(--line);max-width:460px;width:100%;margin:0 auto;overflow:hidden;
+  display:flex;flex-direction:column;max-height:calc(100vh - 30px);max-height:calc(100dvh - 30px)}
+.sheet-head{display:flex;align-items:center;gap:10px;padding:13px 15px;background:var(--panel2);border-bottom:2px solid var(--line);flex-shrink:0}
 .sheet-head h3{margin:0;font-size:17px;flex:1}
 .sheet-head .x{background:var(--panel);border:2px solid var(--line);border-radius:9px;color:#fff;font-size:15px;width:34px;height:34px;cursor:pointer;box-shadow:0 2px 0 var(--line);flex-shrink:0}
-.sheet-body{padding:15px}
+.sheet-body{padding:15px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
 
 /* painel da carta (eu não sei nada) */
 .detail-card{display:flex;gap:12px;align-items:flex-start;margin-bottom:6px}
