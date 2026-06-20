@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b25';
+window.__BUILD='b26';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -574,7 +574,7 @@ const SAVE_KEY='gabfx_ato0_v1';
 const S=Object.assign({xp:0,onbDone:false,bossWon:false,unlocked:[],runs:0,
   aderenciaUltima:0,aderenciaMelhorRun:0,maosPerfeitas:0,cenarioUltimo:null,
   coringasVistos:[],slotsDestravados:[],fichasGastasTotal:0,
-  academiaDone:false,aulasVistas:[],acadOferecida:false},JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'));
+  academiaDone:false,aulasVistas:[],acadOferecida:false,modelosVistos:[]},JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'));
 function save(){localStorage.setItem(SAVE_KEY,JSON.stringify(S));hud();}
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
@@ -2166,6 +2166,550 @@ const AULA_CARTA={ id:'a_carta', titulo:'🟩 Por que aparece a carta "Suporte"'
       'Junto da carta <b>Suporte</b> você joga a <b>Vela de Alta</b> (baixa+alta = <b>regra dos 2 candles</b>). Marca a zona, monta o setup, mira o alvo. [GAB] Bora operar o Ato 0!' }
   ]};
 const ACADEMIA=[AULA_VELA, AULA_ONDAS, AULA_SUPORTE, AULA_RESISTENCIA, AULA_BATE, AULA_CARTA];
+/* ===== CATÁLOGO DE MODELOS DO GAB (aulas animadas, reusa o player) ===== */
+const AULA_SNR = { id:'m_snr', titulo:'🟢🔴 SNR Tradicional (a regra dos 2 candles)', modelo:true,
+  passos:[
+    { candles:[
+        {o:160,h:161,l:156,c:157},{o:157,h:158,l:152,c:153},{o:153,h:154,l:148,c:149},
+        {o:149,h:150,l:145,c:146},{o:146,h:147,l:140,c:141},{o:141,h:142,l:138,c:139}], ate:6,
+      narracao:'O ouro vinha <b>caindo</b> e parou no piso. Repare nas <b>2 últimas velas</b>: uma de <b>baixa</b> (141→139) e, antes, o preço afundando — e agora ele <b>segura</b>. É a <b>regra dos 2 candles</b> que forma um <b>SUPORTE</b>. [GAB]' },
+
+    { zonas:[{top:141,bottom:138,cor:'sup',label:'SUPORTE = só o CORPO (139–141)'}], acende:{cor:'sup'},
+      narracao:'Marca a zona no <b>corpo</b> das velas do fundo (139–141), <b>nunca</b> no pavio ("the wick is useless"). A zona só <b>vale depois do fechamento</b> da vela. O corpo entrou na faixa → ela <b>acende</b>. [GAB]' },
+
+    { candles:[
+        {o:160,h:161,l:156,c:157},{o:157,h:158,l:152,c:153},{o:153,h:154,l:148,c:149},
+        {o:149,h:150,l:145,c:146},{o:146,h:147,l:140,c:141},{o:141,h:142,l:138,c:139},
+        {o:139,h:143,l:138.5,c:142},{o:142,h:146,l:141.5,c:145},{o:145,h:149,l:144.5,c:148},
+        {o:148,h:150,l:146,c:147},{o:147,h:148,l:139,c:140},{o:140,h:142,l:138.5,c:139.5}], ate:12,
+      zonas:[{top:141,bottom:138,cor:'sup',label:'SUPORTE (1º toque ✓)'}], acende:{cor:'sup'},
+      narracao:'O preço sobe, anda em onda e <b>volta a testar</b> o mesmo piso (139–140). <b>Segurou de novo</b> — a zona foi <b>respeitada 2 vezes</b>. Uma zona que aguenta repetição é uma zona <b>de verdade</b>.' },
+
+    { candles:[
+        {o:160,h:161,l:156,c:157},{o:157,h:158,l:152,c:153},{o:153,h:154,l:148,c:149},
+        {o:149,h:150,l:145,c:146},{o:146,h:147,l:140,c:141},{o:141,h:142,l:138,c:139},
+        {o:139,h:143,l:138.5,c:142},{o:142,h:146,l:141.5,c:145},{o:145,h:149,l:144.5,c:148},
+        {o:148,h:150,l:146,c:147},{o:147,h:148,l:139,c:140},{o:140,h:142,l:138.5,c:139.5},
+        {o:139.5,h:143,l:139,c:142.5},{o:142.5,h:147,l:142,c:146},{o:146,h:151,l:145.5,c:150.5},
+        {o:150.5,h:154,l:150,c:153}], ate:16,
+      zonas:[{top:141,bottom:138,cor:'sup',label:'SUPORTE'},
+             {top:155,bottom:152,cor:'road',label:'ROADBLOCK (alvo = resistência)'}],
+      acende:{cor:'sup'},
+      seta:{x:'74%',de:139,ate:152,cor:'#37d07a',txt:'COMPRA'},
+      narracao:'No 2º toque respeitado, o GAB <b>compra no piso</b> e mira a próxima zona lá em cima — o <b>roadblock</b> (resistência), onde realiza o lucro (TP). Suporte = compra, resistência = venda: é o <b>SNR puro</b>. [GAB]' },
+
+    { candles:[
+        {o:160,h:161,l:156,c:157},{o:157,h:158,l:152,c:153},{o:153,h:154,l:148,c:149},
+        {o:149,h:150,l:145,c:146},{o:146,h:147,l:140,c:141},{o:141,h:142,l:138,c:139},
+        {o:139,h:143,l:138.5,c:142},{o:142,h:146,l:141.5,c:145},{o:145,h:149,l:144.5,c:148},
+        {o:148,h:150,l:146,c:147},{o:147,h:148,l:139,c:140},{o:140,h:142,l:138.5,c:139.5}], ate:12,
+      zonas:[{top:141,bottom:138,cor:'sup',label:'SUPORTE'}], acende:{cor:'sup'},
+      interacao:{tipo:'simNao', pergunta:'Essa zona já foi respeitada DUAS vezes (logo, é confiável)?', alvo:true,
+        feedback:{ok:'Isso! Bateu no 1º e no 2º toque e segurou — zona validada.',
+                  no:'Olhe: o corpo entrou na faixa verde duas vezes e o preço subiu nas duas. Respeitada 2x.'}},
+      narracao:'Decida você:' }
+  ]};
+
+const AULA_RBS = { id:'m_rbs', titulo:'🔴→🟢 RBS · Resistência vira Suporte', modelo:true,
+  passos:[
+    { candles:[
+        {o:142,h:147,l:141,c:146},{o:146,h:151,l:145,c:150},{o:150,h:155,l:149,c:154},
+        {o:154,h:156,l:153,c:155},{o:155,h:156,l:151,c:152},{o:152,h:156,l:151,c:155}], ate:6,
+      zonas:[{top:156,bottom:153,cor:'res',label:'RESISTÊNCIA (teto 153–156)'}], acende:{cor:'res'},
+      narracao:'O preço subiu e <b>bateu num teto</b> (153–156): uma <b>resistência</b>. Ele tocou e foi <b>rejeitado</b> — a zona vermelha <b>acende</b>. Por enquanto, o teto está <b>segurando</b>. [GAB]' },
+
+    { candles:[
+        {o:142,h:147,l:141,c:146},{o:146,h:151,l:145,c:150},{o:150,h:155,l:149,c:154},
+        {o:154,h:156,l:153,c:155},{o:155,h:156,l:151,c:152},{o:152,h:156,l:151,c:155},
+        {o:155,h:159,l:154,c:158},{o:158,h:162,l:157,c:161}], ate:8,
+      zonas:[{top:156,bottom:153,cor:'res',label:'resistência ROMPIDA (close acima)'}],
+      narracao:'Agora veio força: uma vela <b>fechou ACIMA</b> do teto (158, depois 161). Isso é o <b>BREAKOUT</b> — só vale com o <b>fechamento</b> da vela acima, não só o pavio. O teto foi <b>rompido</b>. "Breakout → pullback → fly." [GAB]' },
+
+    { candles:[
+        {o:142,h:147,l:141,c:146},{o:146,h:151,l:145,c:150},{o:150,h:155,l:149,c:154},
+        {o:154,h:156,l:153,c:155},{o:155,h:156,l:151,c:152},{o:152,h:156,l:151,c:155},
+        {o:155,h:159,l:154,c:158},{o:158,h:162,l:157,c:161},
+        {o:161,h:162,l:157,c:158},{o:158,h:159,l:154,c:155}], ate:10,
+      zonas:[{top:156,bottom:153,cor:'sup',label:'a MESMA linha agora é SUPORTE'}], acende:{cor:'sup'},
+      narracao:'Aí vem a mágica do <b>flip de polaridade</b>: o preço <b>volta</b> (pullback) e <b>retesta por baixo</b> a mesma faixa. O que era <b>teto</b> agora vira <b>PISO</b> — o corpo entra na faixa e ela <b>acende como suporte</b> (verde). É o <b>RBS</b>. [GAB]' },
+
+    { candles:[
+        {o:142,h:147,l:141,c:146},{o:146,h:151,l:145,c:150},{o:150,h:155,l:149,c:154},
+        {o:154,h:156,l:153,c:155},{o:155,h:156,l:151,c:152},{o:152,h:156,l:151,c:155},
+        {o:155,h:159,l:154,c:158},{o:158,h:162,l:157,c:161},
+        {o:161,h:162,l:157,c:158},{o:158,h:159,l:154,c:155},
+        {o:155,h:159,l:154.5,c:158},{o:158,h:162,l:157.5,c:161},{o:161,h:165,l:160.5,c:164}], ate:13,
+      zonas:[{top:156,bottom:153,cor:'sup',label:'SUPORTE (ex-resistência)'},
+             {top:165,bottom:162,cor:'road',label:'ROADBLOCK (próximo alvo)'}],
+      acende:{cor:'sup'},
+      seta:{x:'77%',de:155,ate:162,cor:'#37d07a',txt:'COMPRA'},
+      narracao:'O piso <b>segurou no reteste</b> → o GAB <b>compra</b> aqui e voa com a tendência de alta, mirando o próximo <b>roadblock</b> lá em cima. Esse é o flip que dá entrada de continuação. <b>Evite:</b> entrar só no <b>toque do pavio</b> sem o reteste fechar. [GAB]' },
+
+    { candles:[
+        {o:142,h:147,l:141,c:146},{o:146,h:151,l:145,c:150},{o:150,h:155,l:149,c:154},
+        {o:154,h:156,l:153,c:155},{o:155,h:156,l:151,c:152},{o:152,h:156,l:151,c:155},
+        {o:155,h:159,l:154,c:158},{o:158,h:162,l:157,c:161},
+        {o:161,h:162,l:157,c:158},{o:158,h:159,l:154,c:155}], ate:10,
+      zonas:[{top:156,bottom:153,cor:'sup',label:'ex-resistência'}], acende:{cor:'sup'},
+      interacao:{tipo:'simNao', pergunta:'Depois do rompimento, a zona vira SUPORTE (e o sinal é COMPRA)?', alvo:true,
+        feedback:{ok:'Isso! Resistência rompida + reteste por baixo = vira suporte → compra. RBS.',
+                  no:'No RBS o teto rompido vira PISO. O preço retesta por baixo e segura → é COMPRA.'}},
+      narracao:'Decida você:' }
+  ]};
+
+const AULA_SBR = { id:'m_sbr', titulo:'🟢→🔴 SBR · Suporte vira Resistência', modelo:true,
+  passos:[
+    { candles:[
+        {o:158,h:159,l:153,c:154},{o:154,h:155,l:149,c:150},{o:150,h:151,l:145,c:146},
+        {o:146,h:147,l:144,c:145},{o:145,h:149,l:144,c:148},{o:148,h:149,l:144,c:145}], ate:6,
+      zonas:[{top:147,bottom:144,cor:'sup',label:'SUPORTE (piso 144–147)'}], acende:{cor:'sup'},
+      narracao:'Espelho do RBS. O preço caiu e <b>bateu num piso</b> (144–147): um <b>suporte</b>. Ele tocou e <b>segurou</b> — a zona verde <b>acende</b>. Por enquanto o piso aguenta. [GAB]' },
+
+    { candles:[
+        {o:158,h:159,l:153,c:154},{o:154,h:155,l:149,c:150},{o:150,h:151,l:145,c:146},
+        {o:146,h:147,l:144,c:145},{o:145,h:149,l:144,c:148},{o:148,h:149,l:144,c:145},
+        {o:145,h:146,l:141,c:142},{o:142,h:143,l:138,c:139}], ate:8,
+      zonas:[{top:147,bottom:144,cor:'res',label:'piso ROMPIDO (close abaixo)'}],
+      narracao:'Veio pressão de baixa: uma vela <b>FECHOU ABAIXO</b> do piso (142, depois 139). <b>Breakout pra baixo</b> — vale só com o <b>fechamento</b> abaixo, não só o pavio. O piso <b>quebrou</b>. [GAB]' },
+
+    { candles:[
+        {o:158,h:159,l:153,c:154},{o:154,h:155,l:149,c:150},{o:150,h:151,l:145,c:146},
+        {o:146,h:147,l:144,c:145},{o:145,h:149,l:144,c:148},{o:148,h:149,l:144,c:145},
+        {o:145,h:146,l:141,c:142},{o:142,h:143,l:138,c:139},
+        {o:139,h:143,l:138,c:142},{o:142,h:146,l:141,c:145}], ate:10,
+      zonas:[{top:147,bottom:144,cor:'res',label:'a MESMA linha agora é RESISTÊNCIA'}], acende:{cor:'res'},
+      narracao:'<b>Flip de polaridade</b> na baixa: o preço <b>volta</b> (pullback) e <b>retesta por cima</b> a mesma faixa. O que era <b>piso</b> agora vira <b>TETO</b> — o corpo entra na faixa e ela <b>acende como resistência</b> (vermelha). É o <b>SBR</b>. [GAB]' },
+
+    { candles:[
+        {o:158,h:159,l:153,c:154},{o:154,h:155,l:149,c:150},{o:150,h:151,l:145,c:146},
+        {o:146,h:147,l:144,c:145},{o:145,h:149,l:144,c:148},{o:148,h:149,l:144,c:145},
+        {o:145,h:146,l:141,c:142},{o:142,h:143,l:138,c:139},
+        {o:139,h:143,l:138,c:142},{o:142,h:146,l:141,c:145},
+        {o:145,h:146,l:141,c:142},{o:142,h:143,l:138,c:139},{o:139,h:140,l:135,c:136}], ate:13,
+      zonas:[{top:147,bottom:144,cor:'res',label:'RESISTÊNCIA (ex-suporte)'},
+             {top:137,bottom:134,cor:'road',label:'ROADBLOCK (próximo alvo)'}],
+      acende:{cor:'res'},
+      seta:{x:'77%',de:145,ate:137,cor:'#ff6b5e',txt:'VENDA'},
+      narracao:'O teto <b>segurou no reteste por cima</b> → o GAB <b>vende</b> e desce com a tendência de baixa, mirando o próximo <b>roadblock</b> lá embaixo. Mesmo flip do RBS, de cabeça pra baixo. <b>Evite:</b> vender só no <b>toque do pavio</b> sem o reteste fechar. [GAB]' },
+
+    { candles:[
+        {o:158,h:159,l:153,c:154},{o:154,h:155,l:149,c:150},{o:150,h:151,l:145,c:146},
+        {o:146,h:147,l:144,c:145},{o:145,h:149,l:144,c:148},{o:148,h:149,l:144,c:145},
+        {o:145,h:146,l:141,c:142},{o:142,h:143,l:138,c:139},
+        {o:139,h:143,l:138,c:142},{o:142,h:146,l:141,c:145}], ate:10,
+      zonas:[{top:147,bottom:144,cor:'res',label:'ex-suporte'}], acende:{cor:'res'},
+      interacao:{tipo:'simNao', pergunta:'Depois do rompimento pra baixo, a zona vira RESISTÊNCIA (e o sinal é VENDA)?', alvo:true,
+        feedback:{ok:'Isso! Suporte rompido + reteste por cima = vira resistência → venda. SBR.',
+                  no:'No SBR o piso rompido vira TETO. O preço retesta por cima e é rejeitado → é VENDA.'}},
+      narracao:'Decida você:' }
+  ]};
+
+const MOD_ROMPIMENTO = { id:'m_rompimento', titulo:'💥 ROMPIMENTO (válido x falso)', modelo:true,
+  passos:[
+    // contexto: preço sobe e bate num teto (resistência) algumas vezes
+    { candles:[
+        {o:147,h:149,l:146,c:148},{o:148,h:151,l:147,c:150},{o:150,h:153,l:149,c:152},
+        {o:152,h:156,l:151,c:155},{o:155,h:156.5,l:153,c:154},{o:154,h:156,l:152,c:153}],
+      zonas:[{top:157,bottom:155,cor:'res',label:'RESISTÊNCIA (teto)'}], acende:{cor:'res'}, ate:6,
+      narracao:'O ouro vem <b>subindo</b> e encosta num <b>teto</b> (resistência ~156). Já bateu e voltou: enquanto o <b>corpo</b> não fechar <b>acima</b>, o teto manda. [GAB]' },
+
+    // FALSO: só o pavio fura, corpo fecha ABAIXO -> teto continua valendo
+    { candles:[
+        {o:147,h:149,l:146,c:148},{o:148,h:151,l:147,c:150},{o:150,h:153,l:149,c:152},
+        {o:152,h:156,l:151,c:155},{o:155,h:156.5,l:153,c:154},{o:154,h:156,l:152,c:153},
+        {o:154,h:159,l:153,c:155}],
+      zonas:[{top:157,bottom:155,cor:'res',label:'teto AINDA vale'}], acende:{cor:'res'}, ate:7,
+      narracao:'Olha essa vela: o <b>pavio</b> furou o teto (foi a 159), mas o <b>corpo fechou embaixo</b> (155). Isso é <b>rompimento FALSO</b> — só susto. O teto <b>continua</b>. [GAB] o pavio é inútil.' },
+
+    // VÁLIDO: corpo grande FECHA acima -> rompeu de verdade
+    { candles:[
+        {o:147,h:149,l:146,c:148},{o:148,h:151,l:147,c:150},{o:150,h:153,l:149,c:152},
+        {o:152,h:156,l:151,c:155},{o:155,h:156.5,l:153,c:154},{o:154,h:156,l:152,c:153},
+        {o:154,h:159,l:153,c:155},{o:155,h:162,l:154,c:161}],
+      zonas:[{top:157,bottom:155,cor:'res',label:'ROMPIDA (corpo fechou acima)'}], acende:{cor:'res'}, ate:8,
+      narracao:'Agora SIM: uma vela de <b>corpo grande</b> atravessa o teto e <b>FECHA acima</b> (161, longe da faixa). Isso é <b>ROMPIMENTO VÁLIDO</b> — o teto cedeu. A regra é o <b>fechamento</b>, nunca o pavio. [GAB]' },
+
+    // pergunta: rompimento válido?
+    { candles:[
+        {o:147,h:149,l:146,c:148},{o:148,h:151,l:147,c:150},{o:150,h:153,l:149,c:152},
+        {o:152,h:156,l:151,c:155},{o:155,h:156.5,l:153,c:154},{o:154,h:156,l:152,c:153},
+        {o:154,h:159,l:153,c:155},{o:155,h:162,l:154,c:161}],
+      zonas:[{top:157,bottom:155,cor:'res',label:'teto rompido'}], acende:{cor:'res'}, ate:8,
+      interacao:{tipo:'simNao', pergunta:'O <b>corpo</b> dessa última vela FECHOU acima do teto (rompeu de verdade)?', alvo:true,
+        feedback:{ok:'Isso! Corpo fechou em 161, bem acima de 157 → rompimento VÁLIDO.',
+                  no:'Repare no fechamento: 161 está ACIMA da faixa (157) → rompeu de verdade.'}},
+      narracao:'Decida você — foi rompimento de verdade?' }
+  ]};
+
+const MOD_RETESTE = { id:'m_reteste', titulo:'🔁 RETESTE (a entrada paciente)', modelo:true,
+  passos:[
+    // 1: já rompeu o teto (contexto curto)
+    { candles:[
+        {o:150,h:153,l:149,c:152},{o:152,h:156,l:151,c:155},{o:155,h:156.5,l:153,c:154},
+        {o:154,h:162,l:153,c:161}],
+      zonas:[{top:157,bottom:155,cor:'res',label:'teto ROMPIDO'}], acende:{cor:'res'}, ate:4,
+      narracao:'Partimos de um <b>rompimento válido</b>: o corpo fechou acima do teto (161). Pergunta do GAB: entro <b>agora</b>, correndo atrás? Não. Espera o <b>reteste</b>. [GAB]' },
+
+    // 2: VOLTA -> o preço recua e testa a faixa rompida por baixo (agora é suporte = RBS)
+    { candles:[
+        {o:150,h:153,l:149,c:152},{o:152,h:156,l:151,c:155},{o:155,h:156.5,l:153,c:154},
+        {o:154,h:162,l:153,c:161},{o:161,h:161,l:157,c:158},{o:158,h:158.5,l:155.5,c:156.5}],
+      zonas:[{top:157,bottom:155,cor:'sup',label:'AGORA é SUPORTE (RBS)'}], acende:{cor:'sup'}, ate:6,
+      narracao:'O preço <b>volta</b> e desce pra <b>testar</b> a faixa que rompeu. Teto rompido <b>vira piso</b> — é o <b>RBS</b> (resistência vira suporte). O corpo entrou na faixa e <b>segurou</b> → acende. [GAB]' },
+
+    // 3: segue (fly) -> entrada COMPRA no reteste, alvo no roadblock de cima
+    { candles:[
+        {o:150,h:153,l:149,c:152},{o:152,h:156,l:151,c:155},{o:155,h:156.5,l:153,c:154},
+        {o:154,h:162,l:153,c:161},{o:161,h:161,l:157,c:158},{o:158,h:158.5,l:155.5,c:156.5},
+        {o:156.5,h:160,l:156,c:159},{o:159,h:163,l:158,c:162},{o:162,h:165,l:161,c:164}],
+      zonas:[{top:157,bottom:155,cor:'sup',label:'reteste (RBS)'},
+             {top:166,bottom:164,cor:'road',label:'ROADBLOCK (alvo)'}],
+      acende:{cor:'sup'},
+      seta:{x:'58%',de:156,ate:163,cor:'#37d07a',txt:'COMPRA'}, narracao:
+      '"Breakout → pullback → <b>fly</b>." Do reteste, o preço <b>decola</b>. A entrada paciente é <b>COMPRA</b> em cima da faixa (~156), <b>segura</b> (stop curto), e o alvo é o próximo <b>roadblock</b>. [GAB]' },
+
+    // pergunta
+    { interacao:{tipo:'simNao', pergunta:'No reteste, esperar o preço <b>voltar</b> à faixa antes de comprar é mais seguro do que correr atrás no rompimento?', alvo:true,
+        feedback:{ok:'Exato! Reteste = entrada paciente: corpo na faixa, stop curto, mira o roadblock.',
+                  no:'É sim: o GAB ensina "breakout → pullback → fly". O reteste te dá entrada barata e stop curto.'}},
+      narracao:'Pra fixar:' }
+  ]};
+
+const MOD_CANDLECLOSE = { id:'m_candleclose', titulo:'⏳ CANDLE-CLOSE (só vale ao fechar)', modelo:true,
+  passos:[
+    // contexto: suporte; preço descendo até a faixa
+    { candles:[
+        {o:148,h:149,l:146,c:147},{o:147,h:148,l:144,c:145},{o:145,h:146,l:142,c:143},
+        {o:143,h:144,l:140,c:141}],
+      zonas:[{top:141,bottom:139,cor:'sup',label:'SUPORTE'}], acende:{cor:'sup'}, ate:4,
+      narracao:'Preço caindo até um <b>suporte</b> (~140). A vela ainda está <b>se formando</b>. [GAB] regra de ouro: a zona <b>só vale depois do FECHAMENTO</b> — não decida no meio da vela.' },
+
+    // ENGANA: vela "aberta" furando o suporte (parece que rompeu pra baixo)
+    { candles:[
+        {o:148,h:149,l:146,c:147},{o:147,h:148,l:144,c:145},{o:145,h:146,l:142,c:143},
+        {o:143,h:144,l:140,c:141},{o:140.5,h:141,l:136,c:136.5}],
+      zonas:[{top:141,bottom:139,cor:'sup',label:'rompeu? (vela ABERTA)'}], acende:{cor:'sup'}, ate:5,
+      narracao:'No meio do caminho a vela despencou pra 136 e <b>parece</b> que furou o suporte pra baixo. Se você <b>vende no susto</b>, cai na pegadinha — a vela <b>ainda não fechou</b>. [GAB]' },
+
+    // FECHA confirmando: a MESMA vela volta e fecha DENTRO da faixa -> não rompeu, suporte aguentou
+    { candles:[
+        {o:148,h:149,l:146,c:147},{o:147,h:148,l:144,c:145},{o:145,h:146,l:142,c:143},
+        {o:143,h:144,l:140,c:141},{o:140.5,h:141,l:136,c:140}],
+      zonas:[{top:141,bottom:139,cor:'sup',label:'FECHOU dentro → segurou'}], acende:{cor:'sup'}, ate:5,
+      narracao:'Vela <b>FECHADA</b>: aquele 136 era só <b>pavio</b>; o <b>corpo fechou em 140</b>, <b>dentro</b> do suporte. Não rompeu nada — o piso <b>aguentou</b>. Quem esperou o fechamento não foi enganado. [GAB]' },
+
+    // pergunta
+    { interacao:{tipo:'simNao', pergunta:'A vela <b>aberta</b> (que furou pra 136) já era motivo pra decidir que o suporte rompeu?', alvo:false,
+        feedback:{ok:'Isso! Só o pavio furou; ao FECHAR, o corpo voltou pra dentro (140). Sem fechamento, não vale.',
+                  no:'Não — espera fechar. A vela fechou em 140, dentro da faixa: o suporte segurou.'}},
+      narracao:'Sua vez:' }
+  ]};
+
+const MOD_ROADBLOCK = { id:'m_roadblock', titulo:'🎯 ROADBLOCK (onde realizar o lucro)', modelo:true,
+  passos:[
+    // contexto: suporte embaixo + roadblock (resistência) lá em cima como alvo
+    { candles:[
+        {o:150,h:151,l:147,c:148},{o:148,h:149,l:144,c:145},{o:145,h:146,l:141,c:142},
+        {o:142,h:143,l:139,c:140},{o:140,h:141,l:138.5,c:140}],
+      zonas:[{top:141,bottom:139,cor:'sup',label:'SUPORTE (entrada)'},
+             {top:157,bottom:155,cor:'road',label:'ROADBLOCK (alvo lá em cima)'}],
+      acende:{cor:'sup'}, ate:5,
+      narracao:'Você comprou no <b>suporte</b> (~140). Pergunta: até onde seguro o trade? [GAB] o alvo é o <b>roadblock</b> = a <b>próxima zona oposta</b> (aqui, a resistência ~156).' },
+
+    // sobe rumo ao roadblock + seta COMPRA do suporte até o roadblock
+    { candles:[
+        {o:150,h:151,l:147,c:148},{o:148,h:149,l:144,c:145},{o:145,h:146,l:141,c:142},
+        {o:142,h:143,l:139,c:140},{o:140,h:141,l:138.5,c:140},
+        {o:140,h:144,l:139.5,c:143},{o:143,h:148,l:142,c:147},{o:147,h:152,l:146,c:151},
+        {o:151,h:156,l:150,c:155}],
+      zonas:[{top:141,bottom:139,cor:'sup',label:'SUPORTE'},
+             {top:157,bottom:155,cor:'road',label:'ROADBLOCK = realiza aqui'}],
+      acende:{cor:'sup'},
+      seta:{x:'50%',de:140,ate:155,cor:'#37d07a',txt:'COMPRA'}, narracao:
+      'Do piso o preço <b>voa</b> até bater no <b>roadblock</b> (~156). A seta vai da entrada (140) até o alvo. Chegou na zona oposta → é <b>aqui que se realiza o lucro</b> (Take Profit). [GAB]' },
+
+    // por que parar aqui: na zona oposta aparece venda -> tende a rejeitar
+    { candles:[
+        {o:150,h:151,l:147,c:148},{o:148,h:149,l:144,c:145},{o:145,h:146,l:141,c:142},
+        {o:142,h:143,l:139,c:140},{o:140,h:141,l:138.5,c:140},
+        {o:140,h:144,l:139.5,c:143},{o:143,h:148,l:142,c:147},{o:147,h:152,l:146,c:151},
+        {o:151,h:156,l:150,c:155},{o:155,h:156.5,l:152,c:153}],
+      zonas:[{top:141,bottom:139,cor:'sup',label:'SUPORTE'},
+             {top:157,bottom:155,cor:'res',label:'ROADBLOCK (rejeitou)'}],
+      acende:{cor:'res'}, ate:10,
+      narracao:'No roadblock aparece <b>vendedor</b> (caro): o corpo bateu na faixa e foi <b>rejeitado</b>. Por isso o alvo é a zona oposta — é o ponto natural de <b>realizar</b>. (TP pode ser escalonado.) [GAB]' },
+
+    // pergunta
+    { interacao:{tipo:'simNao', pergunta:'O alvo (roadblock) de uma compra no suporte é a próxima <b>resistência</b> lá em cima?', alvo:true,
+        feedback:{ok:'Exato! Comprou no piso → realiza na próxima zona oposta (a resistência). Esse é o roadblock.',
+                  no:'É sim: roadblock = próxima zona oposta. Comprou no suporte → alvo na resistência acima.'}},
+      narracao:'Fechando:' }
+  ]};
+
+const MOD_CONFLUENCIA = { id:'m_confluencia', titulo:'🎯 CONFLUÊNCIA — tudo aponta o mesmo ponto', modelo:true,
+  passos:[
+    { candles:[
+        {o:158,h:159,l:155,c:156},{o:156,h:157,l:151,c:152},{o:152,h:153,l:147,c:148},
+        {o:148,h:149,l:144,c:145},{o:145,h:146,l:141,c:142},{o:142,h:143,l:139,c:140.5},
+        {o:140.5,h:142,l:139,c:140}], ate:7, narracao:
+      'O ouro vem <b>caindo</b> e está chegando perto de <b>R$ 140</b>. Antes de comprar, o [GAB] pergunta: <b>quantos motivos</b> apontam pra esse mesmo lugar? Quanto mais motivos juntos, mais forte o nível.' },
+
+    { zonas:[{top:141,bottom:139,cor:'sup',label:'① SUPORTE (a zona)'}], acende:{cor:'sup'}, narracao:
+      '<b>Motivo 1 — a ZONA.</b> Aqui já existe um <b>suporte</b> (o preço fundo da vela bateu na faixa e segurou). Sozinho já vale, mas é só o <b>primeiro</b> fator. [GAB]' },
+
+    { marca:{preco:140,cor:'#f4c95d',label:'② NÚMERO REDONDO · R$ 140'}, narracao:
+      '<b>Motivo 2 — o NÚMERO REDONDO.</b> R$ <b>140</b> é um número "psicológico": muita gente coloca ordem ali. Ele cai <b>em cima</b> da zona — <b>2 fatores no mesmo ponto</b>.' },
+
+    { candles:[
+        {o:158,h:159,l:155,c:156},{o:156,h:157,l:151,c:152},{o:152,h:153,l:147,c:148},
+        {o:148,h:149,l:144,c:145},{o:145,h:146,l:141,c:142},{o:142,h:143,l:139,c:140.5},
+        {o:140.5,h:142,l:139,c:140},
+        {o:144,h:145,l:140,c:141},{o:147,h:148,l:143,c:144},{o:145,h:146,l:139,c:140}], ate:10,
+      zonas:[{top:141,bottom:139,cor:'sup',label:'③ FUNDO ANTERIOR já reagiu aqui'}], acende:{cor:'sup'},
+      marca:{preco:140,cor:'#f4c95d',label:'R$ 140'}, narracao:
+      '<b>Motivo 3 — o FUNDO ANTERIOR.</b> O preço <b>já tinha batido</b> nesse nível antes e subiu. Voltou agora pela <b>2ª vez</b> — o mercado <b>lembra</b> desse fundo. Três motivos, um só nível.' },
+
+    { seta:{x:'62%',de:140,ate:152,cor:'#37d07a',txt:'COMPRA (alta prob.)'}, narracao:
+      'ZONA + NÚMERO REDONDO + FUNDO ANTERIOR <b>empilhados</b> = <b>CONFLUÊNCIA</b>. É o trade de <b>altíssima probabilidade</b>: o GAB aposta mais aqui. Compra no piso, mira o <b>roadblock</b> lá em cima. [GAB]' },
+
+    { interacao:{tipo:'simNao', pergunta:'3 fatores caindo no MESMO nível deixam o trade mais forte?', alvo:true,
+        feedback:{ok:'Isso! Confluência = vários motivos no mesmo ponto = mais probabilidade. É o que o GAB caça.',
+                  no:'Pelo método é o contrário: quanto MAIS fatores no mesmo nível, mais forte. Um motivo só é fraco.'}},
+      narracao:'Decida você:' }
+  ]};
+
+const MOD_MTF = { id:'m_mtf', titulo:'🗼 MULTI-TIMEFRAME — a mesma zona em vários tempos', modelo:true,
+  passos:[
+    { candles:[
+        {o:144,h:146,l:143,c:145},{o:145,h:148,l:144,c:147},{o:147,h:149,l:144,c:145},
+        {o:145,h:147,l:142,c:143},{o:143,h:145,l:141,c:142},{o:142,h:143,l:140,c:141.5},
+        {o:141.5,h:143,l:140,c:141}], ate:7, narracao:
+      'Você está no gráfico <b>Daily</b> e achou um <b>suporte</b> perto de R$ <b>141</b>. Boa zona — mas o [GAB] diz que <b>isto</b> é "a coisa mais importante" do método: <b>em quantos tempos</b> ela aparece?' },
+
+    { zonas:[{top:142,bottom:140,cor:'sup',label:'SUPORTE · só no DAILY'}], acende:{cor:'sup'}, narracao:
+      'Por enquanto é <b>1 zona, 1 tempo</b> (Daily). Decente. Agora o truque do GAB: <b>suba</b> de tempo gráfico e veja se a <b>mesma linha</b> também marca zona lá em cima. [GAB]' },
+
+    { zonas:[{top:142,bottom:140,cor:'sup',label:'⭐ MESMA zona · também no WEEKLY'}], acende:{cor:'sup'}, narracao:
+      'No <b>Weekly</b> (tempo maior) a <b>mesma faixa</b> também é suporte → <b>+1 selo de força</b>. Pelo método, <b>quanto maior o tempo, mais forte a zona</b>. Já são <b>2 tempos</b> alinhados.' },
+
+    { zonas:[{top:142,bottom:140,cor:'sup',label:'⭐⭐ também no MONTHLY (granddaddy)'}], acende:{cor:'sup'},
+      marca:{preco:141,cor:'#f4c95d',label:'3 tempos na MESMA linha = "infinitely stronger"'}, narracao:
+      'E no <b>Monthly</b> — o "vovô", o tempo mais forte de todos — a <b>mesma linha</b> ainda é suporte. <b>3 tempos empilhados</b>. O GAB chama isso de <b>"infinitamente mais forte"</b>. [GAB]' },
+
+    { candles:[
+        {o:144,h:146,l:143,c:145},{o:145,h:148,l:144,c:147},{o:147,h:149,l:144,c:145},
+        {o:145,h:147,l:142,c:143},{o:143,h:145,l:141,c:142},{o:142,h:143,l:140,c:141.5},
+        {o:141.5,h:143,l:140,c:141},{o:144,h:146,l:141,c:145},{o:148,h:150,l:144,c:149}], ate:9,
+      zonas:[{top:142,bottom:140,cor:'sup',label:'ZONA MTF (Daily+Weekly+Monthly)'},
+             {top:155,bottom:153,cor:'road',label:'ROADBLOCK do MESMO tempo (alvo)'}], acende:{cor:'sup'},
+      seta:{x:'70%',de:141,ate:153,cor:'#37d07a',txt:'TOUCH TRADE'}, narracao:
+      'Com tantos tempos juntos, a zona é tão forte que o GAB libera o <b>"touch trade"</b>: entra <b>no toque</b>, sem esperar confirmação. Mira o <b>roadblock do mesmo tempo</b>. [GAB] — <b>avançado</b>, exige a zona empilhada.' },
+
+    { interacao:{tipo:'simNao', pergunta:'A mesma zona aparecer no Daily, Weekly E Monthly deixa ela mais forte?', alvo:true,
+        feedback:{ok:'Exato! Cada tempo alinhado é +1 força. É "a coisa mais importante" pro GAB.',
+                  no:'Pelo método é mais forte sim: quanto mais tempos batem na mesma linha, "infinitamente mais forte".'}},
+      narracao:'Sua vez:' }
+  ]};
+
+const MOD_TENDENCIA = { id:'m_tendencia', titulo:'📈 TENDÊNCIA — pra que lado o mercado anda', modelo:true,
+  passos:[
+    { candles:[
+        {o:138,h:141,l:137,c:140},{o:140,h:142,l:139,c:139},{o:139,h:144,l:138,c:143},
+        {o:143,h:145,l:141,c:142},{o:142,h:148,l:141,c:147},{o:147,h:149,l:144,c:145},
+        {o:145,h:152,l:144,c:151},{o:151,h:153,l:148,c:149},{o:149,h:156,l:148,c:155}], ate:9, narracao:
+      'Antes de qualquer zona, o [GAB] olha o <b>sentido</b>: o mercado está <b>subindo</b> ou <b>descendo</b>? Repare nesta sequência — ela vai <b>ladeira acima</b>, mas em <b>ondas</b>.' },
+
+    { marca:{preco:143,cor:'#37d07a',label:'cada FUNDO mais ALTO ▲'}, narracao:
+      'O segredo é olhar os <b>fundos</b>: 139 … 142 … 145 … <b>cada fundo fica mais alto</b> que o anterior. Fundo subindo = <b>compradores no comando</b>. [GAB]' },
+
+    { marca:{preco:152,cor:'#37d07a',label:'cada TOPO mais ALTO ▲'}, narracao:
+      'E os <b>topos</b> também sobem: 144 … 148 … 153 … <b>topos cada vez mais altos</b>. <b>Topo subindo + fundo subindo = TENDÊNCIA DE ALTA</b> (mercado "bullish").' },
+
+    { seta:{x:'85%',de:150,ate:158,cor:'#37d07a',txt:'a favor da tendência'}, narracao:
+      'Regra de ouro do GAB: <b>opere a FAVOR</b> do tempo maior. Em alta, você procura <b>suportes pra COMPRAR</b> — não fica vendendo contra a maré. O sentido é o <b>filtro</b> de tudo. [GAB]' },
+
+    { interacao:{tipo:'simNao', pergunta:'Fundos e topos cada vez mais ALTOS = tendência de alta?', alvo:true,
+        feedback:{ok:'Isso! Topo subindo + fundo subindo = alta. Aí você caça suportes pra comprar.',
+                  no:'Olhe os fundos (139→142→145) e topos subindo: isso é tendência de ALTA.'}},
+      narracao:'Confirme:' }
+  ]};
+
+const MOD_STOPHUNT = { id:'m_stophunt', fase2:true, titulo:'🪤 STOP HUNT — o pavio que caça seu stop', modelo:true,
+  passos:[
+    { candles:[
+        {o:150,h:151,l:147,c:148},{o:148,h:149,l:144,c:145},{o:145,h:146,l:142,c:143},
+        {o:143,h:144,l:141,c:142},{o:142,h:143,l:140,c:141}],
+      zonas:[{top:141,bottom:139,cor:'sup',label:'SUPORTE (a última zona)'}], acende:{cor:'sup'}, ate:5, narracao:
+      'O preço caiu até o <b>suporte</b> em ~R$ 140 e segurou. O iniciante pensa: "vou comprar e botar meu <b>stop</b> logo abaixo da zona". Parece esperto… mas o [GAB] <b>avisa</b>.' },
+
+    { marca:{preco:138.5,cor:'#ff6b5e',label:'stop "óbvio" de todo mundo'}, narracao:
+      'Todo mundo coloca o stop no <b>mesmo lugar óbvio</b>, logo abaixo do piso. Isso vira um <b>monte de ordens</b> empilhadas ali — o que o mercado chama de <b>liquidez</b>. E liquidez <b>atrai</b> o preço. [GAB]' },
+
+    { candles:[
+        {o:150,h:151,l:147,c:148},{o:148,h:149,l:144,c:145},{o:145,h:146,l:142,c:143},
+        {o:143,h:144,l:141,c:142},{o:142,h:143,l:140,c:141},
+        {o:140,h:141,l:137,c:140.5}],
+      zonas:[{top:141,bottom:139,cor:'sup',label:'SUPORTE'}], acende:{cor:'sup'},
+      marca:{preco:138.5,cor:'#ff6b5e',label:'pavio FUROU e estourou os stops'}, ate:6, narracao:
+      'Olha a última vela: um <b>pavio</b> desce a 137, <b>fura</b> os stops de todo mundo… e o <b>corpo</b> volta a fechar a 140,5, <b>dentro da zona</b>. Isso é o <b>STOP HUNT</b>: caçaram a liquidez e voltaram.' },
+
+    { candles:[
+        {o:150,h:151,l:147,c:148},{o:148,h:149,l:144,c:145},{o:145,h:146,l:142,c:143},
+        {o:143,h:144,l:141,c:142},{o:142,h:143,l:140,c:141},
+        {o:140,h:141,l:137,c:140.5},{o:140.5,h:145,l:140,c:144},{o:144,h:150,l:143,c:149}],
+      zonas:[{top:141,bottom:139,cor:'sup',label:'SUPORTE segurou (corpo)'}], acende:{cor:'sup'},
+      seta:{x:'78%',de:140,ate:151,cor:'#37d07a',txt:'só o CORPO conta'}, ate:8, narracao:
+      'Quem marcou pelo <b>corpo</b> (R$ 140) e <b>não pôs stop na última zona</b> ficou no trade — e o preço <b>voou</b>. Por isso o GAB: <b>"o pavio é inútil"</b> e <b>"nunca SL na última zona"</b>. [GAB]' },
+
+    { interacao:{tipo:'simNao', pergunta:'O pavio furou o piso por baixo — a zona quebrou de verdade?', alvo:false,
+        feedback:{ok:'Isso! Só o PAVIO furou; o CORPO fechou dentro. Foi caça-stop, não quebra. A zona vale.',
+                  no:'Cuidado: só o pavio passou; o corpo fechou DENTRO. Pelo método (body-only) a zona NÃO quebrou — foi stop hunt.'}},
+      narracao:'Decida:' }
+  ]};
+
+const MOD_QM = { id:'m_qm', titulo:'👑 QUASIMODO (o breakout que falha)', modelo:true, fase2:true,
+  passos:[
+    // 1) sobe e bate num teto (left shoulder) — contexto
+    { candles:[
+        {o:142,h:144,l:141,c:143},{o:143,h:148,l:142,c:147},{o:147,h:152,l:146,c:151},
+        {o:151,h:156,l:150,c:155},{o:155,h:157,l:153,c:154},{o:154,h:156,l:152,c:153}], ate:6,
+      zonas:[{top:157,bottom:155,cor:'res',label:'OMBRO ESQUERDO (1ª venda, fraca)'}], acende:{cor:'res'},
+      narracao:'O preço subiu e bateu num <b>teto</b> (~156) — o <b>ombro esquerdo</b>. Recuou. Até aqui parece um topo comum. Guarde essa altura. [GAB]' },
+
+    // 2) rompe o teto (parece breakout de alta) e faz um topo MAIS ALTO = APEX
+    { candles:[
+        {o:142,h:144,l:141,c:143},{o:143,h:148,l:142,c:147},{o:147,h:152,l:146,c:151},
+        {o:151,h:156,l:150,c:155},{o:155,h:157,l:153,c:154},{o:154,h:156,l:152,c:153},
+        {o:153,h:158,l:152,c:157},{o:157,h:163,l:156,c:162}], ate:8,
+      zonas:[{top:163,bottom:161,cor:'res',label:'APEX (topo mais alto = venda FORTE)'}], acende:{cor:'res'},
+      narracao:'Agora o preço <b>fura o teto</b> e faz um <b>topo ainda mais alto</b> (162): o <b>APEX</b>. Quem comprou no rompimento acha que vai voar… mas o GAB desconfia: e se o breakout <b>falhar</b>? [GAB]' },
+
+    // 3) o breakout FALHA: despenca abaixo do ombro = confirma o QM
+    { candles:[
+        {o:142,h:144,l:141,c:143},{o:143,h:148,l:142,c:147},{o:147,h:152,l:146,c:151},
+        {o:151,h:156,l:150,c:155},{o:155,h:157,l:153,c:154},{o:154,h:156,l:152,c:153},
+        {o:153,h:158,l:152,c:157},{o:157,h:163,l:156,c:162},
+        {o:162,h:163,l:156,c:157},{o:157,h:158,l:151,c:152},{o:152,h:153,l:147,c:148}], ate:11,
+      zonas:[{top:163,bottom:161,cor:'res',label:'APEX'}], acende:{cor:'res'},
+      narracao:'O breakout <b>FALHOU</b>: em vez de voar, o preço <b>despencou</b> e perdeu até o ombro esquerdo. Essa falha é a assinatura do <b>Quasimodo</b> — diferente do RBS (que continua), o QM <b>reverte</b>. [GAB]' },
+
+    // 4) entrada: VENDA no reteste do APEX, alvo no roadblock lá embaixo
+    { candles:[
+        {o:142,h:144,l:141,c:143},{o:143,h:148,l:142,c:147},{o:147,h:152,l:146,c:151},
+        {o:151,h:156,l:150,c:155},{o:155,h:157,l:153,c:154},{o:154,h:156,l:152,c:153},
+        {o:153,h:158,l:152,c:157},{o:157,h:163,l:156,c:162},
+        {o:162,h:163,l:156,c:157},{o:157,h:158,l:151,c:152},{o:152,h:153,l:147,c:148},
+        {o:148,h:150,l:144,c:145},{o:145,h:146,l:140,c:141}], ate:13,
+      zonas:[{top:163,bottom:161,cor:'res',label:'APEX (reteste = VENDA forte)'},
+             {top:140,bottom:138,cor:'road',label:'ROADBLOCK (alvo lá embaixo)'}],
+      acende:{cor:'res'},
+      seta:{x:'72%',de:155,ate:141,cor:'#ff6b5e',txt:'VENDA'},
+      narracao:'O GAB tem <b>3 zonas de venda</b>: ombro esquerdo (fraca), o SBR e o <b>APEX</b> (a mais forte). Vende no reteste e mira o <b>roadblock</b> lá embaixo. <b>Evite</b>: comprar no falso rompimento do apex. [GAB]' },
+
+    // 5) pergunta
+    { interacao:{tipo:'simNao', pergunta:'No QM, depois do topo mais alto (apex) o preço REVERTE pra baixo (vira venda)?', alvo:true,
+        feedback:{ok:'Isso! O breakout falha no apex e o preço reverte — é VENDA. Diferente do RBS, que continua.',
+                  no:'No QM o rompimento FALHA: forma o apex e reverte pra baixo → é VENDA. Só o RBS continuaria.'}},
+      narracao:'Decida você:' }
+  ]};
+
+const MOD_HNS = { id:'m_hns', titulo:'🧍 HEAD & SHOULDERS (o QM fraquinho)', modelo:true, fase2:true,
+  passos:[
+    // 1) ombro esquerdo
+    { candles:[
+        {o:143,h:145,l:142,c:144},{o:144,h:149,l:143,c:148},{o:148,h:153,l:147,c:152},
+        {o:152,h:154,l:150,c:151},{o:151,h:153,l:149,c:150}], ate:5,
+      zonas:[{top:154,bottom:152,cor:'res',label:'OMBRO ESQUERDO'}], acende:{cor:'res'},
+      narracao:'Primeiro topo: o <b>ombro esquerdo</b> (~153). O preço bateu e recuou. Parecido com o início do Quasimodo — mas olha o que muda no final. [GAB]' },
+
+    // 2) cabeça (topo mais alto no meio)
+    { candles:[
+        {o:143,h:145,l:142,c:144},{o:144,h:149,l:143,c:148},{o:148,h:153,l:147,c:152},
+        {o:152,h:154,l:150,c:151},{o:151,h:153,l:149,c:150},
+        {o:150,h:155,l:149,c:154},{o:154,h:160,l:153,c:159},{o:159,h:160,l:155,c:156}], ate:8,
+      zonas:[{top:160,bottom:158,cor:'res',label:'CABEÇA (topo mais alto)'}], acende:{cor:'res'},
+      narracao:'Veio um topo <b>mais alto</b> no meio: a <b>cabeça</b> (159). Depois o preço caiu de novo. Já temos <b>ombro</b> + <b>cabeça</b> = <b>2 zonas de venda</b>. [GAB]' },
+
+    // 3) ombro direito (mais baixo) — NÃO rompe nada: por isso é HNS (fraco), não QM
+    { candles:[
+        {o:143,h:145,l:142,c:144},{o:144,h:149,l:143,c:148},{o:148,h:153,l:147,c:152},
+        {o:152,h:154,l:150,c:151},{o:151,h:153,l:149,c:150},
+        {o:150,h:155,l:149,c:154},{o:154,h:160,l:153,c:159},{o:159,h:160,l:155,c:156},
+        {o:156,h:158,l:153,c:154},{o:154,h:155,l:150,c:151}], ate:10,
+      zonas:[{top:160,bottom:158,cor:'res',label:'CABEÇA (venda mais forte)'},
+             {top:154,bottom:152,cor:'res',label:'OMBRO DIREITO ≈ ombro esq.'}], acende:{cor:'res'},
+      narracao:'Por fim um <b>ombro direito</b> mais baixo, na mesma altura do esquerdo. <b>Diferença pro QM:</b> aqui <b>não houve aquele último rompimento</b> — por isso o HNS é o <b>QM fraco</b>: só <b>2 zonas</b>, sem o breakout. <b>Se rompesse, viraria QM.</b> [GAB]' },
+
+    // 4) entrada: venda na cabeça/ombro, alvo embaixo
+    { candles:[
+        {o:143,h:145,l:142,c:144},{o:144,h:149,l:143,c:148},{o:148,h:153,l:147,c:152},
+        {o:152,h:154,l:150,c:151},{o:151,h:153,l:149,c:150},
+        {o:150,h:155,l:149,c:154},{o:154,h:160,l:153,c:159},{o:159,h:160,l:155,c:156},
+        {o:156,h:158,l:153,c:154},{o:154,h:155,l:150,c:151},
+        {o:151,h:152,l:146,c:147},{o:147,h:148,l:143,c:144}], ate:12,
+      zonas:[{top:154,bottom:152,cor:'res',label:'ombro (reteste = VENDA)'},
+             {top:143,bottom:141,cor:'road',label:'ROADBLOCK (alvo)'}], acende:{cor:'res'},
+      seta:{x:'76%',de:153,ate:144,cor:'#ff6b5e',txt:'VENDA'},
+      narracao:'O GAB vende no reteste do ombro/cabeça e mira o <b>roadblock</b> embaixo. É como o QM, só que <b>mais fraco</b> (sem o breakout final) — então o GAB aposta <b>menos</b>. [GAB]' },
+
+    // 5) pergunta
+    { interacao:{tipo:'simNao', pergunta:'O HNS é mais fraco que o QM porque NÃO teve o último rompimento?', alvo:true,
+        feedback:{ok:'Isso! HNS = QM sem o breakout final → só 2 zonas, mais fraco. Se rompesse, viraria QM.',
+                  no:'É sim: o que falta no HNS é o último breakout. Sem ele, são só 2 zonas (QM fraco).'}},
+      narracao:'Sua vez:' }
+  ]};
+
+const MOD_OHLC = { id:'m_ohlc', titulo:'🧱 OHLC (o reforço — nunca sozinho)', modelo:true, fase2:true,
+  passos:[
+    // 1) duas velas do mesmo sentido formam uma mini-zona
+    { candles:[
+        {o:150,h:151,l:147,c:148},{o:148,h:149,l:145,c:146},{o:146,h:147,l:143,c:144},
+        {o:144,h:145,l:141,c:143},{o:143,h:144,l:141,c:142}], ate:5,
+      zonas:[{top:144,bottom:141,cor:'sup',label:'mini-zona OHLC (2 velas iguais)'}], acende:{cor:'sup'},
+      narracao:'Olha as <b>2 últimas velas</b>: as duas de baixa, coladas, no mesmo lugar. Isso forma uma <b>mini-zona</b> (OHLC = open-close). É o tipo <b>mais fraco</b> do GAB. [GAB]' },
+
+    // 2) ALERTA: OHLC sozinho não vale — preço pode furar fácil
+    { candles:[
+        {o:150,h:151,l:147,c:148},{o:148,h:149,l:145,c:146},{o:146,h:147,l:143,c:144},
+        {o:144,h:145,l:141,c:143},{o:143,h:144,l:141,c:142},
+        {o:142,h:143,l:138,c:139}], ate:6,
+      zonas:[{top:144,bottom:141,cor:'sup',label:'OHLC sozinho FUROU (fraco)'}], acende:{cor:'sup'},
+      narracao:'<b>Regra de ouro:</b> OHLC <b>nunca</b> entra sozinho. Sozinho ele é fraco — olha, o preço <b>furou</b> a mini-zona fácil (139). Quem entrou só nele tomou stop. [GAB]' },
+
+    // 3) o uso CERTO: OHLC EM CIMA de um suporte de verdade = buff (confluência)
+    { candles:[
+        {o:150,h:151,l:147,c:148},{o:148,h:149,l:145,c:146},{o:146,h:147,l:143,c:144},
+        {o:144,h:145,l:141,c:143},{o:143,h:144,l:141,c:142},
+        {o:142,h:143,l:140,c:141},{o:141,h:142,l:140,c:141}], ate:7,
+      zonas:[{top:142,bottom:139,cor:'sup',label:'SUPORTE forte + OHLC em cima = BUFF'}], acende:{cor:'sup'},
+      marca:{preco:140,cor:'#f4c95d',label:'aqui também tem suporte → confluência'},
+      narracao:'O jeito <b>certo</b>: usar o OHLC como <b>reforço</b> em cima de uma zona forte (um suporte de verdade). Aí as duas coisas se somam — vira <b>confluência</b> e o trade fica bom. [GAB]' },
+
+    // 4) entrada com confluência
+    { candles:[
+        {o:150,h:151,l:147,c:148},{o:148,h:149,l:145,c:146},{o:146,h:147,l:143,c:144},
+        {o:144,h:145,l:141,c:143},{o:143,h:144,l:141,c:142},
+        {o:142,h:143,l:140,c:141},{o:141,h:142,l:140,c:141},
+        {o:141,h:145,l:140,c:144},{o:144,h:149,l:143,c:148}], ate:9,
+      zonas:[{top:142,bottom:139,cor:'sup',label:'suporte + OHLC (buff)'},
+             {top:155,bottom:153,cor:'road',label:'ROADBLOCK (alvo)'}], acende:{cor:'sup'},
+      seta:{x:'70%',de:140,ate:153,cor:'#37d07a',txt:'COMPRA (com buff)'},
+      narracao:'Com o OHLC <b>reforçando</b> um suporte de verdade, o GAB <b>compra</b> e mira o roadblock. <b>Lembre:</b> o OHLC é tempero, <b>não</b> o prato — sozinho, fica fora. [GAB]' },
+
+    // 5) pergunta
+    { interacao:{tipo:'simNao', pergunta:'Dá pra entrar usando SÓ o OHLC, sem outra zona junto?', alvo:false,
+        feedback:{ok:'Isso! OHLC é o tipo mais fraco — só serve de reforço (buff) em cima de outra zona.',
+                  no:'Não: regra de ouro do GAB — OHLC NUNCA entra sozinho, só como confluência.'}},
+      narracao:'Decida:' }
+  ]};
+
+const MODELOS_GAB=[
+  AULA_SNR, AULA_RBS, AULA_SBR,
+  MOD_ROMPIMENTO, MOD_RETESTE, MOD_CANDLECLOSE, MOD_ROADBLOCK,
+  MOD_CONFLUENCIA, MOD_MTF, MOD_TENDENCIA,
+  MOD_STOPHUNT, MOD_QM, MOD_HNS, MOD_OHLC
+];
+
 
 /* ---- player ---- */
 function acDraw(state,n){
@@ -2197,6 +2741,7 @@ function acDraw(state,n){
 }
 function playStep(aula,i){
   acStop();
+  { const c=$('#acad-ctr'); if(c) c.innerHTML=''; }   // some o botão do passo anterior enquanto anima (senão clicar nele re-roda o passo errado)
   const passo=aula.passos[i]; const bal=$('#acad-say'); if(!bal) return;
   const prev=aula._state||{};
   const state=aula._state={
@@ -2264,29 +2809,35 @@ function montarInteracao(aula,i,passo,ctr){
     $('#ac-again').onclick=()=>{ aula._state=prevStateFor(aula,i); playStep(aula,i); };
   }
 }
-function playAula(aula){
+function playAula(aula, origem){
   acStop();
+  aula._origem = origem || (aula.modelo ? 'modelos' : 'academia');
   const screen=$('#screen');
   screen.innerHTML=`<div class="view"><div class="card-lesson" style="padding-top:10px">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-      <button class="btn ghost" style="width:auto;padding:4px 10px;margin:0" id="ac-back">‹ aulas</button>
+      <button class="btn ghost" style="width:auto;padding:4px 10px;margin:0" id="ac-back">‹ ${aula._origem==='modelos'?'modelos':'aulas'}</button>
       <b style="font-size:15px">${aula.titulo}</b></div>
     <div class="felt"><canvas id="acad-bd" width="548" height="212"></canvas>
       <span class="tf-badge">DAILY · XAUUSD</span></div>
     <div class="gab-note" id="acad-say" style="min-height:54px;display:block"></div>
     <div class="acad-ctr" id="acad-ctr" style="display:flex;gap:8px;margin-top:8px"></div>
   </div></div>`;
-  $('#ac-back').onclick=()=>{ acStop(); telaAcademia(); };
+  $('#ac-back').onclick=()=>{ acStop(); aula._origem==='modelos'?telaModelos():telaAcademia(); };
   aula._state=null;
-  S.aulasVistas=S.aulasVistas||[];
-  if(!S.aulasVistas.includes(aula.id)){ S.aulasVistas.push(aula.id); save(); }
+  if(aula._origem==='modelos'){
+    S.modelosVistos=S.modelosVistos||[];
+    if(!S.modelosVistos.includes(aula.id)){ S.modelosVistos.push(aula.id); save(); }
+  } else {
+    S.aulasVistas=S.aulasVistas||[];
+    if(!S.aulasVistas.includes(aula.id)){ S.aulasVistas.push(aula.id); save(); }
+  }
   screen.scrollTop=0;
   playStep(aula,0);
 }
 function fecharAula(aula){ acStop(); fanfare();
   conceptToast('🎓','Aula concluída','Você viu <b>'+aula.titulo+'</b>. Pode rever quando quiser.');
   if(ACADEMIA.filter(a=>!a.fase2).every(a=>(S.aulasVistas||[]).includes(a.id))){ S.academiaDone=true; save(); }
-  telaAcademia();
+  (aula._origem==='modelos') ? telaModelos() : telaAcademia();
 }
 function telaAcademia(){
   acStop();
@@ -2300,13 +2851,38 @@ function telaAcademia(){
     <h2>📊 Academia de Leitura</h2>
     <p style="color:#dde7df;font-size:14px;line-height:1.5">Aulas <b>animadas</b> no gráfico: veja o preço se mover, a zona <b>acender</b> e entenda <b>quando a vela bate</b> num suporte ou numa resistência. No seu ritmo — toque <b>▶ de novo</b> pra rever.</p>
     ${cards}
+    <button class="btn primary" id="ac-modelos">🧩 Modelos do GAB (catálogo)</button>
     <button class="btn go" id="ac-jogar">▶ Ir pro Ato 0</button>
     <button class="btn ghost" id="ac-menu">‹ Voltar ao menu</button>
   </div></div>`;
   $$('.acad-item').forEach(b=>b.onclick=()=>{ blip(560);
     playAula(ACADEMIA.find(a=>a.id===b.dataset.aula)); });
+  const mb=$('#ac-modelos'); if(mb) mb.onclick=()=>{ blip(560); telaModelos(); };
   $('#ac-jogar').onclick=()=>{ blip(560); S.onbDone=true; save(); runAto0(); };
   $('#ac-menu').onclick =()=>{ blip(360); menu(); };
+  screen.scrollTop=0;
+}
+function telaModelos(){
+  acStop();
+  const screen=$('#screen'); const vistas=S.modelosVistos||[];
+  const nucleo=MODELOS_GAB.filter(a=>!a.fase2), avanc=MODELOS_GAB.filter(a=>a.fase2);
+  const item=a=>{ const ok=vistas.includes(a.id);
+    return `<button class="btn ${ok?'ghost':'primary'} acad-item" data-aula="${a.id}" style="text-align:left">
+      ${ok?'✓ ':'▶ '}${a.titulo}</button>`; };
+  const vistosN=vistas.filter(id=>nucleo.some(a=>a.id===id)).length;
+  screen.innerHTML=`<div class="view"><div class="card-lesson">
+    <div class="tag">MODELOS DO GAB · ${vistosN}/${nucleo.length} no núcleo</div>
+    <h2>🧩 Catálogo de Modelos</h2>
+    <p style="color:#dde7df;font-size:14px;line-height:1.5">Cada <b>setup</b> do método do GAB com um exemplo <b>animado</b>: como se forma, quando a zona <b>vale</b>, onde o GAB <b>entra</b> (COMPRA/VENDA) e o que <b>evitar</b>. No seu ritmo.</p>
+    <div class="tag" style="margin-top:6px">NÚCLEO</div>
+    ${nucleo.map(item).join('')}
+    <div class="tag" style="margin-top:10px">AVANÇADO</div>
+    ${avanc.map(item).join('')}
+    <button class="btn ghost" id="mod-back" style="margin-top:10px">‹ Voltar à Academia</button>
+  </div></div>`;
+  $$('.acad-item').forEach(b=>b.onclick=()=>{ blip(560);
+    playAula(MODELOS_GAB.find(a=>a.id===b.dataset.aula),'modelos'); });
+  $('#mod-back').onclick=()=>{ blip(360); telaAcademia(); };
   screen.scrollTop=0;
 }
 function abrirAcademia(){ telaAcademia(); }
