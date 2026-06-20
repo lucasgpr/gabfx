@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b34';
+window.__BUILD='b35';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -1635,26 +1635,31 @@ function runAto0(){
       op.disabled=true; op.style.boxShadow=''; op.textContent='✓ Operado'; blip(700);thunk();shake(false);vibrate(12);
       const r=cv.getBoundingClientRect(); sparks(r.left+r.width*0.62,r.top+r.height*0.5,'#37d07a',8);
       say('✅ <b>Entrou no reteste!</b> Segura até o <b>roadblock</b> (o alvo).'); };
-    let n=SETUP.length;
-    say('📈 <b>Pregão rodando…</b> espere o preço <b>VOLTAR na zona</b> e aperte <b>🟢 ENTRAR</b> na hora certa.');
+    say('📈 <b>Pregão rodando ao vivo…</b> a vela se forma em <b>tempo real</b> — espere o preço <b>VOLTAR na zona</b> e aperte <b>🟢 ENTRAR</b> na hora.');
+    let i=SETUP.length, s=0; const STEPS=8, finais=full.map(c=>({o:c.o,c:c.c,h:c.h,l:c.l}));
+    function fimPregao(){ op.style.boxShadow=''; k._missedEntry=!entered;
+      const sup=CEN.tipo==='suporte', slot=B.w/full.length, ax=B.x+slot*(full.length-0.5);
+      const yFrom=pY(sup?ZONE.bottom:ZONE.top,B,PR);
+      const yTo=(certo&&entered)?pY(sup?ROAD.bottom:ROAD.top,B,PR):pY(sup?ZONE.bottom-10:ZONE.top+10,B,PR);
+      arrow(ctx,ax,yFrom,yTo,buy?'#37d07a':'#fe5f55',buy?'COMPRA':'VENDA');
+      setTimeout(()=>flyCardsToCenter(k,buy),420);
+    }
     const tm=setInterval(()=>{
-      n++; drawTrade(full,n); blip(300+n*12); vibrate(3);
-      const idx=n-1, inWin=(idx>=winStart && idx<=winEnd && !entered);
+      if(i>=full.length){ clearInterval(tm); return fimPregao(); }
+      const fc=finais[i], prog=(s+1)/STEPS, cNow=fc.o+(fc.c-fc.o)*prog;
+      const hNow=Math.max(fc.o,cNow)+(fc.h-Math.max(fc.o,fc.c))*prog, lNow=Math.min(fc.o,cNow)-(Math.min(fc.o,fc.c)-fc.l)*prog;
+      full[i]={o:fc.o,c:+cNow.toFixed(2),h:+Math.max(cNow,fc.o,hNow).toFixed(2),l:+Math.min(cNow,fc.o,lNow).toFixed(2)};
+      drawTrade(full,i+1);
+      const inWin=(i>=winStart && i<=winEnd && !entered);
       if(inWin){ op.disabled=false; op.style.boxShadow='0 0 18px #37d07a,0 0 6px #37d07a';
         op.textContent=buy?'🟢 ENTRAR (COMPRA)':'🔴 ENTRAR (VENDA)';
         if(!winSaid){ winSaid=true; say('🎯 <b>O preço VOLTOU na zona!</b> Aperte <b>ENTRAR</b> AGORA — perdeu a janela, perde o trade.'); } }
       else if(!entered){ op.disabled=true; op.style.boxShadow='';
-        if(winSaid && idx>winEnd && !missed){ missed=true; op.textContent='✗ perdeu a entrada';
+        if(winSaid && i>winEnd && !missed){ missed=true; op.textContent='✗ perdeu a entrada';
           say('⚫ <b>Perdeu a entrada.</b> O preço passou pela zona e você não operou.'); } }
-      if(n>=full.length){ clearInterval(tm); op.style.boxShadow='';
-        k._missedEntry=!entered;
-        const sup=CEN.tipo==='suporte', slot=B.w/full.length, ax=B.x+slot*(full.length-0.5);
-        const yFrom=pY(sup?ZONE.bottom:ZONE.top,B,PR);
-        const yTo=(certo&&entered)?pY(sup?ROAD.bottom:ROAD.top,B,PR):pY(sup?ZONE.bottom-10:ZONE.top+10,B,PR);
-        arrow(ctx,ax,yFrom,yTo,buy?'#37d07a':'#fe5f55',buy?'COMPRA':'VENDA');
-        setTimeout(()=>flyCardsToCenter(k,buy),420);
-      }
-    },175);
+      s++;
+      if(s>=STEPS){ full[i]=finais[i]; s=0; blip(300+i*9); vibrate(2); i++; }
+    },48);
   }
 
   /* ---------- 1) o trade roda candle a candle no gráfico ---------- */
