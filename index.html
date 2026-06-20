@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b31';
+window.__BUILD='b32';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -581,7 +581,7 @@ const S=Object.assign({xp:0,onbDone:false,bossWon:false,unlocked:[],runs:0,
   aderenciaUltima:0,aderenciaMelhorRun:0,maosPerfeitas:0,cenarioUltimo:null,
   coringasVistos:[],slotsDestravados:[],fichasGastasTotal:0,
   academiaDone:false,aulasVistas:[],acadOferecida:false,modelosVistos:[],
-  mkProg:{}},JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'));
+  mkProg:{},fzProg:{}},JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'));
 function save(){localStorage.setItem(SAVE_KEY,JSON.stringify(S));hud();}
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
@@ -2958,7 +2958,7 @@ function abrirAcademia(){ telaAcademia(); }
    =================================================================== */
 const MK={ bg:'#ffffff', grid:'#eceef1', axis:'#6a6e78', ink:'#131722', sub:'#787b84',
   bull:'#26a69a', bear:'#ef5350', supLine:'#1b8a7f', supFill:'rgba(38,166,154,.15)',
-  resLine:'#c0392b', resFill:'rgba(239,83,80,.15)', markLine:'#2962ff', markFill:'rgba(41,98,255,.12)' };
+  resLine:'#c0392b', resFill:'rgba(239,83,80,.15)', markLine:'#2962ff', markFill:'rgba(41,98,255,.12)', road:'#9b59b6' };
 const MK_MODS=[
   {key:'m0',nome:'Módulo 0 — Alfabeto do gráfico',treina:'Ler a vela e achar o corpo',gate:8,tipo:'alfabeto'},
   {key:'m1',nome:'Módulo 1 — Marcar Suporte',treina:'Suporte = baixa→alta · marque o corpo',gate:6,tipo:'marca',alvo:'suporte'},
@@ -3133,6 +3133,176 @@ function mkDone(mod){ S.mkProg=S.mkProg||{}; S.mkProg[mod.key]=mod.gate; save();
   mkSay(`🏆 <b>${mod.nome}</b> concluído! Você marcou certo ${mod.gate} vezes. Tá ficando mestre.`);
   mkCtr([{t:'‹ Voltar ao treino',c:'primary',f:telaMarcacao}]); }
 
+/* ===================================================================
+   FASE 0 AO VIVO — marca a zona, o gráfico RODA (igual mercado) e você opera
+   no momento certo (reteste). Reusa MK/mkScore/mkStep/mkZone/pY/yToP. (v1)
+   =================================================================== */
+const FASES=[
+  {id:'f1',nome:'Fase 0·1 — Retorno ao Suporte',tipo:'suporte',alvo:55},
+  {id:'f2',nome:'Fase 0·2 — Retorno à Resistência',tipo:'resistencia',alvo:55},
+  {id:'f3',nome:'Fase 0·3 — Suporte (mais ruído)',tipo:'suporte',alvo:70,dif:1},
+];
+let FZTIMER=null;
+function pararFase(){ if(FZTIMER){clearInterval(FZTIMER);FZTIMER=null;} }
+function genFase(tipo,dif){
+  dif=dif||0;
+  const S0=2600+(Math.random()*120|0), R=mkRnd(48,70)+dif*8, amp=mkRnd(6,9)+dif*1.2;
+  const cs=[], P=(o,c,wl,wh)=>cs.push({o:+o.toFixed(2),c:+c.toFixed(2),h:+(Math.max(o,c)+wh).toFixed(2),l:+(Math.min(o,c)-wl).toFixed(2)});
+  let p=S0+R*0.85;
+  for(let g=0;g<5;g++){ const o=p,c=Math.max(S0+amp*1.2,p-mkRnd(amp*0.8,amp*1.4)); P(o,c,mkRnd(1,3),mkRnd(0,1.5)); p=c; }
+  P(p,S0,mkRnd(2,4)+dif,mkRnd(0,1.2)); p=S0;
+  P(S0,S0+amp,mkRnd(2.5,4.5),mkRnd(0,1.2)); p=S0+amp;
+  P(p,p+amp*0.5,1,mkRnd(1,2)); p+=amp*0.5;
+  P(p,p+amp*0.3,1,mkRnd(1,2)); p+=amp*0.3;
+  const histN=cs.length;
+  const back=2+(Math.random()*2|0);
+  for(let i=0;i<back;i++){ const o=p,c=p-(p-S0)*mkRnd(.5,.8)-mkRnd(0,amp*.3); P(o,Math.max(c,S0-amp*0.1),mkRnd(1,3),1); p=cs[cs.length-1].c; }
+  P(p,S0+amp*0.15,mkRnd(2,4.5),1); p=S0+amp*0.15;
+  const RB=S0+R;
+  for(let i=0;i<7;i++){ const o=p,c=Math.min(RB,p+(RB-p)*mkRnd(.3,.5)+mkRnd(0,amp*.3)); P(o,c,1,mkRnd(1,3)); p=c; }
+  let sc={cs,histN,ans:{tipo:'suporte',top:S0+amp*0.5,bottom:S0,base:S0},road:RB,Sbase:S0,amp,R};
+  if(tipo==='resistencia') sc=mirrorFase(sc);
+  let mx=-1e9,mn=1e9; sc.cs.forEach(k=>{mx=Math.max(mx,k.h);mn=Math.min(mn,k.l);});
+  const pad=(mx-mn)*0.10; sc.pr={max:mx+pad,min:mn-pad};
+  return sc;
+}
+function mirrorFase(sc){ const S=sc.Sbase, f=p=>+(2*S-p).toFixed(2);
+  return {cs:sc.cs.map(k=>({o:f(k.o),c:f(k.c),h:f(k.l),l:f(k.h)})),histN:sc.histN,road:f(sc.road),
+    Sbase:S,amp:sc.amp,R:sc.R,ans:{tipo:'resistencia',top:S,bottom:f(sc.ans.top),base:S}}; }
+function faseDraw(cv,fz){
+  const ctx=cv.getContext('2d'),W=cv.width,H=cv.height,sc=fz.sc,pr=sc.pr;
+  ctx.clearRect(0,0,W,H); ctx.fillStyle=MK.bg; ctx.fillRect(0,0,W,H);
+  const L={x:6,y:34,w:W-58,h:H-34-18,axisX:W-52};
+  ctx.textAlign='left'; ctx.font='10px ui-monospace,monospace';
+  const stp=mkStep(pr);
+  for(let v=Math.ceil(pr.min/stp)*stp; v<pr.max; v+=stp){ const y=pY(v,L,pr);
+    ctx.strokeStyle=MK.grid;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(L.x,y);ctx.lineTo(L.x+L.w,y);ctx.stroke();
+    ctx.fillStyle=MK.axis;ctx.fillText(v.toFixed(2),L.axisX+3,y+3); }
+  const ry=pY(sc.road,L,pr); ctx.strokeStyle=MK.road;ctx.lineWidth=1.4;ctx.setLineDash([6,4]);
+  ctx.beginPath();ctx.moveTo(L.x,ry);ctx.lineTo(L.x+L.w,ry);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle=MK.road;ctx.font='bold 9px system-ui';ctx.fillText('roadblock (alvo)',L.x+4,ry-3);
+  if(fz.fase!=='mark'&&fz.markQ) mkZone(ctx,L,pr,sc.ans.top,sc.ans.bottom,sc.ans.tipo);
+  if(fz.mark){ const yT=pY(Math.max(fz.mark.pTop,fz.mark.pBottom),L,pr),yB=pY(Math.min(fz.mark.pTop,fz.mark.pBottom),L,pr), glow=fz.inZone;
+    ctx.fillStyle=glow?'rgba(124,252,155,.28)':MK.markFill; ctx.fillRect(L.x,yT,L.w,yB-yT);
+    ctx.strokeStyle=glow?'#22c55e':MK.markLine; ctx.lineWidth=glow?2.6:1.6; ctx.setLineDash([5,3]);
+    ctx.strokeRect(L.x,yT,L.w,yB-yT); ctx.setLineDash([]); }
+  const N=sc.cs.length, slot=L.w/N, cw=Math.min(12,slot*0.6), rev=fz.reveal||sc.histN;
+  for(let i=0;i<rev;i++){ const c=sc.cs[i],cx=L.x+slot*i+slot/2,col=c.c>=c.o?MK.bull:MK.bear;
+    ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(cx,pY(c.h,L,pr));ctx.lineTo(cx,pY(c.l,L,pr));ctx.stroke();
+    const yo=pY(c.o,L,pr),yc=pY(c.c,L,pr);ctx.fillRect(cx-cw/2,Math.min(yo,yc),cw,Math.max(1.5,Math.abs(yo-yc))); }
+  if(fz.entered&&fz.entryIdx!=null){ const cx=L.x+slot*fz.entryIdx+slot/2,ey=pY(fz.entryPrice,L,pr);
+    ctx.fillStyle='#2962ff';ctx.beginPath();ctx.arc(cx,ey,4,0,7);ctx.fill();
+    ctx.font='bold 9px system-ui';ctx.fillText(fz.def.tipo==='suporte'?'COMPRA':'VENDA',cx+6,ey+3); }
+  const last=sc.cs[rev-1].c, ly=pY(last,L,pr);
+  ctx.strokeStyle='#9aa0aa';ctx.lineWidth=1;ctx.setLineDash([2,2]);ctx.beginPath();ctx.moveTo(L.x,ly);ctx.lineTo(L.axisX,ly);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle=MK.ink;ctx.fillRect(L.axisX,ly-7,W-L.axisX,14);ctx.fillStyle='#fff';ctx.font='9px ui-monospace,monospace';ctx.fillText(last.toFixed(2),L.axisX+3,ly+3);
+  ctx.fillStyle='#e8b923';ctx.beginPath();ctx.arc(11,11,4,0,7);ctx.fill();
+  ctx.fillStyle=MK.ink;ctx.font='bold 11px system-ui';ctx.fillText('Gold Spot / U.S. Dollar · 1D · OANDA',20,14);
+  ctx.fillStyle='#b2b5be';ctx.font='9px system-ui';ctx.fillText('TradingView',8,H-4);
+  return {B:L,pr};
+}
+function faseDrawNow(){ const cv=$('#mk-cv'); if(cv)S.fz.geo=faseDraw(cv,S.fz); }
+function faseSay(h){ const e=$('#fz-say'); if(e)e.innerHTML=h; }
+function faseDock(btns){ const c=$('#fz-dock'); if(!c)return; c.innerHTML='';
+  btns.forEach(b=>{ const x=document.createElement('button'); x.className='btn '+(b.c||'ghost');
+    x.style.cssText='width:auto;flex:1;min-width:120px'; x.textContent=b.t; if(b.id)x.id=b.id; if(b.dis)x.disabled=true;
+    x.onclick=()=>{blip(480);b.f();}; c.appendChild(x); }); }
+function faseHud(chips,mult,pips){ const h=$('#fz-hud'); if(h)h.innerHTML=`<b style="color:#3ea0e0">${chips}</b>×<b style="color:#f4c95d">${mult}</b>=<b>${pips}</b>/${S.fz.def.alvo}`; }
+function telaFases(){
+  pararFase(); blip(420); const screen=$('#screen'), prog=S.fzProg||{};
+  screen.innerHTML=`<div class="view"><div class="card-lesson">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <button class="btn ghost" style="width:auto;padding:4px 10px;margin:0" id="fz-menu">‹ menu</button>
+      <b style="font-size:16px;flex:1">🎯 Marcar & Operar</b></div>
+    <p style="font-size:13px;color:var(--mut);line-height:1.5;margin:0 0 10px"><b>1)</b> Marque a zona. <b>2)</b> O gráfico <b>roda</b> ao vivo. <b>3)</b> Quando o preço <b>voltar na zona</b>, opere no momento certo (perdeu a janela, perdeu o trade). Pips = chips×mult, igual ao GAB e ao Balatro.</p>
+    <div id="fz-list" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="fid" style="margin-top:12px">Mais fases chegando (fresh, RBS/SBR, QM, multi-TF…). <span class="gabtag">FIEL</span> ao GAB.</div>
+  </div></div>`;
+  $('#fz-menu').onclick=()=>menu();
+  const list=$('#fz-list');
+  FASES.forEach(d=>{ const best=prog[d.id]||0, done=best>=d.alvo;
+    const b=document.createElement('button'); b.className='btn '+(done?'ghost':'primary');
+    b.style.cssText='text-align:left;width:100%;white-space:normal';
+    b.innerHTML=`<b>${d.nome}</b> ${done?'<span style="color:#7CFC9B">✓</span>':''}<br><small style="opacity:.8">Meta: ${d.alvo} pips${best?` · seu recorde: ${best}`:''}</small>`;
+    b.onclick=()=>faseLive(d); list.appendChild(b); });
+  screen.scrollTop=0;
+}
+function faseLive(def){
+  pararFase();
+  S.fz={def,sc:genFase(def.tipo,def.dif||0),fase:'mark',reveal:0,mark:null,entered:false,entryPrice:null,entryIdx:null,alav:false,wasZone:false,inZone:false,missed:false,markQ:null,geo:null};
+  S.fz.reveal=S.fz.sc.histN;
+  const screen=$('#screen');
+  screen.innerHTML=`<div class="view"><div class="card-lesson" style="padding-top:10px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <button class="btn ghost" style="width:auto;padding:4px 10px;margin:0" id="fz-back">‹ fases</button>
+      <b style="font-size:13px;flex:1;min-width:0">${def.nome}</b>
+      <span id="fz-hud" style="font-size:12px;color:var(--mut)"></span></div>
+    <div style="background:#fff;border-radius:10px;overflow:hidden;border:1px solid #d7dadf">
+      <canvas id="mk-cv" width="560" height="320" style="width:100%;display:block;touch-action:none"></canvas></div>
+    <div id="fz-say" style="min-height:44px;font-size:13.5px;line-height:1.45;margin:8px 0;color:#dde7df"></div>
+    <div id="fz-dock" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+  </div></div>`;
+  $('#fz-back').onclick=()=>{pararFase();telaFases();};
+  faseDrawNow(); faseHud(0,1,0);
+  faseSay(def.tipo==='suporte'
+    ? '<b>1) Leia e marque.</b> O preço caiu e formou um <b>suporte</b> (vela de baixa → vela de alta). <b>Arraste</b> pra marcar a faixa no <b>corpo</b> (não no pavio). Depois o gráfico vai <b>rodar</b>.'
+    : '<b>1) Leia e marque.</b> O preço subiu e formou uma <b>resistência</b> (vela de alta → vela de baixa). <b>Arraste</b> pra marcar a faixa no <b>corpo</b> (não no pavio). Depois o gráfico vai <b>rodar</b>.');
+  faseDock([{t:'Confirmar marcação',c:'primary',id:'fz-ok',dis:true,f:faseConfirmMark}]);
+  faseBindDrag();
+}
+function faseBindDrag(){ const cv=$('#mk-cv'),fz=S.fz; let drag=false,yA=0;
+  const yc=ev=>{const r=cv.getBoundingClientRect();return (ev.clientY-r.top)*(cv.height/r.height);};
+  cv.onpointerdown=ev=>{ if(S.fz.fase!=='mark')return; ev.preventDefault();drag=true;yA=yc(ev);upd(ev);cv.setPointerCapture&&cv.setPointerCapture(ev.pointerId);};
+  cv.onpointermove=ev=>{ if(drag){ev.preventDefault();upd(ev);} };
+  cv.onpointerup=()=>drag=false; cv.onpointerleave=()=>drag=false;
+  function upd(ev){ const yB=yc(ev),L=fz.geo.B,pr=fz.geo.pr;
+    fz.mark={pTop:yToP(Math.min(yA,yB),L,pr),pBottom:yToP(Math.max(yA,yB),L,pr)}; faseDrawNow();
+    const ok=$('#fz-ok'); if(ok)ok.disabled=false; } }
+function faseConfirmMark(){ const fz=S.fz; if(!fz.mark)return; fz.markQ=mkScore(fz.mark,fz.sc.ans); fz.fase='armar'; pararFase(); faseArmar(); }
+function faseArmar(){ const fz=S.fz; faseDrawNow();
+  const r=fz.markQ, nota=r.ok?'✓ Boa marcação.':r.pavio?'Você pegou o <b>pavio</b> (marque no corpo) — vai render menos.':'Marcação meio fora — vai render menos.';
+  faseSay(`<b>2) Prepare a entrada.</b> ${nota} O pregão vai <b>rodar</b>: espere o preço <b>voltar à zona</b> (vai <b>acender verde</b>) e toque <b>${fz.def.tipo==='suporte'?'COMPRAR':'VENDER'}</b> na hora. ⚡ Alavancagem dobra (pra cima se acertar).`);
+  faseDock([
+    {t:fz.alav?'⚡ Alavancagem ON':'⚡ Alavancagem',c:fz.alav?'primary':'',f:()=>{fz.alav=!fz.alav;faseArmar();}},
+    {t:'▶ Iniciar pregão',c:'go',f:faseStart} ]); }
+function faseToggleAlav(){ const fz=S.fz; if(fz.entered)return; fz.alav=!fz.alav; const a=$('#fz-alav2');
+  if(a){a.className='btn '+(fz.alav?'primary':'ghost');a.textContent=fz.alav?'⚡ ON':'⚡ Alav.';} }
+function faseStart(){ const fz=S.fz; fz.fase='live'; pararFase();
+  faseSay('📈 <b>Rodando…</b> espere o preço <b>voltar à zona</b> (acende verde) e toque '+(fz.def.tipo==='suporte'?'COMPRAR':'VENDER')+' na hora certa.');
+  faseDock([
+    {t:fz.def.tipo==='suporte'?'🟢 COMPRAR':'🔴 VENDER',c:'primary',id:'fz-entry',dis:true,f:faseEntrar},
+    {t:fz.alav?'⚡ ON':'⚡ Alav.',c:fz.alav?'primary':'',id:'fz-alav2',f:faseToggleAlav} ]);
+  FZTIMER=setInterval(faseTick,640); }
+function faseTick(){ const fz=S.fz,sc=fz.sc;
+  if(fz.reveal<sc.cs.length) fz.reveal++; else { pararFase(); return faseResult(); }
+  const i=fz.reveal-1,c=sc.cs[i],base=sc.ans.base,amp=sc.amp,sup=fz.def.tipo==='suporte';
+  const inZone=i>=sc.histN&&!fz.entered&&(sup?(c.c<=base+amp*1.2&&c.c>=base-amp*2.5):(c.c>=base-amp*1.2&&c.c<=base+amp*2.5));
+  fz.inZone=inZone; if(inZone)fz.wasZone=true;
+  if(fz.wasZone&&!fz.entered&&(sup?c.c>base+amp*1.7:c.c<base-amp*1.7))fz.missed=true;
+  faseDrawNow();
+  const eb=$('#fz-entry'); if(eb)eb.disabled=!inZone;
+  if(inZone)faseSay('🎯 <b>NA ZONA!</b> Toque <b>'+(sup?'COMPRAR':'VENDER')+'</b> AGORA — quanto mais fundo no reteste, mais pips.');
+  else if(fz.missed)faseSay('⚠ O preço <b>saiu da zona</b> e disparou… (você não entrou)'); }
+function faseEntrar(){ const fz=S.fz; if(fz.entered||!fz.inZone)return;
+  fz.entered=true; fz.entryIdx=fz.reveal-1; fz.entryPrice=fz.sc.cs[fz.entryIdx].c;
+  blip(700); const eb=$('#fz-entry'); if(eb){eb.disabled=true;eb.textContent='✓ Operado';}
+  faseSay('✅ <b>Entrou em '+fz.entryPrice.toFixed(2)+'!</b> Agora segura — o alvo é o <b>roadblock</b>.'); faseDrawNow(); }
+function faseResult(){ const fz=S.fz,sc=fz.sc; fz.fase='result'; fz.reveal=sc.cs.length; faseDrawNow();
+  const exit=sc.cs[sc.cs.length-1].c, sup=fz.def.tipo==='suporte'; let chips=0,mult=1,pips=0,msg='';
+  if(!fz.entered){ msg='⚫ <b>Você perdeu a entrada.</b> O preço voltou na zona e você não operou — sem entrada, sem pips. A entrada do GAB é no <b>reteste</b> da zona: quando acender verde, toque na hora.'; }
+  else{ const capPips=Math.max(0,Math.round(sup?(exit-fz.entryPrice):(fz.entryPrice-exit)));
+    const markBonus=Math.round((fz.markQ&&fz.markQ.iou?fz.markQ.iou:0)*25);
+    chips=capPips+markBonus+10; mult=fz.alav?2:1; pips=Math.round(chips*mult);
+    msg=`✅ Capturou <b>${capPips} pips</b> do reteste ao roadblock`+(markBonus?` · +${markBonus} marcação`:'')+(fz.alav?` · ⚡ ×2`:'')+`.`; }
+  const win=pips>=fz.def.alvo; faseSay(msg); faseHud(chips,mult,pips);
+  if(win){ S.fzProg=S.fzProg||{}; S.fzProg[fz.def.id]=Math.max(S.fzProg[fz.def.id]||0,pips); save(); blip(820);
+    faseSay(msg+` <b style="color:#7CFC9B">🏆 Bateu a meta (${pips}/${fz.def.alvo})!</b>`); }
+  else if(fz.entered) faseSay(msg+` <b style="color:#ffcf6b">Faltou pra meta (${pips}/${fz.def.alvo}).</b> Entre mais <b>fundo</b> no reteste ${fz.def.tipo==='suporte'?'(mais perto do suporte)':'(mais perto da resistência)'} ou use ⚡.`);
+  faseDock([ {t: win?'Próxima ▶':'↻ Repetir',c:'primary',f: win?faseProx:()=>faseLive(fz.def)},
+             {t:'‹ fases',f:telaFases} ]); }
+function faseProx(){ const i=FASES.findIndex(f=>f.id===S.fz.def.id); if(i>=0&&i<FASES.length-1)faseLive(FASES[i+1]); else telaFases(); }
+
 function menu(){
   const screen=$('#screen');
   const cont=S.onbDone?'<button class="btn go" id="play">▶ '+(S.bossWon?'Rejogar o Ato 0':'Operar o Ato 0')+'</button>':'';
@@ -3149,13 +3319,13 @@ function menu(){
     ${(S.coringasVistos&&S.coringasVistos.length)?`<div class="fid" style="margin-top:8px">🃏 Coringas descobertos na loja: <b>${S.coringasVistos.length}</b></div>`:''}
     <button class="btn primary" id="start">${S.onbDone?'📚 Rever as aulas (Módulos 1–6)':'▶ Começar do zero'}</button>
     <button class="btn ghost" id="acad">📊 Academia de Leitura ${S.academiaDone?'✓':''}</button>
-    <button class="btn ghost" id="marc">🎯 Treino de Marcação${(()=>{const p=S.mkProg||{},n=MK_MODS.filter(m=>(p[m.key]||0)>=m.gate).length;return n?` <span style="color:#7CFC9B">${n}/${MK_MODS.length}</span>`:'';})()}</button>
+    <button class="btn ghost" id="marc">🎯 Marcar & Operar${(()=>{const p=S.fzProg||{},n=FASES.filter(d=>(p[d.id]||0)>=d.alvo).length;return n?` <span style="color:#7CFC9B">${n}/${FASES.length}</span>`:'';})()}</button>
     ${cont}
     <div class="fid" style="margin-top:14px">Conteúdo <span class="gabtag">FIEL</span> ao método do GAB · adaptações marcadas como <span class="lictag">LICENÇA DE DESIGN</span>. PT-BR.</div>
   </div></div>`;
   $('#start').onclick=()=>{blip(560);lesson(0);};
   const ab=$('#acad');if(ab)ab.onclick=()=>{blip(560);abrirAcademia();};
-  const mb=$('#marc');if(mb)mb.onclick=()=>{blip(560);telaMarcacao();};
+  const mb=$('#marc');if(mb)mb.onclick=()=>{blip(560);telaFases();};
   const p=$('#play');if(p)p.onclick=()=>{blip(560);runAto0();};
   screen.scrollTop=0;
   $('#actpill').innerHTML='Ato <b>0</b>';
