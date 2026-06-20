@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b27';
+window.__BUILD='b28';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -364,7 +364,7 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 .sheet-body{padding:15px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
 /* vídeo-aula: embed 16:9 responsivo dentro do showSheet */
 .va-frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000;border:2px solid var(--line);margin:0 0 12px}
-.va-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.va-frame iframe,.va-frame video{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000;object-fit:contain}
 .va-oque{font-size:14px;line-height:1.55;color:#dde7df;margin:0 0 12px}
 .va-yt{display:inline-block;margin-top:4px}
 @supports not (aspect-ratio:16/9){ .va-frame{height:0;padding-bottom:56.25%} }
@@ -2716,41 +2716,52 @@ const MODELOS_GAB=[
   MOD_STOPHUNT, MOD_QM, MOD_HNS, MOD_OHLC
 ];
 
-/* ===== MAPA VÍDEO-AULA → lição/modelo do jogo (vídeos REAIS do GAB, IDs verificados) =====
-   yt = id do YouTube · t = segundos (start) · oQue = o que o GAB mostra. Legenda PT automática. */
+/* ===== MAPA VÍDEO-AULA → lição/modelo do jogo (vídeos REAIS do GAB, baixados localmente) =====
+   f = arquivo local em videos/ · t = segundos (start) · yt = id do YouTube (fallback) · oQue = o que o GAB mostra. */
+const VIDEO_DIR = 'videos/';
+const V_SNR='20251007 - How to become millionaire in forex trading (SNR EP1).mp4';
+const V_TYPES='20250315 - MASTERMIND TECHNIQUE LESSON #1 ( TYPES OF SNR).mp4';
+const V_RBS='20250419 - MASTERMIND LESSON #1 ( RBS ).mp4';
+const V_ROAD='20250516 - THE SECRET TO PROFITING EVERY TRADE. ( ROADBLOCKS & BREAKOUTS ).mp4';
+const V_LAYER='20250429 - MASTERMIND LESSON #6 ( BEST LAYER TECHNIQUE ).mp4';
+const V_MTF='20251010 - How to become Millionaire in forex trading ( MultiTimeFrame EP3).mp4';
+const V_QM='20250420 - MASTERMIND LESSON #2 ( QM PATTERN.mp4';
+const V_HNS='20251009 - How to become Millionaire in forex trading (HNS & OHLC EP2).mp4';
 const VIDEO_AULA = {
-  'a_vela':        { yt:'c8wAvFb2m3A', t:535, titulo:'Corpo x pavio da vela',          oQue:'O GAB marca só o CORPO da vela, nunca o pavio ("the wick is useless").' },
-  'a_suporte':     { yt:'uLF_rYM_p_4', t:69,  titulo:'O que é suporte e resistência',  oQue:'GAB define S&R: suporte é o piso onde o preço trava e sobe.' },
-  'a_resistencia': { yt:'uLF_rYM_p_4', t:69,  titulo:'O que é suporte e resistência',  oQue:'Mesma cena: resistência é o teto; suporte vira resistência e vice-versa.' },
-  'a_bate':        { yt:'c8wAvFb2m3A', t:535, titulo:'Marcar pelo corpo (a vela bate)', oQue:'A zona conta pelo CORPO entrando na faixa — o pavio não vale.' },
-  'a_carta':       { yt:'c8wAvFb2m3A', t:255, titulo:'Reconhecer o suporte (2 candles)', oQue:'Como achar um suporte: vela de baixa + vela de alta = o suporte se forma.' },
-  'm_snr':         { yt:'c8wAvFb2m3A', t:255, titulo:'SNR tradicional (regra dos 2 candles)', oQue:'GAB mostra a regra dos 2 candles que forma a zona de SNR.' },
-  'm_rbs':         { yt:'36wwFdgVlA0', t:2,   titulo:'RBS — resistência vira suporte',  oQue:'GAB explica o flip: resistência rompida vira suporte.' },
-  'm_sbr':         { yt:'36wwFdgVlA0', t:85,  titulo:'SBR — suporte vira resistência',  oQue:'Espelho do RBS: suporte rompido vira resistência.' },
-  'm_rompimento':  { yt:'WkGyO-9q42s', t:9,   titulo:'Rompimento (válido x falso)',     oQue:'Roadblocks & Breakouts: o que é um breakout de verdade.' },
-  'm_reteste':     { yt:'36wwFdgVlA0', t:42,  titulo:'Reteste / pullback após o rompimento', oQue:'Depois do breakout, o preço volta e retesta a faixa antes de seguir.' },
-  'm_roadblock':   { yt:'WkGyO-9q42s', t:14,  titulo:'Roadblock (o alvo / TP)',         oQue:'GAB define o roadblock — a próxima zona oposta onde se realiza o lucro.' },
-  'm_confluencia': { yt:'ONJwJa2SwlE', t:19,  titulo:'Confluência (layering)',          oQue:'GAB ensina "layering": empilhar fatores no mesmo nível = trade mais forte.' },
-  'm_mtf':         { yt:'a7-QoNvQUMY', t:85,  titulo:'Multi-timeframe (monthly/weekly/daily)', oQue:'A mesma zona em vários tempos fica mais forte.' },
-  'm_qm':          { yt:'IT4TLQ-RAL0', t:49,  titulo:'Quasimodo (QM)',                  oQue:'Como identificar o QM: resistência, rompimento que falha e o apex.' },
-  'm_hns':         { yt:'6nMXPqJheTI', t:134, titulo:'Head & Shoulders',                oQue:'GAB desenha ombro esquerdo, cabeça (apex) e ombro direito.' },
-  'm_ohlc':        { yt:'6nMXPqJheTI', t:228, titulo:'OHLC buff',                        oQue:'A técnica OHLC (open-close) como reforço de zona.' }
+  'a_vela':        { f:V_TYPES, yt:'c8wAvFb2m3A', t:535, titulo:'Corpo x pavio da vela',          oQue:'O GAB marca só o CORPO da vela, nunca o pavio ("the wick is useless").' },
+  'a_suporte':     { f:V_SNR,   yt:'uLF_rYM_p_4', t:69,  titulo:'O que é suporte e resistência',  oQue:'GAB define S&R: suporte é o piso onde o preço trava e sobe.' },
+  'a_resistencia': { f:V_SNR,   yt:'uLF_rYM_p_4', t:69,  titulo:'O que é suporte e resistência',  oQue:'Mesma cena: resistência é o teto; suporte vira resistência e vice-versa.' },
+  'a_bate':        { f:V_TYPES, yt:'c8wAvFb2m3A', t:535, titulo:'Marcar pelo corpo (a vela bate)', oQue:'A zona conta pelo CORPO entrando na faixa — o pavio não vale.' },
+  'a_carta':       { f:V_TYPES, yt:'c8wAvFb2m3A', t:255, titulo:'Reconhecer o suporte (2 candles)', oQue:'Como achar um suporte: vela de baixa + vela de alta = o suporte se forma.' },
+  'm_snr':         { f:V_TYPES, yt:'c8wAvFb2m3A', t:255, titulo:'SNR tradicional (regra dos 2 candles)', oQue:'GAB mostra a regra dos 2 candles que forma a zona de SNR.' },
+  'm_rbs':         { f:V_RBS,   yt:'36wwFdgVlA0', t:2,   titulo:'RBS — resistência vira suporte',  oQue:'GAB explica o flip: resistência rompida vira suporte.' },
+  'm_sbr':         { f:V_RBS,   yt:'36wwFdgVlA0', t:85,  titulo:'SBR — suporte vira resistência',  oQue:'Espelho do RBS: suporte rompido vira resistência.' },
+  'm_rompimento':  { f:V_ROAD,  yt:'WkGyO-9q42s', t:9,   titulo:'Rompimento (válido x falso)',     oQue:'Roadblocks & Breakouts: o que é um breakout de verdade.' },
+  'm_reteste':     { f:V_RBS,   yt:'36wwFdgVlA0', t:42,  titulo:'Reteste / pullback após o rompimento', oQue:'Depois do breakout, o preço volta e retesta a faixa antes de seguir.' },
+  'm_roadblock':   { f:V_ROAD,  yt:'WkGyO-9q42s', t:14,  titulo:'Roadblock (o alvo / TP)',         oQue:'GAB define o roadblock — a próxima zona oposta onde se realiza o lucro.' },
+  'm_confluencia': { f:V_LAYER, yt:'ONJwJa2SwlE', t:19,  titulo:'Confluência (layering)',          oQue:'GAB ensina "layering": empilhar fatores no mesmo nível = trade mais forte.' },
+  'm_mtf':         { f:V_MTF,   yt:'a7-QoNvQUMY', t:85,  titulo:'Multi-timeframe (monthly/weekly/daily)', oQue:'A mesma zona em vários tempos fica mais forte.' },
+  'm_qm':          { f:V_QM,    yt:'IT4TLQ-RAL0', t:49,  titulo:'Quasimodo (QM)',                  oQue:'Como identificar o QM: resistência, rompimento que falha e o apex.' },
+  'm_hns':         { f:V_HNS,   yt:'6nMXPqJheTI', t:134, titulo:'Head & Shoulders',                oQue:'GAB desenha ombro esquerdo, cabeça (apex) e ombro direito.' },
+  'm_ohlc':        { f:V_HNS,   yt:'6nMXPqJheTI', t:228, titulo:'OHLC buff',                        oQue:'A técnica OHLC (open-close) como reforço de zona.' }
 };
 function abrirVideoAula(licaoId){
   const v = VIDEO_AULA[licaoId];
   if(!v) return;
   blip(560);
   const start = Math.max(0, v.t|0);
-  const src = `https://www.youtube.com/embed/${v.yt}?start=${start}&cc_load_policy=1&cc_lang_pref=pt&hl=pt&rel=0&modestbranding=1`;
-  const watch = `https://www.youtube.com/watch?v=${v.yt}&t=${start}s`;
+  const clipe = VIDEO_DIR + 'cortes/' + v.yt + '_' + start + '.mp4';   // corte que JÁ começa no momento certo
   const body =
-    `<div class="va-frame"><iframe src="${src}" title="${v.titulo||'Vídeo-aula'}" `+
-      `allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" `+
-      `allowfullscreen referrerpolicy="strict-origin-when-cross-origin" loading="lazy"></iframe></div>`+
+    `<div class="va-frame"><video id="va-vid" src="${clipe}" controls preload="auto" playsinline></video></div>`+
     `<p class="va-oque">${v.oQue||''}</p>`+
-    `<p style="font-size:12px;color:var(--mut);margin:0 0 10px">Vídeo real do GAB (em inglês) — toque no <b>CC</b> do player pra legenda automática em português.</p>`+
-    `<a class="btn ghost va-yt" href="${watch}" target="_blank" rel="noopener">▶ Abrir no YouTube</a>`;
+    `<div id="va-fb" style="display:none;font-size:13px;line-height:1.5;color:#e9def8;background:rgba(244,201,93,.07);border:1px solid rgba(244,201,93,.28);border-radius:10px;padding:10px 12px;margin:0 0 10px">`+
+      `⚠ Este corte do GAB está só na <b>versão do seu PC</b>. Abra o jogo pelo servidor da sua WiFi (atalho <b>ABRIR_NO_CELULAR</b>) que ele toca aqui dentro, no momento certo.</div>`;
   showSheet('📺 '+(v.titulo||'Veja o GAB fazendo isso'), body);
+  const vid = $('#va-vid');
+  if(vid){
+    vid.play().catch(()=>{});   // tenta tocar (mobile pode exigir 1 toque — os controles estão visíveis)
+    vid.addEventListener('error',()=>{ const fb=$('#va-fb'); if(fb)fb.style.display='block'; const fr=document.querySelector('.va-frame'); if(fr)fr.style.display='none'; });
+  }
 }
 
 
