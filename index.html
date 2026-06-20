@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b33';
+window.__BUILD='b34';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -1597,10 +1597,65 @@ function runAto0(){
     k._blindEntry=blind_entry;
     if(blind_entry){say('▶ Você entrou <b>sem marcar a zona</b>… operando no escuro. Vamos ver no que dá.');}
     const certo=(k.dir===CEN.dirCerta);          // direção certa = a do cenário (suporte→buy / resistência→sell)
-    const cont=certo?CONT_CERTO:CONT_ERRADO, full=SETUP.concat(cont);
-    animateTrade(full,buy,certo,k);
+    pregaoVivo(buy,certo,k);                       // gráfico continua rodando → você ENTRA no reteste (no tempo)
   }
   function centerOf(el){const r=el.getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2];}
+
+  /* ---------- PREGÃO AO VIVO: depois de OPERAR, o gráfico continua rodando; o preço
+     VOLTA na zona (reteste) e você aperta ENTRAR na janela. Perdeu a janela = sem trade. ---------- */
+  function gerarPregao(certo){
+    const sup=CEN.tipo==='suporte';
+    const zMid=(ZONE.top+ZONE.bottom)/2, zTop=ZONE.top, zBot=ZONE.bottom;
+    const roadMid=(ROAD.top+ROAD.bottom)/2, amp=(PR.max-PR.min)*0.03;
+    const cont=[]; let p=SETUP[SETUP.length-1].c;
+    const push=(o,c,wl,wh)=>cont.push({o:+o.toFixed(2),c:+c.toFixed(2),h:+(Math.max(o,c)+wh).toFixed(2),l:+(Math.min(o,c)-wl).toFixed(2)});
+    for(let i=0;i<3;i++){ const o=p, c=o+(zMid-o)*(0.55+0.18*i)+(Math.random()-0.5)*amp*0.5;
+      push(o,c, sup?amp*0.7:amp*0.25, sup?amp*0.25:amp*0.7); p=c; }
+    if(certo){
+      for(let i=0;i<7 && (sup? p<roadMid-amp : p>roadMid+amp);i++){ const o=p, c=o+(roadMid-o)*0.42+(Math.random()-0.5)*amp*0.3;
+        push(o,c, sup?amp*0.25:amp*0.5, sup?amp*0.5:amp*0.25); p=c; }
+      push(p, sup?Math.min(roadMid,PR.max-1):Math.max(roadMid,PR.min+1), amp*0.4, amp*0.4);
+    } else {
+      const tgt=sup? Math.max(PR.min+1, zBot-(zTop-zBot)-amp*4) : Math.min(PR.max-1, zTop+(zTop-zBot)+amp*4);
+      for(let i=0;i<6;i++){ const o=p, c=o+(tgt-o)*0.4; push(o,c,amp*0.5,amp*0.5); p=c; }
+    }
+    let winA=-1,winB=-1;
+    for(let i=0;i<cont.length;i++){ const c=cont[i].c; if(c>=zBot-amp && c<=zTop+amp){ if(winA<0)winA=i; winB=i; } }
+    if(winA<0){ winA=2; winB=2; }
+    return {cont,winA,winB};
+  }
+  function pregaoVivo(buy,certo,k){
+    const g=gerarPregao(certo), full=SETUP.concat(g.cont);
+    k._liveFull=full;
+    const winStart=SETUP.length+g.winA, winEnd=SETUP.length+g.winB;
+    const cv=$('#bd'),ctx=cv.getContext('2d'),op=$('#op');
+    let entered=false, missed=false, winSaid=false;
+    op.disabled=true; op.style.boxShadow=''; op.textContent='⏳ pregão rodando…';
+    op.onclick=()=>{ if(entered||op.disabled)return; entered=true; k._entered=true;
+      op.disabled=true; op.style.boxShadow=''; op.textContent='✓ Operado'; blip(700);thunk();shake(false);vibrate(12);
+      const r=cv.getBoundingClientRect(); sparks(r.left+r.width*0.62,r.top+r.height*0.5,'#37d07a',8);
+      say('✅ <b>Entrou no reteste!</b> Segura até o <b>roadblock</b> (o alvo).'); };
+    let n=SETUP.length;
+    say('📈 <b>Pregão rodando…</b> espere o preço <b>VOLTAR na zona</b> e aperte <b>🟢 ENTRAR</b> na hora certa.');
+    const tm=setInterval(()=>{
+      n++; drawTrade(full,n); blip(300+n*12); vibrate(3);
+      const idx=n-1, inWin=(idx>=winStart && idx<=winEnd && !entered);
+      if(inWin){ op.disabled=false; op.style.boxShadow='0 0 18px #37d07a,0 0 6px #37d07a';
+        op.textContent=buy?'🟢 ENTRAR (COMPRA)':'🔴 ENTRAR (VENDA)';
+        if(!winSaid){ winSaid=true; say('🎯 <b>O preço VOLTOU na zona!</b> Aperte <b>ENTRAR</b> AGORA — perdeu a janela, perde o trade.'); } }
+      else if(!entered){ op.disabled=true; op.style.boxShadow='';
+        if(winSaid && idx>winEnd && !missed){ missed=true; op.textContent='✗ perdeu a entrada';
+          say('⚫ <b>Perdeu a entrada.</b> O preço passou pela zona e você não operou.'); } }
+      if(n>=full.length){ clearInterval(tm); op.style.boxShadow='';
+        k._missedEntry=!entered;
+        const sup=CEN.tipo==='suporte', slot=B.w/full.length, ax=B.x+slot*(full.length-0.5);
+        const yFrom=pY(sup?ZONE.bottom:ZONE.top,B,PR);
+        const yTo=(certo&&entered)?pY(sup?ROAD.bottom:ROAD.top,B,PR):pY(sup?ZONE.bottom-10:ZONE.top+10,B,PR);
+        arrow(ctx,ax,yFrom,yTo,buy?'#37d07a':'#fe5f55',buy?'COMPRA':'VENDA');
+        setTimeout(()=>flyCardsToCenter(k,buy),420);
+      }
+    },175);
+  }
 
   /* ---------- 1) o trade roda candle a candle no gráfico ---------- */
   function animateTrade(full,buy,certo,k){
@@ -1726,9 +1781,12 @@ function runAto0(){
     let clean=correct&&!k.hasTrap&&!k.hasFomo;
     // ⚫ ENTRADA NO ESCURO: operou sem marcar a zona → chute cego, derruba tudo [GAB: marcar a zona é a regra nº1]
     if(k._blindEntry){ correct=false; clean=false; }
+    if(k._missedEntry){ correct=false; clean=false; }
     let gain=correct?raw:-Math.round(raw*0.5);
     if(k._blindEntry){ gain=-Math.round(raw*0.65);
       k._blindNote=`<b>⚫ Você operou no ESCURO:</b> apertou OPERAR <b>sem marcar a zona</b> no gráfico. Sem saber onde estava ${CEN.textos.pisoTeto==='piso'?'o piso':'o teto'}, sua entrada virou um chute — e o mercado cobra isso. Marcar a zona (no <b>corpo</b>, faixa colorida) é a 1ª coisa que o GAB faz, SEMPRE. [GAB]`; }
+    if(k._missedEntry){ gain=0;
+      k._missNote=`<b>⚫ Você perdeu a entrada:</b> o preço <b>voltou na zona</b> (o reteste) e você não apertou <b>ENTRAR</b> a tempo. Sem entrada não há trade — <b>0 pips</b>. No método do GAB a entrada é no <b>reteste</b>: quando a zona acender, opere na hora. [GAB]`; }
     let riskNote='';
     // ⚠ FOMO: entrou antes do fechamento → chicote. Os +chips do FOMO eram ISCA (não compensam).
     if(k.hasFomo){
@@ -1746,6 +1804,7 @@ function runAto0(){
       }
     }
     if(k._blindNote){ riskNote = k._blindNote + (riskNote?'<br><br>'+riskNote:''); }
+    if(k._missNote){ riskNote = k._missNote + (riskNote?'<br><br>'+riskNote:''); }
     k._riskNote=riskNote;
     // ADERÊNCIA da mão (limites do corpo vêm do cenário, iguais a tryMark)
     const cMin=CEN.marcaCorpo[0],cMax=CEN.marcaCorpo[1];
@@ -1757,9 +1816,9 @@ function runAto0(){
     fichas += (gain>=0?3:1) + (k._aderencia.pct>=80?1:0);
     const target=Math.max(0,pips+gain);
     let n=pips;const dir=gain>=0?1:-1,stepN=Math.max(1,Math.round(Math.abs(gain)/22));
-    say(gain>=0
+    say(k._missedEntry?'⚫ Sem entrada — o trade não aconteceu (0 pips).':(gain>=0
       ? (correct?`Subindo… ${CEN.textos.segurou}`:'Deu certo apesar de tudo…')
-      : (correct?'A aposta de risco virou contra você…':(CEN.tipo==='suporte'?'O preço subiu contra a venda…':'O preço caiu contra a compra…')));
+      : (correct?'A aposta de risco virou contra você…':(CEN.tipo==='suporte'?'O preço subiu contra a venda…':'O preço caiu contra a compra…'))));
     const tt=setInterval(()=>{
       n+=dir*stepN;
       if((dir>0&&n>=target)||(dir<0&&n<=target))n=target;
@@ -1911,8 +1970,8 @@ function runAto0(){
     k._reCorrect=correct; k._reChips=chips; k._reMult=mult; k._reGain=gain;
     const rg=$('#reverGraf');
     if(rg) rg.onclick=()=>{ closeSheet();
-      const cont = correct ? CONT_CERTO : CONT_ERRADO;
-      reverTradeCompleto(SETUP.concat(cont), correct, k);
+      const full = k._liveFull || SETUP.concat(correct ? CONT_CERTO : CONT_ERRADO);
+      reverTradeCompleto(full, correct, k);
     };
     $('#next').onclick=()=>{ closeSheet(); gastarCartas(k); abrirLoja(); };
   }
@@ -3356,13 +3415,11 @@ function menu(){
     ${(S.coringasVistos&&S.coringasVistos.length)?`<div class="fid" style="margin-top:8px">🃏 Coringas descobertos na loja: <b>${S.coringasVistos.length}</b></div>`:''}
     <button class="btn primary" id="start">${S.onbDone?'📚 Rever as aulas (Módulos 1–6)':'▶ Começar do zero'}</button>
     <button class="btn ghost" id="acad">📊 Academia de Leitura ${S.academiaDone?'✓':''}</button>
-    <button class="btn ghost" id="marc">🎯 Marcar & Operar${(()=>{const p=S.fzProg||{},n=FASES.filter(d=>(p[d.id]||0)>=d.alvo).length;return n?` <span style="color:#7CFC9B">${n}/${FASES.length}</span>`:'';})()}</button>
     ${cont}
     <div class="fid" style="margin-top:14px">Conteúdo <span class="gabtag">FIEL</span> ao método do GAB · adaptações marcadas como <span class="lictag">LICENÇA DE DESIGN</span>. PT-BR.</div>
   </div></div>`;
   $('#start').onclick=()=>{blip(560);lesson(0);};
   const ab=$('#acad');if(ab)ab.onclick=()=>{blip(560);abrirAcademia();};
-  const mb=$('#marc');if(mb)mb.onclick=()=>{blip(560);telaFases();};
   const p=$('#play');if(p)p.onclick=()=>{blip(560);runAto0();};
   screen.scrollTop=0;
   $('#actpill').innerHTML='Ato <b>0</b>';
