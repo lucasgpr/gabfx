@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b20';
+window.__BUILD='b21';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -2047,16 +2047,16 @@ function acPagePt(p){ const cv=$('#acad-bd'); if(!cv) return {x:0,y:0};
 const _SUP=CENARIOS_A0.suporte, _RES=CENARIOS_A0.resistencia;
 const AULA_VELA={ id:'a_vela', titulo:'🕯️ O que é uma VELA',
   passos:[
-    { candles:[{o:150,h:156,l:148,c:154}], ate:1, narracao:
-      'Cada <b>vela</b> conta a luta do preço num período. Esta <b>abriu</b> em 150, espetou até 156, caiu a 148 e <b>fechou</b> em 154. Como fechou <b>acima</b> de onde abriu → vela <b>VERDE</b> (alta).' },
-    { candles:[{o:150,h:156,l:148,c:154}], ate:1, narracao:
-      'O retângulo grosso é o <b>corpo</b> (de 150 a 154 — o que importa). Os espetos finos são o <b>pavio</b>: lugares onde o preço foi e <b>voltou</b>. [GAB] o pavio é só passagem.' },
-    { candles:[{o:150,h:156,l:148,c:154},{o:154,h:156,l:149,c:150}], ate:2, narracao:
-      'Esta segunda abriu em cima (154) e <b>fechou embaixo</b> (150) → vela <b>VERMELHA</b> (baixa). Verde sobe, vermelha cai: é assim que você lê a cor.' },
-    { candles:[{o:150,h:156,l:148,c:154},{o:154,h:156,l:149,c:150}], ate:2,
+    { candles:[{o:150,h:160,l:145,c:155}], ate:1, narracao:
+      'Cada <b>vela</b> conta a luta do preço num período. (Os números <b>R$</b> à direita são o preço.) Esta <b>abriu</b> em 150, espetou até 160, caiu a 145 e <b>fechou</b> em 155. Como fechou <b>acima</b> de onde abriu → vela <b>VERDE</b> (alta).' },
+    { candles:[{o:150,h:160,l:145,c:155}], ate:1, narracao:
+      'O retângulo grosso é o <b>corpo</b> (de 150 a 155 — o que importa). Os espetos finos são o <b>pavio</b>: até 160 em cima e 145 embaixo, onde o preço foi e <b>voltou</b>. [GAB] o pavio é só passagem.' },
+    { candles:[{o:150,h:160,l:145,c:155},{o:155,h:160,l:148,c:150}], ate:2, narracao:
+      'Esta segunda <b>abriu</b> em cima (155) e <b>fechou embaixo</b> (150) → vela <b>VERMELHA</b> (baixa). Verde sobe, vermelha cai: é assim que você lê a cor.' },
+    { candles:[{o:150,h:160,l:145,c:155},{o:155,h:160,l:148,c:150}], ate:2,
       interacao:{tipo:'simNao', pergunta:'A 1ª vela (verde) fechou ACIMA de onde abriu?', alvo:true,
-        feedback:{ok:'Isso! Fechou em 154, acima da abertura 150 → verde.',
-                   no:'Olhe de novo: abriu em 150 e fechou em 154 (mais alto) → verde = alta.'}},
+        feedback:{ok:'Isso! Fechou em 155, acima da abertura 150 → verde.',
+                   no:'Olhe de novo: abriu em 150 e fechou em 155 (mais alto) → verde = alta.'}},
       narracao:'Sua vez: olhando a <b>1ª vela</b>…' }
   ]};
 const AULA_ONDAS={ id:'a_ondas', titulo:'🌊 O preço anda em ONDAS',
@@ -2177,6 +2177,17 @@ function acDraw(state,n){
   if(state.seta && count>=arr.length){ const s=state.seta;
     const ax=ACAD_B.x+ACAD_B.w*(parseFloat(s.x)/100);
     arrow(ctx, ax, pY(s.de,ACAD_B,ACAD_PR), pY(s.ate,ACAD_B,ACAD_PR), s.cor, s.txt); }
+  // EIXO DE PREÇO: linhas-guia + números R$ (pro leigo VER os valores citados na narração)
+  ctx.font='bold 9px system-ui'; ctx.textAlign='right'; ctx.setLineDash([]);
+  for(let p=135;p<=165;p+=5){ if(p<=ACAD_PR.min||p>=ACAD_PR.max)continue;
+    const y=pY(p,ACAD_B,ACAD_PR);
+    ctx.strokeStyle='rgba(174,191,206,.13)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(ACAD_B.x,y); ctx.lineTo(ACAD_B.x+ACAD_B.w,y); ctx.stroke();
+    const t='R$ '+p, w=ctx.measureText(t).width;
+    ctx.fillStyle='rgba(11,19,32,.82)'; ctx.fillRect(ACAD_B.x+ACAD_B.w-w-6,y-6,w+5,12);
+    ctx.fillStyle='#aebfce'; ctx.fillText(t, ACAD_B.x+ACAD_B.w-3, y+3);
+  }
+  ctx.textAlign='left';
 }
 function playStep(aula,i){
   acStop();
