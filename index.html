@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b26';
+window.__BUILD='b27';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -362,6 +362,12 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 .sheet-head h3{margin:0;font-size:17px;flex:1}
 .sheet-head .x{background:var(--panel);border:2px solid var(--line);border-radius:9px;color:#fff;font-size:15px;width:34px;height:34px;cursor:pointer;box-shadow:0 2px 0 var(--line);flex-shrink:0}
 .sheet-body{padding:15px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
+/* vídeo-aula: embed 16:9 responsivo dentro do showSheet */
+.va-frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000;border:2px solid var(--line);margin:0 0 12px}
+.va-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.va-oque{font-size:14px;line-height:1.55;color:#dde7df;margin:0 0 12px}
+.va-yt{display:inline-block;margin-top:4px}
+@supports not (aspect-ratio:16/9){ .va-frame{height:0;padding-bottom:56.25%} }
 
 /* painel da carta (eu não sei nada) */
 .detail-card{display:flex;gap:12px;align-items:flex-start;margin-bottom:6px}
@@ -2710,6 +2716,43 @@ const MODELOS_GAB=[
   MOD_STOPHUNT, MOD_QM, MOD_HNS, MOD_OHLC
 ];
 
+/* ===== MAPA VÍDEO-AULA → lição/modelo do jogo (vídeos REAIS do GAB, IDs verificados) =====
+   yt = id do YouTube · t = segundos (start) · oQue = o que o GAB mostra. Legenda PT automática. */
+const VIDEO_AULA = {
+  'a_vela':        { yt:'c8wAvFb2m3A', t:535, titulo:'Corpo x pavio da vela',          oQue:'O GAB marca só o CORPO da vela, nunca o pavio ("the wick is useless").' },
+  'a_suporte':     { yt:'uLF_rYM_p_4', t:69,  titulo:'O que é suporte e resistência',  oQue:'GAB define S&R: suporte é o piso onde o preço trava e sobe.' },
+  'a_resistencia': { yt:'uLF_rYM_p_4', t:69,  titulo:'O que é suporte e resistência',  oQue:'Mesma cena: resistência é o teto; suporte vira resistência e vice-versa.' },
+  'a_bate':        { yt:'c8wAvFb2m3A', t:535, titulo:'Marcar pelo corpo (a vela bate)', oQue:'A zona conta pelo CORPO entrando na faixa — o pavio não vale.' },
+  'a_carta':       { yt:'c8wAvFb2m3A', t:255, titulo:'Reconhecer o suporte (2 candles)', oQue:'Como achar um suporte: vela de baixa + vela de alta = o suporte se forma.' },
+  'm_snr':         { yt:'c8wAvFb2m3A', t:255, titulo:'SNR tradicional (regra dos 2 candles)', oQue:'GAB mostra a regra dos 2 candles que forma a zona de SNR.' },
+  'm_rbs':         { yt:'36wwFdgVlA0', t:2,   titulo:'RBS — resistência vira suporte',  oQue:'GAB explica o flip: resistência rompida vira suporte.' },
+  'm_sbr':         { yt:'36wwFdgVlA0', t:85,  titulo:'SBR — suporte vira resistência',  oQue:'Espelho do RBS: suporte rompido vira resistência.' },
+  'm_rompimento':  { yt:'WkGyO-9q42s', t:9,   titulo:'Rompimento (válido x falso)',     oQue:'Roadblocks & Breakouts: o que é um breakout de verdade.' },
+  'm_reteste':     { yt:'36wwFdgVlA0', t:42,  titulo:'Reteste / pullback após o rompimento', oQue:'Depois do breakout, o preço volta e retesta a faixa antes de seguir.' },
+  'm_roadblock':   { yt:'WkGyO-9q42s', t:14,  titulo:'Roadblock (o alvo / TP)',         oQue:'GAB define o roadblock — a próxima zona oposta onde se realiza o lucro.' },
+  'm_confluencia': { yt:'ONJwJa2SwlE', t:19,  titulo:'Confluência (layering)',          oQue:'GAB ensina "layering": empilhar fatores no mesmo nível = trade mais forte.' },
+  'm_mtf':         { yt:'a7-QoNvQUMY', t:85,  titulo:'Multi-timeframe (monthly/weekly/daily)', oQue:'A mesma zona em vários tempos fica mais forte.' },
+  'm_qm':          { yt:'IT4TLQ-RAL0', t:49,  titulo:'Quasimodo (QM)',                  oQue:'Como identificar o QM: resistência, rompimento que falha e o apex.' },
+  'm_hns':         { yt:'6nMXPqJheTI', t:134, titulo:'Head & Shoulders',                oQue:'GAB desenha ombro esquerdo, cabeça (apex) e ombro direito.' },
+  'm_ohlc':        { yt:'6nMXPqJheTI', t:228, titulo:'OHLC buff',                        oQue:'A técnica OHLC (open-close) como reforço de zona.' }
+};
+function abrirVideoAula(licaoId){
+  const v = VIDEO_AULA[licaoId];
+  if(!v) return;
+  blip(560);
+  const start = Math.max(0, v.t|0);
+  const src = `https://www.youtube.com/embed/${v.yt}?start=${start}&cc_load_policy=1&cc_lang_pref=pt&hl=pt&rel=0&modestbranding=1`;
+  const watch = `https://www.youtube.com/watch?v=${v.yt}&t=${start}s`;
+  const body =
+    `<div class="va-frame"><iframe src="${src}" title="${v.titulo||'Vídeo-aula'}" `+
+      `allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" `+
+      `allowfullscreen referrerpolicy="strict-origin-when-cross-origin" loading="lazy"></iframe></div>`+
+    `<p class="va-oque">${v.oQue||''}</p>`+
+    `<p style="font-size:12px;color:var(--mut);margin:0 0 10px">Vídeo real do GAB (em inglês) — toque no <b>CC</b> do player pra legenda automática em português.</p>`+
+    `<a class="btn ghost va-yt" href="${watch}" target="_blank" rel="noopener">▶ Abrir no YouTube</a>`;
+  showSheet('📺 '+(v.titulo||'Veja o GAB fazendo isso'), body);
+}
+
 
 /* ---- player ---- */
 function acDraw(state,n){
@@ -2814,15 +2857,17 @@ function playAula(aula, origem){
   aula._origem = origem || (aula.modelo ? 'modelos' : 'academia');
   const screen=$('#screen');
   screen.innerHTML=`<div class="view"><div class="card-lesson" style="padding-top:10px">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
       <button class="btn ghost" style="width:auto;padding:4px 10px;margin:0" id="ac-back">‹ ${aula._origem==='modelos'?'modelos':'aulas'}</button>
-      <b style="font-size:15px">${aula.titulo}</b></div>
+      <b style="font-size:15px;flex:1;min-width:0">${aula.titulo}</b>
+      ${VIDEO_AULA[aula.id]?`<button class="btn primary" style="width:auto;padding:4px 10px;margin:0" id="ac-video">📺 Veja o GAB</button>`:''}</div>
     <div class="felt"><canvas id="acad-bd" width="548" height="212"></canvas>
       <span class="tf-badge">DAILY · XAUUSD</span></div>
     <div class="gab-note" id="acad-say" style="min-height:54px;display:block"></div>
     <div class="acad-ctr" id="acad-ctr" style="display:flex;gap:8px;margin-top:8px"></div>
   </div></div>`;
   $('#ac-back').onclick=()=>{ acStop(); aula._origem==='modelos'?telaModelos():telaAcademia(); };
+  { const vb=$('#ac-video'); if(vb) vb.onclick=()=>abrirVideoAula(aula.id); }
   aula._state=null;
   if(aula._origem==='modelos'){
     S.modelosVistos=S.modelosVistos||[];
