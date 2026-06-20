@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b22';
+window.__BUILD='b23';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -355,7 +355,7 @@ canvas{width:100%;background:linear-gradient(180deg,#08111a,#060c12);border-radi
 /* overlay genérico (resultado, painel da carta, dicionário) */
 .over{position:fixed;inset:0;z-index:80;display:none;align-items:flex-start;justify-content:center;background:rgba(3,6,11,.84);padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .over.show{display:flex}
-.sheet{background:var(--panel);border:3px solid var(--line);border-radius:18px;padding:0;box-shadow:0 10px 0 var(--line);max-width:460px;width:100%;margin:auto;overflow:hidden}
+.sheet{background:var(--panel);border:3px solid var(--line);border-radius:18px;padding:0;box-shadow:0 10px 0 var(--line);max-width:460px;width:100%;margin:0 auto;overflow:hidden}
 .sheet-head{display:flex;align-items:center;gap:10px;padding:13px 15px;background:var(--panel2);border-bottom:2px solid var(--line)}
 .sheet-head h3{margin:0;font-size:17px;flex:1}
 .sheet-head .x{background:var(--panel);border:2px solid var(--line);border-radius:9px;color:#fff;font-size:15px;width:34px;height:34px;cursor:pointer;box-shadow:0 2px 0 var(--line);flex-shrink:0}
