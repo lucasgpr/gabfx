@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b28';
+window.__BUILD='b29';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -933,9 +933,14 @@ $('#dicbtn').onclick=openDictionary;
 /* ===================================================================
    7. OVERLAY GENÉRICO (sheet)  — usado por painel-de-carta, dicionário, resultado
    =================================================================== */
+function pararVideosSheet(){
+  const o=$('#over'); if(!o) return;
+  o.querySelectorAll('video').forEach(v=>{ try{ v.pause(); v.removeAttribute('src'); v.load(); }catch(e){} });
+}
 function showSheet(title,bodyHTML,opts){
   opts=opts||{};
   const o=$('#over');
+  pararVideosSheet();
   o.innerHTML=`<div class="sheet"><div class="sheet-head"><h3>${title}</h3>`+
     (opts.noX?'':`<button class="x" id="sheetx">✕</button>`)+`</div><div class="sheet-body">${bodyHTML}</div></div>`;
   o.classList.add('show');
@@ -943,7 +948,7 @@ function showSheet(title,bodyHTML,opts){
   const x=$('#sheetx');if(x)x.onclick=closeSheet;
   o.onclick=e=>{if(e.target===o&&!opts.sticky)closeSheet();};
 }
-function closeSheet(){$('#over').classList.remove('show');blip(360);}
+function closeSheet(){pararVideosSheet();$('#over').classList.remove('show');blip(360);}
 
 /* ===================================================================
    8. PAINEL "EU NÃO SEI NADA" (item 4) — clicar/segurar QUALQUER carta
