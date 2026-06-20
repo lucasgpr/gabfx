@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b29';
+window.__BUILD='b30';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -2755,7 +2755,7 @@ function abrirVideoAula(licaoId){
   if(!v) return;
   blip(560);
   const start = Math.max(0, v.t|0);
-  const clipe = VIDEO_DIR + 'cortes/' + v.yt + '_' + start + '.mp4';   // corte que JÁ começa no momento certo
+  const clipe = VIDEO_DIR + 'cortes/' + v.yt + '_' + start + '.mp4?v=2';   // corte (legenda PT queimada) — ?v= fura cache do celular
   const body =
     `<div class="va-frame"><video id="va-vid" src="${clipe}" controls preload="auto" playsinline></video></div>`+
     `<p class="va-oque">${v.oQue||''}</p>`+
