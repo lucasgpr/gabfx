@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b21';
+window.__BUILD='b22';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -638,6 +638,19 @@ function drawGrid(ctx,b,pr){
   ctx.strokeStyle='#ffffff0e';ctx.lineWidth=1;
   for(let i=0;i<=4;i++){const y=b.y+b.h*i/4;ctx.beginPath();ctx.moveTo(b.x,y);ctx.lineTo(b.x+b.w,y);ctx.stroke();}
 }
+/* EIXO DE PREÇO: números R$ + linhas-guia (em QUALQUER gráfico). Usado por drawTrade e acDraw. */
+function drawPriceAxis(ctx,b,pr){
+  ctx.save(); ctx.font='bold 9px system-ui'; ctx.textAlign='right'; ctx.setLineDash([]);
+  for(let p=135;p<=165;p+=5){ if(p<=pr.min||p>=pr.max)continue;
+    const y=pY(p,b,pr);
+    ctx.strokeStyle='rgba(174,191,206,.12)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(b.x,y); ctx.lineTo(b.x+b.w,y); ctx.stroke();
+    const t='R$ '+p, w=ctx.measureText(t).width;
+    ctx.fillStyle='rgba(11,19,32,.82)'; ctx.fillRect(b.x+b.w-w-6,y-6,w+5,12);
+    ctx.fillStyle='#aebfce'; ctx.fillText(t, b.x+b.w-3, y+3);
+  }
+  ctx.restore();
+}
 function candles(ctx,arr,b,pr,n){
   const N=arr.length,show=(n==null?N:Math.min(n,N)),slot=b.w/N,cw=Math.min(18,slot*.56);
   for(let i=0;i<show;i++){
@@ -1224,6 +1237,7 @@ function runAto0(){
     zone(ctx,{top:ROAD.top,bottom:ROAD.bottom,fill:`rgba(${CEN.roadRGB},.10)`,stroke:CEN.roadCor,label:'ROADBLOCK (alvo)',lc:CEN.roadLabel},B,PR);
     zone(ctx,{top:ZONE.top,bottom:ZONE.bottom,fill:lit?`rgba(${CEN.corRGB},.30)`:`rgba(${CEN.corRGB},.14)`,stroke:CEN.cor,lit:lit,label:CEN.textos.zonaLabel,lc:CEN.corLabel},B,PR);
     candles(ctx,shown,B,PR,count);
+    drawPriceAxis(ctx,B,PR);   // números R$ sempre visíveis (igual à Academia)
     if(lit&&!priceTested){priceTested=true;blip(720);sparks(B.x+B.w*0.86,pY(ZONE.bottom,B,PR)+58,CEN.cor,6);}
     if(zoneMarked){ // sua marcação fica fixa no gráfico, no preço que VOCÊ marcou
       const yz=pY(markedPrice,B,PR);
@@ -2177,17 +2191,7 @@ function acDraw(state,n){
   if(state.seta && count>=arr.length){ const s=state.seta;
     const ax=ACAD_B.x+ACAD_B.w*(parseFloat(s.x)/100);
     arrow(ctx, ax, pY(s.de,ACAD_B,ACAD_PR), pY(s.ate,ACAD_B,ACAD_PR), s.cor, s.txt); }
-  // EIXO DE PREÇO: linhas-guia + números R$ (pro leigo VER os valores citados na narração)
-  ctx.font='bold 9px system-ui'; ctx.textAlign='right'; ctx.setLineDash([]);
-  for(let p=135;p<=165;p+=5){ if(p<=ACAD_PR.min||p>=ACAD_PR.max)continue;
-    const y=pY(p,ACAD_B,ACAD_PR);
-    ctx.strokeStyle='rgba(174,191,206,.13)'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(ACAD_B.x,y); ctx.lineTo(ACAD_B.x+ACAD_B.w,y); ctx.stroke();
-    const t='R$ '+p, w=ctx.measureText(t).width;
-    ctx.fillStyle='rgba(11,19,32,.82)'; ctx.fillRect(ACAD_B.x+ACAD_B.w-w-6,y-6,w+5,12);
-    ctx.fillStyle='#aebfce'; ctx.fillText(t, ACAD_B.x+ACAD_B.w-3, y+3);
-  }
-  ctx.textAlign='left';
+  drawPriceAxis(ctx,ACAD_B,ACAD_PR);   // números R$ + linhas-guia
 }
 function playStep(aula,i){
   acStop();
