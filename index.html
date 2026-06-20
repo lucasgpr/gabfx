@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b24';
+window.__BUILD='b25';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -1197,7 +1197,7 @@ function runAto0(){
   const CONT_CERTO=CEN.contCerto, CONT_ERRADO=CEN.contErrado;
 
   /* ----- estado da run (Hades: 1 run = 1 operação) ----- */
-  let blind={alvo:300,maos:4,desc:3},        // [LICENÇA] Ato 0, Ante 1 = 300 pips (escala do doc)
+  let blind={alvo:150,maos:4,desc:3},        // [LICENÇA] meta 150: 1 mão limpa (137)+qualquer 2ª vence; alavancada (274) vence sozinha; loja ainda aparece entre as mãos
       pips=0,sel=new Set(),busy=false,firstHand=true,priceTested=false,zoneMarked=false,descHinted=false,markedPrice=0;
   let linhaPreco=null;       // rascunho: preço da linha colocada, AINDA não confirmada (null = sem linha)
   let draggingLine=false;    // arrastando a linha pra ajuste fino
