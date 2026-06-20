@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b30';
+window.__BUILD='b31';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -580,7 +580,8 @@ const SAVE_KEY='gabfx_ato0_v1';
 const S=Object.assign({xp:0,onbDone:false,bossWon:false,unlocked:[],runs:0,
   aderenciaUltima:0,aderenciaMelhorRun:0,maosPerfeitas:0,cenarioUltimo:null,
   coringasVistos:[],slotsDestravados:[],fichasGastasTotal:0,
-  academiaDone:false,aulasVistas:[],acadOferecida:false,modelosVistos:[]},JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'));
+  academiaDone:false,aulasVistas:[],acadOferecida:false,modelosVistos:[],
+  mkProg:{}},JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'));
 function save(){localStorage.setItem(SAVE_KEY,JSON.stringify(S));hud();}
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
@@ -2951,6 +2952,187 @@ function abrirAcademia(){ telaAcademia(); }
 /* ===================================================================
    14. MENU / ABERTURA
    =================================================================== */
+/* ===================================================================
+   FASE DE MARCAÇÃO — treino exaustivo de marcar zonas (tema CLARO TradingView,
+   velas verde/vermelho). Bíblia: FASE_MARCACAO.md. Reusa pY/yToP. Módulos 0–2 (slice).
+   =================================================================== */
+const MK={ bg:'#ffffff', grid:'#eceef1', axis:'#6a6e78', ink:'#131722', sub:'#787b84',
+  bull:'#26a69a', bear:'#ef5350', supLine:'#1b8a7f', supFill:'rgba(38,166,154,.15)',
+  resLine:'#c0392b', resFill:'rgba(239,83,80,.15)', markLine:'#2962ff', markFill:'rgba(41,98,255,.12)' };
+const MK_MODS=[
+  {key:'m0',nome:'Módulo 0 — Alfabeto do gráfico',treina:'Ler a vela e achar o corpo',gate:8,tipo:'alfabeto'},
+  {key:'m1',nome:'Módulo 1 — Marcar Suporte',treina:'Suporte = baixa→alta · marque o corpo',gate:6,tipo:'marca',alvo:'suporte'},
+  {key:'m2',nome:'Módulo 2 — Marcar Resistência',treina:'Resistência = alta→baixa · marque o corpo',gate:6,tipo:'marca',alvo:'resistencia'},
+];
+function mkRnd(a,b){return a+Math.random()*(b-a);}
+function mkGen(alvo){
+  const N=18, idx=7+(Math.random()*4|0), up=(alvo==='resistencia');
+  const base=2600+(Math.random()*140|0), amp=mkRnd(7,12), bodyH=amp*mkRnd(.8,1.1);
+  const closes=[]; let p=base+(up?-34:34);
+  for(let i=0;i<N;i++){
+    if(i<idx)p+=(base-p)*0.30+mkRnd(-1,1)*amp*0.4;
+    else if(i===idx)p=base;
+    else p+=(up?-1:1)*amp*0.85+mkRnd(-1,1)*amp*0.4;
+    closes.push(p);
+  }
+  const cs=[];
+  for(let i=0;i<N;i++){ const o=i===0?closes[0]+(up?2:-2):cs[i-1].c, c=closes[i];
+    cs.push({o,h:Math.max(o,c)+mkRnd(0,amp*0.4),l:Math.min(o,c)-mkRnd(0,amp*0.4),c}); }
+  if(!up){ cs[idx]={o:base+bodyH,c:base,h:base+bodyH+mkRnd(0,2),l:base-amp*mkRnd(.5,.9)};
+           cs[idx+1]={o:base,c:base+bodyH,h:base+bodyH+mkRnd(0,2),l:base-amp*mkRnd(.3,.7)}; }
+  else   { cs[idx]={o:base-bodyH,c:base,h:base+amp*mkRnd(.5,.9),l:base-bodyH-mkRnd(0,2)};
+           cs[idx+1]={o:base,c:base-bodyH,h:base+amp*mkRnd(.3,.7),l:base-bodyH-mkRnd(0,2)}; }
+  const zh=bodyH*0.5;
+  const ans=up?{tipo:'resistencia',top:base,bottom:base-zh,base,idx}
+              :{tipo:'suporte',top:base+zh,bottom:base,base,idx};
+  let mx=-1e9,mn=1e9; cs.forEach(k=>{mx=Math.max(mx,k.h);mn=Math.min(mn,k.l);});
+  const pad=(mx-mn)*0.14; return {cs,pr:{max:mx+pad,min:mn-pad},ans,alvo,idx};
+}
+function mkScore(m,ans){
+  const aT=ans.top,aB=ans.bottom, mT=Math.max(m.pTop,m.pBottom),mB=Math.min(m.pTop,m.pBottom);
+  const inter=Math.max(0,Math.min(aT,mT)-Math.max(aB,mB)), uni=Math.max(aT,mT)-Math.min(aB,mB);
+  const iou=uni>0?inter/uni:0, slack=(aT-aB)*0.9; let pavio=false;
+  if(ans.tipo==='suporte'&&mB<ans.base-slack)pavio=true;
+  if(ans.tipo==='resistencia'&&mT>ans.base+slack)pavio=true;
+  return {ok:iou>=0.42&&!pavio, iou, pavio};
+}
+function mkStep(pr){ const raw=(pr.max-pr.min)/5, pw=Math.pow(10,Math.floor(Math.log10(raw))), n=raw/pw;
+  return (n<1.5?1:n<3?2:n<7?5:10)*pw; }
+function mkZone(ctx,L,pr,top,bottom,tipo){
+  const yT=pY(top,L,pr),yB=pY(bottom,L,pr), sup=tipo==='suporte';
+  ctx.fillStyle=sup?MK.supFill:MK.resFill; ctx.fillRect(L.x,yT,L.w,yB-yT);
+  ctx.strokeStyle=sup?MK.supLine:MK.resLine; ctx.lineWidth=1.6;
+  ctx.beginPath();ctx.moveTo(L.x,yT);ctx.lineTo(L.x+L.w,yT);ctx.moveTo(L.x,yB);ctx.lineTo(L.x+L.w,yB);ctx.stroke();
+}
+function mkDraw(cv,ex,st){
+  const ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H); ctx.fillStyle=MK.bg; ctx.fillRect(0,0,W,H);
+  const L={x:6,y:34,w:W-58,h:H-34-18,axisX:W-52}, pr=ex.pr;
+  ctx.textAlign='left'; ctx.font='10px ui-monospace,monospace';
+  for(let v=Math.ceil(pr.min/mkStep(pr))*mkStep(pr); v<pr.max; v+=mkStep(pr)){
+    const y=pY(v,L,pr); ctx.strokeStyle=MK.grid; ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(L.x,y);ctx.lineTo(L.x+L.w,y);ctx.stroke();
+    ctx.fillStyle=MK.axis; ctx.fillText(v.toFixed(2),L.axisX+3,y+3);
+  }
+  const slot=L.w/ex.cs.length, cw=Math.min(13,slot*0.6);
+  ex.cs.forEach((c,i)=>{ const cx=L.x+slot*i+slot/2, col=c.c>=c.o?MK.bull:MK.bear;
+    ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(cx,pY(c.h,L,pr));ctx.lineTo(cx,pY(c.l,L,pr));ctx.stroke();
+    const yo=pY(c.o,L,pr),yc=pY(c.c,L,pr); ctx.fillRect(cx-cw/2,Math.min(yo,yc),cw,Math.max(1.5,Math.abs(yo-yc))); });
+  const last=ex.cs[ex.cs.length-1].c, ly=pY(last,L,pr);
+  ctx.fillStyle=MK.ink; ctx.fillRect(L.axisX,ly-7,W-L.axisX,14);
+  ctx.fillStyle='#fff'; ctx.font='9px ui-monospace,monospace'; ctx.fillText(last.toFixed(2),L.axisX+3,ly+3);
+  ctx.fillStyle='#e8b923'; ctx.beginPath(); ctx.arc(11,11,4,0,7); ctx.fill();
+  ctx.fillStyle=MK.ink; ctx.font='bold 11px system-ui'; ctx.fillText('Gold Spot / U.S. Dollar · 1D · OANDA',20,14);
+  if(st.showAns) mkZone(ctx,L,pr,ex.ans.top,ex.ans.bottom,ex.ans.tipo);
+  if(st.mark){ const yT=pY(Math.max(st.mark.pTop,st.mark.pBottom),L,pr),yB=pY(Math.min(st.mark.pTop,st.mark.pBottom),L,pr);
+    ctx.fillStyle=MK.markFill; ctx.fillRect(L.x,yT,L.w,yB-yT);
+    ctx.strokeStyle=MK.markLine; ctx.lineWidth=1.6; ctx.setLineDash([5,3]);
+    ctx.strokeRect(L.x,yT,L.w,yB-yT); ctx.setLineDash([]); }
+  if(st.hi!=null){ const cx=L.x+slot*st.hi+slot/2; ctx.strokeStyle='#2962ff';ctx.lineWidth=2;ctx.setLineDash([3,3]);
+    ctx.strokeRect(cx-slot/2+1,L.y+1,slot-2,L.h-2); ctx.setLineDash([]); }
+  ctx.fillStyle='#b2b5be'; ctx.font='9px system-ui'; ctx.fillText('TradingView',8,H-4);
+  return {B:L,pr};
+}
+function abrirMarcacao(){ telaMarcacao(); }
+function telaMarcacao(){
+  blip(420); const screen=$('#screen'), prog=S.mkProg||{};
+  screen.innerHTML=`<div class="view"><div class="card-lesson">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <button class="btn ghost" style="width:auto;padding:4px 10px;margin:0" id="mk-back">‹ menu</button>
+      <b style="font-size:16px;flex:1">🎯 Treino de Marcação</b></div>
+    <p style="font-size:13px;color:var(--mut);line-height:1.5;margin:0 0 10px">Marcação é o <b>coração</b> do método do GAB. Aqui você treina <b>achar e marcar as zonas</b> no gráfico — igual à tela dele — até virar mestre.</p>
+    <div id="mk-list" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="fid" style="margin-top:12px">Mais módulos chegando (corpo×pavio, fresh, RBS/SBR, QM…). <span class="gabtag">FIEL</span> ao GAB.</div>
+  </div></div>`;
+  $('#mk-back').onclick=()=>menu();
+  const list=$('#mk-list');
+  MK_MODS.forEach(m=>{ const done=(prog[m.key]||0)>=m.gate;
+    const b=document.createElement('button'); b.className='btn '+(done?'ghost':'primary');
+    b.style.cssText='text-align:left;width:100%;white-space:normal';
+    b.innerHTML=`<b>${m.nome}</b> ${done?'<span style="color:#7CFC9B">✓</span>':''}<br><small style="opacity:.8">${m.treina}</small>`;
+    b.onclick=()=>mkPlay(m.key); list.appendChild(b); });
+  screen.scrollTop=0;
+}
+function mkPlay(key){
+  const mod=MK_MODS.find(m=>m.key===key); blip(560);
+  S.mk={key,acertos:0,st:{},geo:null};
+  const screen=$('#screen');
+  screen.innerHTML=`<div class="view"><div class="card-lesson" style="padding-top:10px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <button class="btn ghost" style="width:auto;padding:4px 10px;margin:0" id="mk-back">‹ treino</button>
+      <b style="font-size:13.5px;flex:1;min-width:0">${mod.nome}</b>
+      <span id="mk-prog" style="font-size:12px;color:var(--mut)"></span></div>
+    <div style="background:#fff;border-radius:10px;overflow:hidden;border:1px solid #d7dadf">
+      <canvas id="mk-cv" width="560" height="320" style="width:100%;display:block;touch-action:none"></canvas></div>
+    <div id="mk-say" style="min-height:44px;font-size:13.5px;line-height:1.45;margin:8px 0;color:#dde7df"></div>
+    <div id="mk-ctr" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+  </div></div>`;
+  $('#mk-back').onclick=()=>telaMarcacao();
+  mkNext();
+}
+function mkSay(h){ const e=$('#mk-say'); if(e)e.innerHTML=h; }
+function mkCtr(btns){ const c=$('#mk-ctr'); if(!c)return; c.innerHTML='';
+  btns.forEach(b=>{ const x=document.createElement('button'); x.className='btn '+(b.c||'ghost');
+    x.style.cssText='width:auto;flex:1;min-width:118px'; x.textContent=b.t; if(b.id)x.id=b.id; if(b.dis)x.disabled=true;
+    x.onclick=()=>{blip(480);b.f();}; c.appendChild(x); }); }
+function mkRender(){ const cv=$('#mk-cv'); if(cv)S.mk.geo=mkDraw(cv,S.mk.ex,S.mk.st); }
+function mkProgTxt(){ const M=S.mk,mod=MK_MODS.find(m=>m.key===M.key); const p=$('#mk-prog'); if(p)p.textContent=`✓ ${M.acertos}/${mod.gate}`; }
+function mkNext(){
+  const M=S.mk, mod=MK_MODS.find(m=>m.key===M.key); mkProgTxt();
+  if(M.acertos>=mod.gate) return mkDone(mod);
+  M.st={};
+  if(mod.tipo==='marca'){
+    M.ex=mkGen(mod.alvo);
+    mkSay(mod.alvo==='suporte'
+      ? 'Ache o <b>suporte</b>: uma vela de <b>baixa</b> seguida de uma de <b>alta</b> (o fundo onde o preço virou pra cima). <b>Arraste</b> no gráfico pra marcar a faixa — rente ao <b>corpo</b>, não no pavio.'
+      : 'Ache a <b>resistência</b>: uma vela de <b>alta</b> seguida de uma de <b>baixa</b> (o teto onde o preço virou pra baixo). <b>Arraste</b> pra marcar a faixa — rente ao <b>corpo</b>, não no pavio.');
+    mkRender(); mkCtr([{t:'Confirmar',c:'primary',id:'mk-ok',dis:true,f:mkConfirmMarca}]); mkBindDrag();
+  } else mkAlfabeto();
+}
+function mkAlfabeto(){
+  const M=S.mk; M.ex=mkGen(Math.random()<.5?'suporte':'resistencia');
+  const i=M.ex.idx+(Math.random()<.5?0:1), c=M.ex.cs[i], up=c.c>=c.o;
+  M.st.hi=i;
+  if(Math.random()<.5){ M.alvoDir=up?'alta':'baixa';
+    mkSay('A vela <b>destacada</b> é de <b>alta</b> ou de <b>baixa</b>? Olhe o <b>corpo</b>: fechou acima ou abaixo da abertura?');
+    mkRender(); mkCtr([{t:'🟢 Alta',f:()=>mkAnsDir('alta')},{t:'🔴 Baixa',f:()=>mkAnsDir('baixa')}]);
+  } else {
+    mkSay('<b>Toque no CORPO</b> da vela destacada (a parte <b>grossa</b>), não no pavio (a linha fina). O GAB: "o pavio é inútil, o corpo é o preço".');
+    mkRender(); mkCtr([]); mkBindTapBody(i);
+  }
+}
+function mkAnsDir(d){ const M=S.mk, ok=(d===M.alvoDir); if(ok)M.acertos++;
+  mkFeedback(ok, ok? (d==='alta'?'Isso! Corpo <b>verde</b>, fechou acima da abertura = alta (comprador dominou).':'Isso! Corpo <b>vermelho</b>, fechou abaixo = baixa (vendedor dominou).')
+    : 'Olhe o <b>corpo</b>: fecha acima da abertura → <b>alta</b> (verde); abaixo → <b>baixa</b> (vermelha).'); }
+function mkBindTapBody(i){ const cv=$('#mk-cv'), M=S.mk;
+  cv.onpointerdown=(ev)=>{ ev.preventDefault();
+    const r=cv.getBoundingClientRect(), y=(ev.clientY-r.top)*(cv.height/r.height), L=M.geo.B, pr=M.geo.pr, c=M.ex.cs[i];
+    const yT=pY(Math.max(c.o,c.c),L,pr), yB=pY(Math.min(c.o,c.c),L,pr), ok=(y>=yT-3&&y<=yB+3);
+    if(ok)M.acertos++; cv.onpointerdown=null;
+    mkFeedback(ok, ok?'Isso é o <b>corpo</b> — onde estão as ordens reais. ✅':'Isso foi o <b>pavio</b> (linha fina) — só rejeição/ruído. O corpo é a parte <b>grossa</b> da vela.'); }; }
+function mkBindDrag(){ const cv=$('#mk-cv'), M=S.mk; let drag=false,yA=0;
+  const yc=(ev)=>{ const r=cv.getBoundingClientRect(); return ((ev.clientY)-r.top)*(cv.height/r.height); };
+  cv.onpointerdown=(ev)=>{ ev.preventDefault(); drag=true; yA=yc(ev); upd(ev); cv.setPointerCapture&&cv.setPointerCapture(ev.pointerId); };
+  cv.onpointermove=(ev)=>{ if(drag){ev.preventDefault(); upd(ev);} };
+  cv.onpointerup=()=>{ drag=false; };
+  function upd(ev){ const yB=yc(ev), L=M.geo.B, pr=M.geo.pr;
+    M.st.mark={pTop:yToP(Math.min(yA,yB),L,pr),pBottom:yToP(Math.max(yA,yB),L,pr)}; mkRender();
+    const ok=$('#mk-ok'); if(ok)ok.disabled=false; } }
+function mkConfirmMarca(){ const M=S.mk; if(!M.st.mark)return;
+  const r=mkScore(M.st.mark,M.ex.ans); M.st.showAns=true; mkRender();
+  if(r.ok){ M.acertos++; mkFeedback(true, M.ex.ans.tipo==='suporte'
+      ? 'Suporte! Baixa seguida de alta — os <b>compradores</b> assumiram aqui. Faixa no corpo. ✅'
+      : 'Resistência! Alta seguida de baixa — os <b>vendedores</b> assumiram. Faixa no corpo. ✅'); }
+  else if(r.pavio) mkFeedback(false,'Você pegou o <b>pavio</b>. O GAB: o pavio é inútil — marque rente ao <b>corpo</b>. Em verde está a zona certa.');
+  else mkFeedback(false,'Quase — a faixa não bateu na zona certa. Veja em <b>verde</b> onde era: rente ao corpo do par '+(M.ex.ans.tipo==='suporte'?'baixa→alta':'alta→baixa')+'.'); }
+function mkFeedback(ok,msg){ const M=S.mk, mod=MK_MODS.find(m=>m.key===M.key);
+  blip(ok?720:300); mkSay((ok?'<b style="color:#7CFC9B">✔</b> ':'<b style="color:#ff8a7a">✘</b> ')+msg); mkProgTxt();
+  mkCtr([{t: M.acertos>=mod.gate?'🏆 Concluir':'Próxima ▶',c:'primary',f:mkNext}]); }
+function mkDone(mod){ S.mkProg=S.mkProg||{}; S.mkProg[mod.key]=mod.gate; save(); blip(760);
+  mkSay(`🏆 <b>${mod.nome}</b> concluído! Você marcou certo ${mod.gate} vezes. Tá ficando mestre.`);
+  mkCtr([{t:'‹ Voltar ao treino',c:'primary',f:telaMarcacao}]); }
+
 function menu(){
   const screen=$('#screen');
   const cont=S.onbDone?'<button class="btn go" id="play">▶ '+(S.bossWon?'Rejogar o Ato 0':'Operar o Ato 0')+'</button>':'';
@@ -2967,11 +3149,13 @@ function menu(){
     ${(S.coringasVistos&&S.coringasVistos.length)?`<div class="fid" style="margin-top:8px">🃏 Coringas descobertos na loja: <b>${S.coringasVistos.length}</b></div>`:''}
     <button class="btn primary" id="start">${S.onbDone?'📚 Rever as aulas (Módulos 1–6)':'▶ Começar do zero'}</button>
     <button class="btn ghost" id="acad">📊 Academia de Leitura ${S.academiaDone?'✓':''}</button>
+    <button class="btn ghost" id="marc">🎯 Treino de Marcação${(()=>{const p=S.mkProg||{},n=MK_MODS.filter(m=>(p[m.key]||0)>=m.gate).length;return n?` <span style="color:#7CFC9B">${n}/${MK_MODS.length}</span>`:'';})()}</button>
     ${cont}
     <div class="fid" style="margin-top:14px">Conteúdo <span class="gabtag">FIEL</span> ao método do GAB · adaptações marcadas como <span class="lictag">LICENÇA DE DESIGN</span>. PT-BR.</div>
   </div></div>`;
   $('#start').onclick=()=>{blip(560);lesson(0);};
   const ab=$('#acad');if(ab)ab.onclick=()=>{blip(560);abrirAcademia();};
+  const mb=$('#marc');if(mb)mb.onclick=()=>{blip(560);telaMarcacao();};
   const p=$('#play');if(p)p.onclick=()=>{blip(560);runAto0();};
   screen.scrollTop=0;
   $('#actpill').innerHTML='Ato <b>0</b>';
