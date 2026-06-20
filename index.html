@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>
 /* AUTO-ATUALIZADOR: detecta versão nova (v.txt) e recarrega sozinho — mata o cache teimoso do iOS */
-window.__BUILD='b32';
+window.__BUILD='b33';
 (function(){try{fetch('v.txt?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():'';}).then(function(t){t=(t||'').trim();if(t&&t!==window.__BUILD&&location.search.indexOf('v=')<0){location.replace(location.pathname+'?v='+encodeURIComponent(t));}}).catch(function(){});}catch(e){}})();
 </script>
 <style>
@@ -3141,10 +3141,31 @@ const FASES=[
   {id:'f1',nome:'Fase 0·1 — Retorno ao Suporte',tipo:'suporte',alvo:55},
   {id:'f2',nome:'Fase 0·2 — Retorno à Resistência',tipo:'resistencia',alvo:55},
   {id:'f3',nome:'Fase 0·3 — Suporte (mais ruído)',tipo:'suporte',alvo:70,dif:1},
+  {id:'b1',nome:'CHEFE — O Caça-Stop',tipo:'suporte',alvo:95,tempo:8,
+    boss:{nome:'O Caça-Stop',emoji:'🩸',taunt:'Vou furar seu stop e te jogar pra fora!',gim:'stophunt'}},
 ];
-let FZTIMER=null;
-function pararFase(){ if(FZTIMER){clearInterval(FZTIMER);FZTIMER=null;} }
-function genFase(tipo,dif){
+let FZTIMER=null, FZCLOCK=null;
+function pararFase(){ if(FZTIMER){clearInterval(FZTIMER);FZTIMER=null;} if(FZCLOCK){clearInterval(FZCLOCK);FZCLOCK=null;} }
+function flashVignette(col){ const v=document.createElement('div');
+  v.style.cssText=`position:fixed;inset:0;z-index:290;pointer-events:none;background:radial-gradient(ellipse at center,transparent 36%,${col||'rgba(224,51,91,.55)'} 100%)`;
+  document.body.appendChild(v); v.animate([{opacity:0},{opacity:1,offset:.25},{opacity:0}],{duration:620,easing:'ease-out'}); setTimeout(()=>v.remove(),660); }
+function bossIntro(boss,cb){ const o=document.createElement('div');
+  o.style.cssText='position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;background:rgba(8,4,10,.66)';
+  o.innerHTML=`<div id="biCard" style="text-align:center;color:#fff;opacity:0"><div style="font-size:70px;filter:drop-shadow(0 0 18px #e0335b)">${boss.emoji}</div><div style="letter-spacing:5px;color:#ff5a6e;font-weight:800;font-size:12px">⚔ CHEFE ⚔</div><div style="font-size:26px;font-weight:800;margin:2px 0">${boss.nome}</div><div style="font-size:13.5px;color:#ffd0d6;max-width:300px;margin:6px auto 0;font-style:italic">"${boss.taunt}"</div></div>`;
+  document.body.appendChild(o); flashVignette(); shake(true); vibrate(24); thunk(); whoosh();
+  o.querySelector('#biCard').animate([{transform:'scale(.6) rotate(-6deg)',opacity:0},{transform:'scale(1.12) rotate(3deg)',opacity:1,offset:.55},{transform:'scale(1) rotate(0)',opacity:1}],{duration:560,easing:'cubic-bezier(.34,1.56,.5,1)',fill:'forwards'});
+  setTimeout(()=>{ o.animate([{opacity:1},{opacity:0}],{duration:300,fill:'forwards'}); setTimeout(()=>{o.remove();cb&&cb();},300); },1850); }
+function celebrar(boss){ const W=window.innerWidth,H=window.innerHeight;
+  for(let k=0;k<5;k++) setTimeout(()=>{ sparks(W*Math.random(),H*0.28+H*0.42*Math.random(), k%2?'#f4c95d':'#7CFC9B',14); blip(700+k*110); },k*110);
+  flashVignette('rgba(124,252,155,.32)'); shake(true); vibrate(30);
+  const o=document.createElement('div'); o.style.cssText='position:fixed;inset:0;z-index:295;display:flex;align-items:center;justify-content:center;pointer-events:none';
+  o.innerHTML=`<div style="text-align:center"><div style="font-size:28px;font-weight:800;color:#7CFC9B;text-shadow:0 0 16px #2ecc71">${boss?'CHEFE DERROTADO!':'VOCÊ VENCEU!'}</div>${boss?`<div style="font-size:40px;margin-top:4px">${boss.emoji}💥</div>`:''}</div>`;
+  document.body.appendChild(o); o.firstChild.animate([{transform:'scale(.4)',opacity:0},{transform:'scale(1.15)',opacity:1,offset:.5},{transform:'scale(1)',opacity:1}],{duration:600,easing:'cubic-bezier(.34,1.56,.5,1)',fill:'forwards'});
+  setTimeout(()=>{ o.animate([{opacity:1},{opacity:0}],{duration:400,fill:'forwards'}); setTimeout(()=>o.remove(),400); },1500); }
+function faseClock(){ FZCLOCK=setInterval(()=>{ const fz=S.fz; if(!fz||fz.fase!=='live')return; const rem=Math.max(0,(fz.clockEnd-performance.now())/1000);
+  const h=$('#fz-clock'); if(h){ h.textContent='⏱ '+rem.toFixed(1)+'s'; h.style.color=rem<fz.def.tempo*0.35?'#ff6b6b':'#ffcf6b'; }
+  if(rem<=0 && !fz.entered){ fz.timeUp=true; pararFase(); faseResult(); } },100); }
+function genFase(tipo,dif,gim){
   dif=dif||0;
   const S0=2600+(Math.random()*120|0), R=mkRnd(48,70)+dif*8, amp=mkRnd(6,9)+dif*1.2;
   const cs=[], P=(o,c,wl,wh)=>cs.push({o:+o.toFixed(2),c:+c.toFixed(2),h:+(Math.max(o,c)+wh).toFixed(2),l:+(Math.min(o,c)-wl).toFixed(2)});
@@ -3157,10 +3178,12 @@ function genFase(tipo,dif){
   const histN=cs.length;
   const back=2+(Math.random()*2|0);
   for(let i=0;i<back;i++){ const o=p,c=p-(p-S0)*mkRnd(.5,.8)-mkRnd(0,amp*.3); P(o,Math.max(c,S0-amp*0.1),mkRnd(1,3),1); p=cs[cs.length-1].c; }
-  P(p,S0+amp*0.15,mkRnd(2,4.5),1); p=S0+amp*0.15;
+  let gimIdx=null;
+  if(gim==='stophunt'){ P(p,S0+amp*0.1,amp*mkRnd(1.4,1.9),1); gimIdx=cs.length-1; p=S0+amp*0.1; }
+  else { P(p,S0+amp*0.15,mkRnd(2,4.5),1); p=S0+amp*0.15; }
   const RB=S0+R;
   for(let i=0;i<7;i++){ const o=p,c=Math.min(RB,p+(RB-p)*mkRnd(.3,.5)+mkRnd(0,amp*.3)); P(o,c,1,mkRnd(1,3)); p=c; }
-  let sc={cs,histN,ans:{tipo:'suporte',top:S0+amp*0.5,bottom:S0,base:S0},road:RB,Sbase:S0,amp,R};
+  let sc={cs,histN,ans:{tipo:'suporte',top:S0+amp*0.5,bottom:S0,base:S0},road:RB,Sbase:S0,amp,R,gimIdx,gim:gim||null};
   if(tipo==='resistencia') sc=mirrorFase(sc);
   let mx=-1e9,mn=1e9; sc.cs.forEach(k=>{mx=Math.max(mx,k.h);mn=Math.min(mn,k.l);});
   const pad=(mx-mn)*0.10; sc.pr={max:mx+pad,min:mn-pad};
@@ -3168,7 +3191,7 @@ function genFase(tipo,dif){
 }
 function mirrorFase(sc){ const S=sc.Sbase, f=p=>+(2*S-p).toFixed(2);
   return {cs:sc.cs.map(k=>({o:f(k.o),c:f(k.c),h:f(k.l),l:f(k.h)})),histN:sc.histN,road:f(sc.road),
-    Sbase:S,amp:sc.amp,R:sc.R,ans:{tipo:'resistencia',top:S,bottom:f(sc.ans.top),base:S}}; }
+    Sbase:S,amp:sc.amp,R:sc.R,gimIdx:sc.gimIdx,gim:sc.gim,ans:{tipo:'resistencia',top:S,bottom:f(sc.ans.top),base:S}}; }
 function faseDraw(cv,fz){
   const ctx=cv.getContext('2d'),W=cv.width,H=cv.height,sc=fz.sc,pr=sc.pr;
   ctx.clearRect(0,0,W,H); ctx.fillStyle=MK.bg; ctx.fillRect(0,0,W,H);
@@ -3223,33 +3246,37 @@ function telaFases(){
   const list=$('#fz-list');
   FASES.forEach(d=>{ const best=prog[d.id]||0, done=best>=d.alvo;
     const b=document.createElement('button'); b.className='btn '+(done?'ghost':'primary');
-    b.style.cssText='text-align:left;width:100%;white-space:normal';
-    b.innerHTML=`<b>${d.nome}</b> ${done?'<span style="color:#7CFC9B">✓</span>':''}<br><small style="opacity:.8">Meta: ${d.alvo} pips${best?` · seu recorde: ${best}`:''}</small>`;
+    b.style.cssText='text-align:left;width:100%;white-space:normal'+(d.boss?';border-color:#e0335b;box-shadow:0 2px 0 #7a1d30':'');
+    b.innerHTML=`<b>${d.boss?'⚔ '+d.boss.emoji+' ':''}${d.nome}</b> ${done?'<span style="color:#7CFC9B">✓</span>':''}<br><small style="opacity:.8">${d.boss?`<span style="color:#ff8a7a">CHEFE · ${d.tempo}s</span> · `:''}Meta: ${d.alvo} pips${best?` · recorde: ${best}`:''}</small>`;
     b.onclick=()=>faseLive(d); list.appendChild(b); });
   screen.scrollTop=0;
 }
 function faseLive(def){
   pararFase();
-  S.fz={def,sc:genFase(def.tipo,def.dif||0),fase:'mark',reveal:0,mark:null,entered:false,entryPrice:null,entryIdx:null,alav:false,wasZone:false,inZone:false,missed:false,markQ:null,geo:null};
+  const run=()=>{
+  S.fz={def,sc:genFase(def.tipo,def.dif||0,def.boss&&def.boss.gim),fase:'mark',reveal:0,mark:null,entered:false,entryPrice:null,entryIdx:null,alav:false,wasZone:false,inZone:false,missed:false,markQ:null,geo:null,winOpen:null};
   S.fz.reveal=S.fz.sc.histN;
   const screen=$('#screen');
   screen.innerHTML=`<div class="view"><div class="card-lesson" style="padding-top:10px">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
       <button class="btn ghost" style="width:auto;padding:4px 10px;margin:0" id="fz-back">‹ fases</button>
-      <b style="font-size:13px;flex:1;min-width:0">${def.nome}</b>
+      <b style="font-size:13px;flex:1;min-width:0">${def.boss?'⚔ ':''}${def.nome}</b>
+      ${def.tempo?`<span id="fz-clock" style="font-size:12px;font-weight:800;color:#ffcf6b">⏱ ${def.tempo.toFixed(1)}s</span>`:''}
       <span id="fz-hud" style="font-size:12px;color:var(--mut)"></span></div>
-    <div style="background:#fff;border-radius:10px;overflow:hidden;border:1px solid #d7dadf">
+    <div style="background:#fff;border-radius:10px;overflow:hidden;border:1px solid ${def.boss?'#e0335b':'#d7dadf'};${def.boss?'box-shadow:0 0 0 2px rgba(224,51,91,.22)':''}">
       <canvas id="mk-cv" width="560" height="320" style="width:100%;display:block;touch-action:none"></canvas></div>
     <div id="fz-say" style="min-height:44px;font-size:13.5px;line-height:1.45;margin:8px 0;color:#dde7df"></div>
     <div id="fz-dock" style="display:flex;gap:8px;flex-wrap:wrap"></div>
   </div></div>`;
   $('#fz-back').onclick=()=>{pararFase();telaFases();};
   faseDrawNow(); faseHud(0,1,0);
-  faseSay(def.tipo==='suporte'
+  faseSay((def.boss?'<b style="color:#ff8a7a">⚔ Chefe:</b> '+def.boss.taunt+'<br>':'')+(def.tipo==='suporte'
     ? '<b>1) Leia e marque.</b> O preço caiu e formou um <b>suporte</b> (vela de baixa → vela de alta). <b>Arraste</b> pra marcar a faixa no <b>corpo</b> (não no pavio). Depois o gráfico vai <b>rodar</b>.'
-    : '<b>1) Leia e marque.</b> O preço subiu e formou uma <b>resistência</b> (vela de alta → vela de baixa). <b>Arraste</b> pra marcar a faixa no <b>corpo</b> (não no pavio). Depois o gráfico vai <b>rodar</b>.');
+    : '<b>1) Leia e marque.</b> O preço subiu e formou uma <b>resistência</b> (vela de alta → vela de baixa). <b>Arraste</b> pra marcar a faixa no <b>corpo</b> (não no pavio). Depois o gráfico vai <b>rodar</b>.'));
   faseDock([{t:'Confirmar marcação',c:'primary',id:'fz-ok',dis:true,f:faseConfirmMark}]);
   faseBindDrag();
+  };
+  if(def.boss) bossIntro(def.boss,run); else run();
 }
 function faseBindDrag(){ const cv=$('#mk-cv'),fz=S.fz; let drag=false,yA=0;
   const yc=ev=>{const r=cv.getBoundingClientRect();return (ev.clientY-r.top)*(cv.height/r.height);};
@@ -3268,37 +3295,47 @@ function faseArmar(){ const fz=S.fz; faseDrawNow();
     {t:'▶ Iniciar pregão',c:'go',f:faseStart} ]); }
 function faseToggleAlav(){ const fz=S.fz; if(fz.entered)return; fz.alav=!fz.alav; const a=$('#fz-alav2');
   if(a){a.className='btn '+(fz.alav?'primary':'ghost');a.textContent=fz.alav?'⚡ ON':'⚡ Alav.';} }
-function faseStart(){ const fz=S.fz; fz.fase='live'; pararFase();
-  faseSay('📈 <b>Rodando…</b> espere o preço <b>voltar à zona</b> (acende verde) e toque '+(fz.def.tipo==='suporte'?'COMPRAR':'VENDER')+' na hora certa.');
+function faseStart(){ const fz=S.fz; fz.fase='live'; pararFase(); fz.t0=performance.now(); fz.winOpen=null;
+  faseSay('📈 <b>Rodando…</b> espere o preço <b>voltar à zona</b> (acende verde) e toque '+(fz.def.tipo==='suporte'?'COMPRAR':'VENDER')+' na hora certa.'+(fz.def.boss?' <b style="color:#ff8a7a">O chefe vai tentar te enganar — segure firme.</b>':''));
   faseDock([
     {t:fz.def.tipo==='suporte'?'🟢 COMPRAR':'🔴 VENDER',c:'primary',id:'fz-entry',dis:true,f:faseEntrar},
     {t:fz.alav?'⚡ ON':'⚡ Alav.',c:fz.alav?'primary':'',id:'fz-alav2',f:faseToggleAlav} ]);
-  FZTIMER=setInterval(faseTick,640); }
+  if(fz.def.tempo){ fz.clockEnd=performance.now()+fz.def.tempo*1000; faseClock(); }
+  FZTIMER=setInterval(faseTick, fz.def.boss?430:640); }
 function faseTick(){ const fz=S.fz,sc=fz.sc;
   if(fz.reveal<sc.cs.length) fz.reveal++; else { pararFase(); return faseResult(); }
   const i=fz.reveal-1,c=sc.cs[i],base=sc.ans.base,amp=sc.amp,sup=fz.def.tipo==='suporte';
+  if(fz.def.boss && i===sc.gimIdx){ shake(true);vibrate(22);flashVignette();thunk();
+    const cv=$('#mk-cv'); if(cv){const r=cv.getBoundingClientRect();sparks(r.left+r.width*0.5,r.top+r.height*0.7,'#e0335b',12);}
+    conceptToast('🩸','Caça-Stop!','O pavio <b>furou o suporte</b> pra te assustar — mas o <b>corpo segurou</b>. Pavio é rejeição, não rompimento. Segure firme e <b>ENTRE</b>. [GAB]'); }
   const inZone=i>=sc.histN&&!fz.entered&&(sup?(c.c<=base+amp*1.2&&c.c>=base-amp*2.5):(c.c>=base-amp*1.2&&c.c<=base+amp*2.5));
-  fz.inZone=inZone; if(inZone)fz.wasZone=true;
+  fz.inZone=inZone; if(inZone){fz.wasZone=true; if(fz.winOpen==null)fz.winOpen=performance.now();}
   if(fz.wasZone&&!fz.entered&&(sup?c.c>base+amp*1.7:c.c<base-amp*1.7))fz.missed=true;
-  faseDrawNow();
+  faseDrawNow(); blip(280+i*4);
   const eb=$('#fz-entry'); if(eb)eb.disabled=!inZone;
   if(inZone)faseSay('🎯 <b>NA ZONA!</b> Toque <b>'+(sup?'COMPRAR':'VENDER')+'</b> AGORA — quanto mais fundo no reteste, mais pips.');
   else if(fz.missed)faseSay('⚠ O preço <b>saiu da zona</b> e disparou… (você não entrou)'); }
 function faseEntrar(){ const fz=S.fz; if(fz.entered||!fz.inZone)return;
-  fz.entered=true; fz.entryIdx=fz.reveal-1; fz.entryPrice=fz.sc.cs[fz.entryIdx].c;
-  blip(700); const eb=$('#fz-entry'); if(eb){eb.disabled=true;eb.textContent='✓ Operado';}
-  faseSay('✅ <b>Entrou em '+fz.entryPrice.toFixed(2)+'!</b> Agora segura — o alvo é o <b>roadblock</b>.'); faseDrawNow(); }
+  fz.entered=true; fz.entryIdx=fz.reveal-1; fz.entryPrice=fz.sc.cs[fz.entryIdx].c; fz.entryT=performance.now();
+  blip(700);thunk();shake(false);vibrate(12);
+  const cv=$('#mk-cv'); if(cv){const r=cv.getBoundingClientRect();sparks(r.left+r.width*0.55,r.top+r.height*0.5,'#2962ff',8);}
+  const eb=$('#fz-entry'); if(eb){eb.disabled=true;eb.textContent='✓ Operado';}
+  faseSay('✅ <b>Entrou em '+fz.entryPrice.toFixed(2)+'!</b> Segura — o alvo é o <b>roadblock</b>.'+(fz.def.boss?' <b style="color:#7CFC9B">Você não caiu na manipulação! 🛡</b>':'')); faseDrawNow(); }
 function faseResult(){ const fz=S.fz,sc=fz.sc; fz.fase='result'; fz.reveal=sc.cs.length; faseDrawNow();
   const exit=sc.cs[sc.cs.length-1].c, sup=fz.def.tipo==='suporte'; let chips=0,mult=1,pips=0,msg='';
-  if(!fz.entered){ msg='⚫ <b>Você perdeu a entrada.</b> O preço voltou na zona e você não operou — sem entrada, sem pips. A entrada do GAB é no <b>reteste</b> da zona: quando acender verde, toque na hora.'; }
+  if(!fz.entered){ msg=fz.timeUp
+      ? '⏱ <b>O tempo acabou.</b> Você travou e não operou — no pregão, indecisão custa. Quando acender <b>NA ZONA</b>, decida e toque.'
+      : '⚫ <b>Você perdeu a entrada.</b> O preço voltou na zona e você não operou — sem entrada, sem pips. A entrada do GAB é no <b>reteste</b>: quando acender verde, toque na hora.'; }
   else{ const capPips=Math.max(0,Math.round(sup?(exit-fz.entryPrice):(fz.entryPrice-exit)));
     const markBonus=Math.round((fz.markQ&&fz.markQ.iou?fz.markQ.iou:0)*25);
-    chips=capPips+markBonus+10; mult=fz.alav?2:1; pips=Math.round(chips*mult);
-    msg=`✅ Capturou <b>${capPips} pips</b> do reteste ao roadblock`+(markBonus?` · +${markBonus} marcação`:'')+(fz.alav?` · ⚡ ×2`:'')+`.`; }
-  const win=pips>=fz.def.alvo; faseSay(msg); faseHud(chips,mult,pips);
-  if(win){ S.fzProg=S.fzProg||{}; S.fzProg[fz.def.id]=Math.max(S.fzProg[fz.def.id]||0,pips); save(); blip(820);
-    faseSay(msg+` <b style="color:#7CFC9B">🏆 Bateu a meta (${pips}/${fz.def.alvo})!</b>`); }
-  else if(fz.entered) faseSay(msg+` <b style="color:#ffcf6b">Faltou pra meta (${pips}/${fz.def.alvo}).</b> Entre mais <b>fundo</b> no reteste ${fz.def.tipo==='suporte'?'(mais perto do suporte)':'(mais perto da resistência)'} ou use ⚡.`);
+    const speedBonus=fz.def.tempo?Math.max(0,Math.round((fz.def.tempo-(fz.entryT-fz.t0)/1000)*5)):0;
+    const bossBonus=fz.def.boss?20:0;
+    chips=capPips+markBonus+10+speedBonus+bossBonus; mult=fz.alav?2:1; pips=Math.round(chips*mult);
+    msg=`✅ <b>${capPips} pips</b> do reteste ao roadblock`+(markBonus?` · +${markBonus} marcação`:'')+(speedBonus?` · +${speedBonus} ⏱reflexo`:'')+(bossBonus?` · +${bossBonus} 🛡resistiu`:'')+(fz.alav?` · ⚡×2`:'')+`.`; }
+  const win=pips>=fz.def.alvo; faseHud(chips,mult,pips);
+  if(win){ S.fzProg=S.fzProg||{}; S.fzProg[fz.def.id]=Math.max(S.fzProg[fz.def.id]||0,pips); save();
+    celebrar(fz.def.boss); faseSay(msg+` <b style="color:#7CFC9B">🏆 ${fz.def.boss?'CHEFE DERROTADO':'Bateu a meta'} (${pips}/${fz.def.alvo})!</b>`); }
+  else { blip(220); faseSay(msg+(fz.entered?` <b style="color:#ffcf6b">Faltou (${pips}/${fz.def.alvo}).</b> Entre mais <b>fundo</b> no reteste ou use ⚡/reflexo.`:'')); }
   faseDock([ {t: win?'Próxima ▶':'↻ Repetir',c:'primary',f: win?faseProx:()=>faseLive(fz.def)},
              {t:'‹ fases',f:telaFases} ]); }
 function faseProx(){ const i=FASES.findIndex(f=>f.id===S.fz.def.id); if(i>=0&&i<FASES.length-1)faseLive(FASES[i+1]); else telaFases(); }
